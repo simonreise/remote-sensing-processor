@@ -1,23 +1,13 @@
 # appveyor.yml - https://www.appveyor.com/docs/lang/python
 ---
-
+stack: python 3.9
 image:
   - Ubuntu
 
 environment:
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      PYTHON: "3.7"
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      PYTHON: "3.8"
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
       PYTHON: "3.9"
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      PYTHON: "3.10"
-  #- TOXENV: py37
-  #- TOXENV: py38
-  #- TOXENV: py39
-  #- TOXENV: py310
 
 build: false
 
