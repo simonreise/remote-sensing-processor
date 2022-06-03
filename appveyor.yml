@@ -8,16 +8,16 @@ environment:
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
       PYTHON: "3.7"
+      TOXENV: py37
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
       PYTHON: "3.8"
+      TOXENV: py38
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
       PYTHON: "3.9"
+      TOXENV: py39
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
       PYTHON: "3.10"
-  #- TOXENV: py37
-  #- TOXENV: py38
-  #- TOXENV: py39
-  #- TOXENV: py310
+      TOXENV: py310
 
 build: false
 
