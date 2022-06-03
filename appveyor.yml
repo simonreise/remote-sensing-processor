@@ -16,9 +16,9 @@ environment:
 build: false
 
 install:
-  - pip install --upgrade pip
-  - pip install tox
-  - python3 --list
+  #- pip3 install --upgrade pip
+  - pip3 install tox
+  #- python3 --list
 
 test_script:
   - python3 -m tox
