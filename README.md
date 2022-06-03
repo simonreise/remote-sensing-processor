@@ -98,7 +98,7 @@ pip install .
 
 
 ## License
-See [LICENSE]<LICENSE>.
+See [LICENSE](LICENSE).
 
 ## Thanks to
 RSP uses code from some other projects.
