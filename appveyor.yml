@@ -18,7 +18,8 @@ build: false
 install:
   # - py --list
   # - py -m pip install --upgrade pip
-  - python3 -m pip install tox
+  - apt install python3-pip
+  - pip3 install tox
 
 test_script:
   - python3 -m tox
