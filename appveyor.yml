@@ -29,7 +29,7 @@ for:
         TOXENV: python3.7
     
   install:
-    - sh: $PYTHONPATH = realpath $PYTHON
+    - sh: PYTHONPATH = realpath $PYTHON
     - sh: sudo update-alternatives --set python3 $PYTHONPATH
     - python3 --version
     - python3 -version
