@@ -29,8 +29,8 @@ for:
         TOXENV: python3.7
     
   install:
-    - sh: PYTHONPATH = realpath $PYTHON
-    - sh: sudo update-alternatives --set python3 $PYTHONPATH
+    - abs_path="$(cd "$PYTHON" && pwd -P)"
+    - sh: sudo update-alternatives --set python3 $abs_path
     - python3 --version
     - python3 -version
     - sh: sudo add-apt-repository ppa:ubuntugis/ppa
