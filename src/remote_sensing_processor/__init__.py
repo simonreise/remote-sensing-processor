@@ -20,6 +20,8 @@ from remote_sensing_processor.postprocessing.tiles import get_tiles, predict_map
 
 def sentinel2(archives, sen2cor = True, superres = True, projection = None, cloud_mask = True, clipper = None):
     """
+    sentinel2(archives, sen2cor = True, superres = True, projection = None, cloud_mask = True, clipper = None)
+    
     Preprocess Sentinel-2 imagery
     
     Parameters
@@ -97,6 +99,8 @@ def sentinel2(archives, sen2cor = True, superres = True, projection = None, clou
 
 def landsat(archives, projection = None, cloud_mask = True, pansharpen = True, keep_pan_band = False, resample = 'bilinear', t = 'k', clipper = None):
     """
+    landsat(archives, projection = None, cloud_mask = True, pansharpen = True, keep_pan_band = False, resample = 'bilinear', t = 'k', clipper = None)
+    
     Preprocess Landsat imagery
     
     Parameters
@@ -160,6 +164,8 @@ def landsat(archives, projection = None, cloud_mask = True, pansharpen = True, k
 
 def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper = None, crs = None, nodata = 0, reference_raster = None, nodata_order = False, keep_all_channels = True):
     """
+    mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper = None, crs = None, nodata = 0, reference_raster = None, nodata_order = False, keep_all_channels = True)
+    
     Creates mosaic from several rasters.
     
     Parameters
@@ -240,6 +246,8 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper
 
 def normalized_difference(name, folder = None, b1 = None, b2 = None):
     """
+    normalized_difference(name, folder = None, b1 = None, b2 = None)
+    
     Calculates normalized difference indexes.
     
     Parameters
@@ -290,6 +298,8 @@ def normalized_difference(name, folder = None, b1 = None, b2 = None):
              
 def generate_tiles(x, y, tile_size = 128, categorical = True, num_classes = None, shuffle = False, samples_file = None, split = [1], x_outputs = None, y_outputs = None, dtype = None, nodata = None):
     """
+    generate_tiles(x, y, tile_size = 128, categorical = True, num_classes = None, shuffle = False, samples_file = None, split = [1], x_outputs = None, y_outputs = None, dtype = None, nodata = None)
+    
     Cut rasters into tiles
     
     Parameters
@@ -387,6 +397,8 @@ def generate_tiles(x, y, tile_size = 128, categorical = True, num_classes = None
  
 def generate_map(x, y_true, model, output, tiles = None, samples = None, samples_file = None, categorical = True, nodata = None):
     """
+    generate_map(x, y_true, model, output, tiles = None, samples = None, samples_file = None, categorical = True, nodata = None)
+    
     Create map using pre-trained model.
     
     Parameters
