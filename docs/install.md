@@ -16,9 +16,9 @@ Most of them are installed when you install RSP, but you can have problems when 
 
 Also you need a Sen2Cor to be installed to process Sentinel-2 data.
 
-### PyPI
+## PyPI
 
-#### Windows
+### Windows
 
 Before installing RSP in Windows you have to download and install binary wheels for [GDAL](http://www.lfd.uci.edu/~gohlke/pythonlibs/#gdal), [Rasterio](http://www.lfd.uci.edu/~gohlke/pythonlibs/#rasterio) and [Fiona](https://www.lfd.uci.edu/~gohlke/pythonlibs/#fiona) from Christoph Gohlke's website.
 
@@ -33,7 +33,7 @@ Now you can install RSP.
 pip install remote-sensing-processor
 ```
 
-#### Linux
+### Linux
 In Linux you need to install GDAL from apt manually.
 ```
 sudo add-apt-repository ppa:ubuntugis/ppa
@@ -45,7 +45,7 @@ Now you can install RSP.
 pip install remote-sensing-processor
 ```
 
-#### OS X
+### OS X
 
 In OS X you need to install GDAL manually.
 ```
@@ -56,14 +56,14 @@ Now you can install RSP.
 pip install remote-sensing-processor
 ```
 
-### Conda
+## Conda
 
 Installing RSP in conda is much more easy.
 ```
 conda install -c moskovchenkomike remote-sensing-processor
 ```
 
-### Installing Sen2Cor
+## Installing Sen2Cor
 
 Sen2Cor is needed for Sentinel-2 atmospheric correction and conversion from L1 to L2. You should install it via SNAP plugin installer. [Here](http://wiki.awf.forst.uni-goettingen.de/wiki/index.php/Installation_of_SNAP) is the instruction how you can do it.
 
