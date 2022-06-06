@@ -47,4 +47,4 @@ Feel free to open new tickets at https://github.com/simonreise/remote-sensing-pr
 
 ## License
 
-RSP is an open source software distributed under [GNU General Public License v3.0](../license)
+RSP is an open source software distributed under [GNU General Public License v3.0](https://github.com/simonreise/remote-sensing-processor/blob/master/LICENSE)
