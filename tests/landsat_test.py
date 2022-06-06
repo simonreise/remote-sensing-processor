@@ -5,10 +5,10 @@ import remote_sensing_processor as rsp
 archives = ["LM05_L1TP_161023_19930803_20211018_02_T2.tar", "LT05_L1TP_162023_20110812_20200820_02_T1.tar",
             "LT05_L1TP_160023_20110814_20200820_02_T1.tar", "LE07_L1TP_159023_20210826_20210921_02_T1.tar"]
 archives = [str(pathlib.Path(__file__).parent.resolve()) + r'\\' + a for a in archives]
-urllib.request.urlretrieve("https://drive.google.com/uc?export=download&id=1HO8aHfi8AJ5vfa9KJXBLGsW2ev3i0cZz", archives[0])
-urllib.request.urlretrieve("https://drive.google.com/uc?export=download&id=1_R8qUu6JMzSEHtnAtqAs-DLDeWJj9EX5", archives[1])
-urllib.request.urlretrieve("https://drive.google.com/uc?export=download&id=1egz0ZRqAZKIcZ7jWQnbPDkZ_WoCALSh6", archives[2])
-urllib.request.urlretrieve("https://drive.google.com/uc?export=download&id=100lt-ssXcDtrpnE2nZIvSWXXomZK3YJ2", archives[3])
+urllib.request.urlretrieve("https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123147&authkey=AHz30c4JseIx7yI", archives[0])
+urllib.request.urlretrieve("https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123149&authkey=AEays9RWJB_UleI", archives[1])
+urllib.request.urlretrieve("https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123150&authkey=AGmTZ328PywOU4o", archives[2])
+urllib.request.urlretrieve("https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123148&authkey=ADgB4Pw98Wfi580", archives[3])
 landsats = rsp.landsat(archives)
 assert landsats != None
 clipper = str(pathlib.Path(__file__).parent.resolve()) + r'\\' + 'roi.gpkg'
