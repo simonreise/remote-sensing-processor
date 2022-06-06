@@ -71,4 +71,6 @@ def sen2correct(input_path):
         shutil.rmtree(input_path)
         #print(path)
     except subprocess.CalledProcessError as e:
+        print('Sen2Cor not working. Is it installed correctly?')
         print(e)
+        sys.exit(1)
