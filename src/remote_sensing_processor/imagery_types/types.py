@@ -75,9 +75,9 @@ def get_index(t, index, folder):
     if index == 'NDVI':
         if t in ['Sentinel2_up', 'Sentinel2_p']:
             for band in bands:
-                if ('B08' in band) or ('B08_10m' in band) or ('B8.tif' in band):
+                if ('B08.jp2' in band) or ('B08_10m' in band) or ('B8.tif' in band):
                     b1 = band
-                elif ('B04' in band) or ('B04_10m' in band) or ('B4.tif' in band):
+                elif ('B04.jp2' in band) or ('B04_10m' in band) or ('B4.tif' in band):
                     b2 = band
         elif t in ['Landsat8_up_l1', 'Landsat8_up_l2', 'Landsat8_p']:
             for band in bands:
