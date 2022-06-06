@@ -16,7 +16,7 @@ from remote_sensing_processor.imagery_types.types import get_type
 from remote_sensing_processor.common.common_functions import get_resampling
 
 
-def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resample, t):
+def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resample, t, clipper):
     t = t.lower()
     bands = glob(path + '*B*.tif')
     resample = get_resampling(resample)
@@ -251,6 +251,25 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
             img = proj
         else:
             projection = meta['crs']
+        #clipping
+        if clipper != None:
+            shape = gpd.read_file(clipper).to_crs(crs)
+            shape = convert_3D_2D(shape)
+            with MemoryFile() as memfile:
+                with memfile.open(
+                    driver='GTiff',
+                    height=img.shape[1],
+                    width=img.shape[2],
+                    count=img.shape[0],
+                    dtype=img.dtype,
+                    compress = 'lzw',
+                    crs=projection,
+                    transform=transform,
+                    BIGTIFF='YES',
+                    nodata = 0
+                ) as temp:
+                    temp.write(img)
+                    img, transform = rio.mask.mask(temp, shape, crop=True, filled=True)
         #save
         bname = 'B' + band.split('B')[-1]
         pathres = path + bname

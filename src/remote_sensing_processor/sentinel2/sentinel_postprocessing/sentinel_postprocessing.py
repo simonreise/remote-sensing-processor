@@ -13,7 +13,7 @@ from rasterio.enums import Resampling
 from remote_sensing_processor.common.common_functions import convert_3D_2D
 
 
-def s2postprocess_superres(img, projection, cloud_mask, path, path1):
+def s2postprocess_superres(img, projection, cloud_mask, clipper, path, path1):
     with rio.open(img) as bands:
         img = bands.read()
         meta = bands.profile
@@ -92,6 +92,25 @@ def s2postprocess_superres(img, projection, cloud_mask, path, path1):
         img = proj
     else:
         projection = meta['crs']
+    #clipping
+    if clipper != None:
+        shape = gpd.read_file(clipper).to_crs(crs)
+        shape = convert_3D_2D(shape)
+        with MemoryFile() as memfile:
+            with memfile.open(
+                driver='GTiff',
+                height=img.shape[1],
+                width=img.shape[2],
+                count=img.shape[0],
+                dtype=img.dtype,
+                compress = 'lzw',
+                crs=projection,
+                transform=transform,
+                BIGTIFF='YES',
+                nodata = 0
+            ) as temp:
+                temp.write(img)
+                img, transform = rio.mask.mask(temp, shape, crop=True, filled=True)
     #save
     for i in range(img.shape[0]):
         pathres = path + '\\' + descs[i].split(' ')[1] + '.tif'
@@ -114,7 +133,7 @@ def s2postprocess_superres(img, projection, cloud_mask, path, path1):
             
             
             
-def s2postprocess_no_superres(projection, cloud_mask, path, path1):
+def s2postprocess_no_superres(projection, cloud_mask, clipper, path, path1):
     bandnames = ['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B09', 'B11', 'B12']
     bands = []
     for b in bandnames:
@@ -225,6 +244,25 @@ def s2postprocess_no_superres(projection, cloud_mask, path, path1):
             img = proj
         else:
             projection = meta['crs']
+        #clipping
+        if clipper != None:
+            shape = gpd.read_file(clipper).to_crs(crs)
+            shape = convert_3D_2D(shape)
+            with MemoryFile() as memfile:
+                with memfile.open(
+                    driver='GTiff',
+                    height=img.shape[1],
+                    width=img.shape[2],
+                    count=img.shape[0],
+                    dtype=img.dtype,
+                    compress = 'lzw',
+                    crs=projection,
+                    transform=transform,
+                    BIGTIFF='YES',
+                    nodata = 0
+                ) as temp:
+                    temp.write(img)
+                    img, transform = rio.mask.mask(temp, shape, crop=True, filled=True)
         #save
         pathres = path + '\\' + bandoutnames[i] + '.tif'
         with rio.open(
