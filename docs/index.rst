@@ -60,6 +60,7 @@ output_map = '/home/rsp_test/prediction.tif'
 rsp.generate_map([x_train, x_val, x_test], y_reference, model, output_map, tiles = tiles, samples = samples)
 ```
 
+```{eval-rst}
 .. toctree::
    :maxdepth: 2
 
@@ -67,3 +68,4 @@ rsp.generate_map([x_train, x_val, x_test], y_reference, model, output_map, tiles
    install
    quickstart
    api
+```
