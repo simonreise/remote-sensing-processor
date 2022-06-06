@@ -1,6 +1,6 @@
 Raster mosaic creation
 ======================
-.. automodule:: remote_sensing_processor.mosaic
+.. autofunction:: remote_sensing_processor.mosaic
    :members:
    :undoc-members:
    :show-inheritance:
