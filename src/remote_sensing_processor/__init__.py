@@ -39,8 +39,8 @@ def sentinel2(archives, sen2cor = True, superres = True, projection = None, clou
         
     Returns
     ----------
-    list of strings
-        List of paths where preprocessed Sentinel-2 products are saved.
+    list
+        List of string paths where preprocessed Sentinel-2 products are saved.
     
     Examples
     --------
@@ -120,8 +120,8 @@ def landsat(archives, projection = None, cloud_mask = True, pansharpen = True, k
     
     Returns
     ----------
-    list of strings
-        List of paths where preprocessed Landsat products are saved.
+    list
+        List of string paths where preprocessed Landsat products are saved.
         
     Examples
     --------
@@ -197,8 +197,8 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper
     
     Returns
     ----------
-    list of strings
-        List of paths to mosaic rasters.
+    list
+        List of string paths to mosaic rasters.
         
     Examples
     --------
