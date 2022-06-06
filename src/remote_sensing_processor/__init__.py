@@ -19,7 +19,7 @@ from remote_sensing_processor.imagery_types.types import get_type, get_index
 from remote_sensing_processor.postprocessing.tiles import get_tiles, predict_map
 
 def sentinel2(archives, sen2cor = True, superres = True, projection = None, cloud_mask = True, clipper = None):
-    '''
+    """
     Preprocess Sentinel-2 imagery
     
     Parameters
@@ -39,8 +39,8 @@ def sentinel2(archives, sen2cor = True, superres = True, projection = None, clou
         
     Returns
     ----------
-    list
-        List of string paths where preprocessed Sentinel-2 products are saved.
+    list of strings
+        List of paths where preprocessed Sentinel-2 products are saved.
     
     Examples
     --------
@@ -68,7 +68,7 @@ def sentinel2(archives, sen2cor = True, superres = True, projection = None, clou
          '/home/rsp_test/sentinels/L1C_T43VDK_A031391_20210626T063027/',
          '/home/rsp_test/sentinels/L1C_T43VDL_A023312_20210823T063624/',
          '/home/rsp_test/sentinels/L1C_T43VDL_A031577_20210709T064041/']
-    '''
+    """
     if isinstance(archives, str):
         archives = [archives]
     paths = []
@@ -96,7 +96,7 @@ def sentinel2(archives, sen2cor = True, superres = True, projection = None, clou
     
 
 def landsat(archives, projection = None, cloud_mask = True, pansharpen = True, keep_pan_band = False, resample = 'bilinear', t = 'k', clipper = None):
-    '''
+    """
     Preprocess Landsat imagery
     
     Parameters
@@ -120,8 +120,8 @@ def landsat(archives, projection = None, cloud_mask = True, pansharpen = True, k
     
     Returns
     ----------
-    list
-        List of string paths where preprocessed Landsat products are saved.
+    list of strings
+        List of paths where preprocessed Landsat products are saved.
         
     Examples
     --------
@@ -146,7 +146,7 @@ def landsat(archives, projection = None, cloud_mask = True, pansharpen = True, k
          '/home/rsp_test/landsat/LE07_L1TP_159023_20210826_20210921_02_T1/',
          '/home/rsp_test/landsat/LT05_L1TP_162023_20110812_20200820_02_T1/',
          '/home/rsp_test/landsat/LM05_L1TP_161023_19930803_20211018_02_T2/']
-    '''
+    """
     if isinstance(archives, str):
         archives = [archives]
     paths = []
@@ -159,7 +159,7 @@ def landsat(archives, projection = None, cloud_mask = True, pansharpen = True, k
 
 
 def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper = None, crs = None, nodata = 0, reference_raster = None, nodata_order = False, keep_all_channels = True):
-    '''
+    """
     Creates mosaic from several rasters.
     
     Parameters
@@ -176,16 +176,6 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper
         Path to vector file to be used to crop the image.
     crs : string (optional)
         CRS in which output data should be.
-    cloud_mask : bool (default = True)
-        Is cloud masking needed.
-    pansharpen : bool (default = True)
-        Is pansharpening needed. RSP uses Brovey transform for pansarpening Landsat 7, 8 and 9.
-    keep_pan_band : bool (default = False)
-        Keep pansharpening band or delete it. Pansharpening band have the same wavelengths as optical bands, so it does not contain any additional information to other bands. Affects only Landsat 7, 8 and 9. 
-    resample : resampling method from rasterio as a string (default = 'bilinear')
-        Resampling method that will be used to upscale bands that cannot be upscaled in pansharpening operation. You can read more about resampling methods [here](https://rasterio.readthedocs.io/en/latest/topics/resampling.html). Affects only Landsat 7, 8 and 9. 
-    t : string ('k' or 'c', default = 'k')
-        Convert thermal band to kelvins or celsius (no farenheit lol).
     nodata : int or float (default = 0)
         Nodata value.
     reference_raster : path to reference raster as a string (optional)
@@ -197,8 +187,8 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper
     
     Returns
     ----------
-    list
-        List of string paths to mosaic rasters.
+    list of strings
+        List of paths to mosaic rasters.
         
     Examples
     --------
@@ -235,7 +225,7 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper
         Processing completed
         >>> print(mosaic_landcover)
         ['/home/rsp_test/mosaics/landcover/ESA_WorldCover_10m_2020_v100_N60E075_Map_mosaic.tif']
-    '''
+    """
     mb = ismultiband(inputs[0])
     if mb == True:
         for i in range(len(inputs)):
@@ -249,7 +239,7 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper
     return paths
 
 def normalized_difference(name, folder = None, b1 = None, b2 = None):
-    '''
+    """
     Calculates normalized difference indexes.
     
     Parameters
@@ -275,7 +265,7 @@ def normalized_difference(name, folder = None, b1 = None, b2 = None):
         >>> ndvi = rsp.normalized_difference('NDVI', b1 = '/home/rsp_test/mosaics/sentinel/B8.tif', b2 = '/home/rsp_test/mosaics/sentinel/B4.tif')
         >>> print(ndvi)
         '/home/rsp_test/mosaics/sentinel/NDVI.tif'
-    '''
+    """
     if (folder != None) and ((b1 == None) or (b2 == None)):
         if not folder.endswith(r'\\'):
             folder = folder + r'\\'
@@ -299,7 +289,7 @@ def normalized_difference(name, folder = None, b1 = None, b2 = None):
         
              
 def generate_tiles(x, y, tile_size = 128, categorical = True, num_classes = None, shuffle = False, samples_file = None, split = [1], x_outputs = None, y_outputs = None, dtype = None, nodata = None):
-    '''
+    """
     Cut rasters into tiles
     
     Parameters
@@ -316,15 +306,15 @@ def generate_tiles(x, y, tile_size = 128, categorical = True, num_classes = None
         Number of classes in categorical y data.
     shuffle : bool (default = False)
         Is random shuffling of samples needed.
-    samples_file : path as a string
+    samples_file : path as a string (optional)
         Path where to save tiles and samples data that are generated as output. File should have .pickle format. It can be later needed for mapping.
     split : list of ints (optional)
         Splitting data in subsets. Is a list of integers defining proportions of every subset. [3, 1, 1] will generate 3 subsets in proportion 3 to 1 to 1.
-    x_outputs : list of paths as strings
+    x_outputs : list of paths as strings (optional)
         List of paths to save generated output x data. Data is saved in numpy .npy format.
-    y_outputs : list of paths as strings
+    y_outputs : list of paths as strings (optional)
         List of paths to save generated output y data. Data is saved in numpy .npy format.
-    dtype : dtype definition as a string
+    dtype : dtype definition as a string (optional)
         If you run out of memory, you can try to convert your data to less memory consuming format.
     nodata : int or float (optional)
         If you want to ignore tiles that contain only nodata, you can define which value in y raster corresponds to nodata and tiles that contain only nodata will be omited.
@@ -387,7 +377,7 @@ def generate_tiles(x, y, tile_size = 128, categorical = True, num_classes = None
         5000
         >>> print(samples[:5])
         [1876, 684, 25, 7916, 1347]
-    '''
+    """
     x, y, tiles, samples = get_tiles(x = x, y = y, tile_size = tile_size, num_classes = num_classes, categorical = categorical, shuffle = shuffle, samples_file = samples_file, split = split, x_outputs = x_outputs, y_outputs = y_outputs, dtype = dtype, nodata = nodata)
     if len(split) == 1:
         x = x[0]
@@ -396,7 +386,7 @@ def generate_tiles(x, y, tile_size = 128, categorical = True, num_classes = None
     
  
 def generate_map(x, y_true, model, output, tiles = None, samples = None, samples_file = None, categorical = True, nodata = None):
-    '''
+    """
     Create map using pre-trained model.
     
     Parameters
@@ -440,7 +430,7 @@ def generate_map(x, y_true, model, output, tiles = None, samples = None, samples
         >>> y_reference = '/home/rsp_test/mosaics/landcover.tif'
         >>> output_map = '/home/rsp_test/prediction.tif'
         >>> rsp.generate_map([x_train_file, x_val_file, x_test_file], y_reference, model, output_map, samples_file = s_file, nodata = -1)
-    '''
+    """
     if (tiles != None and samples != None) or (samples_file != None):
         if isinstance(x, list):
             x = [x]
