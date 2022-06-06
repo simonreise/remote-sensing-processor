@@ -31,22 +31,22 @@ output_sentinels = rsp.sentinel2(sentinel2_imgs)
 # in order from images with most nodata values on bottom to images with less nodata on top,
 # clipping it to the area of interest and reprojecting to the proj we need
 border = '/home/rsp_test/border.gpkg'
-rsp.mosaic(output_sentinels, '/home/rsp_test/mosaics/sentinel/', clipper = border, projection = 'EPSG:4326', nodata_order = True)
+mosaic_sentinel = rsp.mosaic(output_sentinels, '/home/rsp_test/mosaics/sentinel/', clipper = border, projection = 'EPSG:4326', nodata_order = True)
 
 # calculating NDVI for sentinel-2 mosaic
-rsp.normalized_difference('NDVI', '/home/rsp_test/mosaics/sentinel/')
+ndvi = rsp.normalized_difference('NDVI', '/home/rsp_test/mosaics/sentinel/')
 
 # merging landcover files into mosaic 
 #and bringing it to resolution and projection of a reference file (one of sentinel mosaic bands)
-dems = glob('/home/rsp_test/landcover/*.tif')
-rsp.mosaic(dems, '/home/rsp_test/mosaics/landcover/', clipper = border, reference_raster = '/home/rsp_test/mosaics/B1.tif', nodata = -1)
+lcs = glob('/home/rsp_test/landcover/*.tif')
+mosaic_landcover = rsp.mosaic(lcs, '/home/rsp_test/mosaics/landcover/', clipper = border, reference_raster = '/home/rsp_test/mosaics/sentinel/B1.tif', nodata = -1)
 
 # cutting sentinel (x) and landcover (y) data to 256x256 px tiles, 
 # with random shuffling samples, splitting data into train,
 # validation and test subsets in proportion 3 to 1 to 1
 # and ignoring tiles with only nodata values
-x = glob('/home/rsp_test/mosaics/sentinel/*.tif')
-y = '/home/rsp_test/mosaics/landcover/landcover01_mosaic.tif'
+x = mosaic_sentinel
+y = mosaic_landcover[0]
 x_i, y_i, tiles, samples = rsp.generate_tiles(x, y, num_classes = 11, tile_size = 256, shuffle = True, split = [3, 1, 1], nodata = -1)
 x_train = x_i[0]
 x_val = x_i[1]
@@ -60,7 +60,7 @@ from tensorflow import keras
 # =======================
 # here must be u-net code
 # =======================
-model.fit(x_train, y_train, epochs = 20, validation_data = (x_val, y_val), callbacks = callbacks)
+model.fit(x_train, y_train, batch_size = 16, epochs = 20, validation_data = (x_val, y_val), callbacks = callbacks)
 # testing_model
 model.evaluate(x_test, y_test)
 
@@ -78,6 +78,7 @@ To run RSP you need these packages to be installed:
 - Rasterio
 - Pyproj
 - Shapely
+- Fiona
 - Geopandas
 - Tensorflow >= 2.3
 
@@ -91,7 +92,7 @@ pip install remote-sensing-processor
 ```
 From Conda:
 ```
-conda install -c ????? remote-sensing-processor
+conda install -c moskovchenkomike remote-sensing-processor
 ```
 From source:
 ```
