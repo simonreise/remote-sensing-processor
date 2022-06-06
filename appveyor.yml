@@ -29,6 +29,7 @@ for:
         TOXENV: python3.7
     
   install:
+    - python3.7
     - sh: source $PYTHON/activate
     - python3 --version
     - python3 -version
