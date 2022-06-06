@@ -6,7 +6,7 @@ image:
 environment:
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      PYTHON: "$HOME/venv3.7.12"
+      PYTHON: "3.7"
       TOXENV: python3.7
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
       PYTHON: "$HOME/venv3.8.12"
