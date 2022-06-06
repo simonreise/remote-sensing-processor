@@ -1,6 +1,5 @@
 Landsat preprocessing
 =====================
-.. autofunction:: remote_sensing_processor.landsat
-   :members:
-   :undoc-members:
+.. automodule:: remote_sensing_processor
+   :members: landsat
    :show-inheritance:
