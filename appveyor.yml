@@ -30,7 +30,6 @@ for:
     
   install:
     - sh: source $PYTHON/activate
-    - sh: sudo update-alternatives --set python3 $abs_path
     - python3 --version
     - python3 -version
     - sh: sudo add-apt-repository ppa:ubuntugis/ppa
