@@ -32,7 +32,7 @@ for:
     - sh: sudo add-apt-repository ppa:ubuntugis/ppa
     - sh: sudo apt-get update
     - sh: sudo apt-get -y install python-numpy gdal-bin libgdal-dev
-    - sh: sudo apt-get install python3-pip
+    - sh: sudo apt-get -y install python3-pip
     - pip3 install tox
 
 -
@@ -45,7 +45,7 @@ for:
     - sh: sudo add-apt-repository ppa:ubuntugis/ppa
     - sh: sudo apt-get update
     - sh: sudo apt-get -y install python-numpy gdal-bin libgdal-dev
-    - sh: sudo apt-get install python3-pip
+    - sh: sudo apt-get -y install python3-pip
     - pip3 install tox
 
 -
@@ -58,7 +58,7 @@ for:
     - sh: sudo add-apt-repository ppa:ubuntugis/ppa
     - sh: sudo apt-get update
     - sh: sudo apt-get -y install python-numpy gdal-bin libgdal-dev
-    - sh: sudo apt-get install python3-pip
+    - sh: sudo apt-get -y install python3-pip
     - pip3 install tox
 
 -
