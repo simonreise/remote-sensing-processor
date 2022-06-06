@@ -50,4 +50,5 @@ def nd(name, b1, b2, folder = None):
                 outfile.write(final)
     except RuntimeError as e:
         print(e)
-        
+        sys.exit(1)
+    return savefolder + '\\' + name + '.tif'

@@ -21,6 +21,7 @@ from remote_sensing_processor.imagery_types.types import get_type
 
 
 def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clipper, crs, nodata, reference_raster, mb, keep_all_channels):
+    paths = []
     if reference_raster != None:
         with rio.open(reference_raster) as r:
             crs = r.crs
@@ -35,7 +36,8 @@ def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clipper, crs, no
                 pathfile = rio.open(path)
                 pathfile, crs = check_crs(pathfile = pathfile, crs = crs, nodata = nodata)
                 files.append(pathfile)
-            mosaic_process(files = files, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster, band = band)
+            path = mosaic_process(files = files, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster, band = band)
+            paths.append(path)
             print('Processing band ' + band + ' is completed')
     else:
         files = []
@@ -44,8 +46,10 @@ def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clipper, crs, no
             pathfile, crs = check_crs(pathfile = pathfile, crs = crs,  nodata = nodata)
             files.append(pathfile)
         band = os.path.basename(inputs[0])[:-4]+'_mosaic'
-        mosaic_process(files = files, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster, band = band)
+        path = mosaic_process(files = files, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster, band = band)
+        paths.append(path)
         print('Processing completed')
+    return paths
 
 
 def check_crs(pathfile, crs, nodata):
@@ -152,6 +156,7 @@ def mosaic_process(files, output_dir, fill_nodata, fill_distance, clipper, crs, 
         nodata = nodata
     ) as outfile:
         outfile.write(final)
+    return output_dir + band + '.tif'
 
 
 def get_bands(paths, keep_all_channels):
