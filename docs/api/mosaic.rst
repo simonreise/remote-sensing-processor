@@ -1,4 +1,4 @@
-.. automodule:: remote_sensing_preprocessor.mosaic
+.. automodule:: remote_sensing_processor.mosaic
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,4 +1,4 @@
-.. automodule:: remote_sensing_preprocessor.generate_tiles
+.. automodule:: remote_sensing_processor.generate_tiles
    :members:
    :undoc-members:
    :show-inheritance:
