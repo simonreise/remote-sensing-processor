@@ -168,7 +168,7 @@ texinfo_documents = [
     (
         master_doc,
         "RSP", 
-        "Remote Sensing Processor Documentation"
+        "Remote Sensing Processor Documentation",
         author,
         "Remote Sensing Processor",
         "RSP is a tool for geospatial raster data processing.",
