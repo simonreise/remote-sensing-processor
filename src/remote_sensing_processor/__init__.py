@@ -112,7 +112,7 @@ def landsat(archives, projection = None, cloud_mask = True, pansharpen = True, k
     keep_pan_band : bool (default = False)
         Keep pansharpening band or delete it. Pansharpening band have the same wavelengths as optical bands, so it does not contain any additional information to other bands. Affects only Landsat 7, 8 and 9. 
     resample : resampling method from rasterio as a string (default = 'bilinear')
-        Resampling method that will be used to upscale bands that cannot be upscaled in pansharpening operation. You can read more about resampling methods [here](https://rasterio.readthedocs.io/en/latest/topics/resampling.html). Affects only Landsat 7, 8 and 9. 
+        Resampling method that will be used to upscale bands that cannot be upscaled in pansharpening operation. You can read more about resampling methods `here <https://rasterio.readthedocs.io/en/latest/topics/resampling.html>`_. Affects only Landsat 7, 8 and 9. 
     t : string ('k' or 'c', default = 'k')
         Convert thermal band to kelvins or celsius (no farenheit lol).
     clipper : string (optional)
