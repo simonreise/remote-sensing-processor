@@ -6,17 +6,18 @@ image:
 environment:
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      PYTHON: "$HOME/venv3.7"
+      PYTHON: "3.7"
       TOXENV: python3.7
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      PYTHON: "$HOME/venv3.8.12"
+      PYTHON: "3.8"
       TOXENV: python3.8
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      PYTHON: "$HOME/venv3.9.10"
+      PYTHON: "3.9"
       TOXENV: python3.9
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      PYTHON: "$HOME/venv3.10.2"
+      PYTHON: "3.10"
       TOXENV: python3.10
+stack: python %PYTHON%
 
 build: false
 
@@ -25,12 +26,10 @@ for:
   matrix:
     only:
       - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-        PYTHON: "$HOME/venv3.7"
+        PYTHON: "3.7"
         TOXENV: python3.7
     
   install:
-    - python3.7
-    - sh: source $PYTHON/activate
     - python3 --version
     - python3 -version
     - sh: sudo add-apt-repository ppa:ubuntugis/ppa
@@ -45,7 +44,7 @@ for:
   matrix:
     only:
       - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-        PYTHON: "$HOME/venv3.8.12"
+        PYTHON: "3.8"
         TOXENV: python3.8
   install: 
     - python3 --version
