@@ -261,11 +261,6 @@ def normalized_difference(name, folder = None, b1 = None, b2 = None):
     b1, b2 : paths as strings
         Paths to bands to calculate normalized difference index. If you define bands, you do not need to define `folder`, but still need to define `name` - it will be an output file name.
     
-    Table of supported indices and products.
-    | Index | Sentinel-2 | Landsat 1-5 | Landsat 5-6 | Landsat 7 | Landsat 8-9 |
-    |-------|------------|-------------|-------------|-----------|-------------|
-    | NDVI  | +          | +           | +           | +         | +           |
-    
     Returns
     ----------
     string
