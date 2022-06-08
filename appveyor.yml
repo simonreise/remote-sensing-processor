@@ -2,9 +2,26 @@
 ---
 image:
   - Ubuntu
+  - Visual Studio 2022
 
 environment:
   matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      PYTHON: "3.7"
+      PYTHONPATH: "C:\Python37-x64"
+      TOXENV: python3.7
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      PYTHON: "3.8"
+      PYTHONPATH: "C:\Python38-x64"
+      TOXENV: python3.8
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      PYTHON: "3.9"
+      PYTHONPATH: "C:\Python39-x64"
+      TOXENV: python3.9
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      PYTHON: "3.10"
+      PYTHONPATH: "C:\Python310-x64"
+      TOXENV: python3.10
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
       PYTHON: "3.7"
       TOXENV: python3.7
@@ -22,6 +39,62 @@ stack: python %PYTHON%
 build: false
 
 for:
+-
+  matrix:
+    only:
+      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+        PYTHON: "3.7"
+        PYTHONPATH: "C:\Python37-x64"
+        TOXENV: python3.7
+    
+  install:
+    - cmd: %PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/cp37/GDAL-3.4.2-cp37-cp37m-win_amd64.whl
+    - cmd: %PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/cp37/rasterio-1.2.10-cp37-cp37m-win_amd64.whl
+    - cmd: %PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/cp37/Fiona-1.8.21-cp37-cp37m-win_amd64.whl
+    - cmd: %PYTHONPATH%\\python.exe -m pip install tox
+
+-
+  matrix:
+    only:
+      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+        PYTHON: "3.8"
+        PYTHONPATH: "C:\Python38-x64"
+        TOXENV: python3.8
+    
+  install:
+    - cmd: %PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/GDAL-3.4.3-cp38-cp38-win_amd64.whl
+    - cmd: %PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/rasterio-1.2.10-cp38-cp38-win_amd64.whl
+    - cmd: %PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/Fiona-1.8.21-cp38-cp38-win_amd64.whl
+    - cmd: %PYTHONPATH%\\python.exe -m pip install tox
+
+-
+  matrix:
+    only:
+      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+        PYTHON: "3.9"
+        PYTHONPATH: "C:\Python39-x64"
+        TOXENV: python3.9
+    
+  install:
+    - cmd: %PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/GDAL-3.4.3-cp39-cp39-win_amd64.whl
+    - cmd: %PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/rasterio-1.2.10-cp39-cp39-win_amd64.whl
+    - cmd: %PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/Fiona-1.8.21-cp39-cp39-win_amd64.whl
+    - cmd: %PYTHONPATH%\\python.exe -m pip install tox
+
+-
+  matrix:
+    only:
+      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+        PYTHON: "3.10"
+        PYTHONPATH: "C:\Python310-x64"
+        TOXENV: python3.10
+    
+  install:
+    - cmd: %PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/GDAL-3.4.3-cp310-cp310-win_amd64.whl
+    - cmd: %PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/rasterio-1.2.10-cp310-cp310-win_amd64.whl
+    - cmd: %PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/Fiona-1.8.21-cp310-cp310-win_amd64.whl
+    - cmd: %PYTHONPATH%\\python.exe -m pip install tox
+
 -
   matrix:
     only:
