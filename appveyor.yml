@@ -45,9 +45,6 @@ for:
         TOXENV: python3.7
     
   install:
-    - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/cp37/GDAL-3.4.2-cp37-cp37m-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/cp37/rasterio-1.2.10-cp37-cp37m-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/cp37/Fiona-1.8.21-cp37-cp37m-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
 
 -
