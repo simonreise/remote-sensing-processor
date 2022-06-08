@@ -20,6 +20,8 @@ from remote_sensing_processor.common.common_functions import get_resampling
 def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resample, t, clipper):
     t = t.lower()
     bands = glob(path + '*B*.tif')
+    if bands == []:
+        bands = glob(path + '*B*.TIF')
     resample = get_resampling(resample)
     # deleting gm bands for landsat 7
     bands = [band for band in bands if '_GM_' not in band]
