@@ -45,7 +45,10 @@ for:
         TOXENV: python3.7
     
   install:
+    - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\Scripts;%PATH%"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
+  test_script:
+    - "%PYTHONPATH%\\python.exe -m tox"
 
 -
   matrix:
@@ -53,13 +56,15 @@ for:
       - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
         PYTHON: "3.8"
         PYTHONPATH: "C:\\Python38-x64"
-        TOXENV: python3.8
-    
+        TOXENV: python3.8 
   install:
+    - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\Scripts;%PATH%"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/GDAL-3.4.3-cp38-cp38-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/rasterio-1.2.10-cp38-cp38-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/Fiona-1.8.21-cp38-cp38-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
+  test_script:
+    - "%PYTHONPATH%\\python.exe -m tox"    
 
 -
   matrix:
@@ -70,11 +75,14 @@ for:
         TOXENV: python3.9
     
   install:
+    - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\Scripts;%PATH%"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/GDAL-3.4.3-cp39-cp39-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/rasterio-1.2.10-cp39-cp39-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/Fiona-1.8.21-cp39-cp39-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
-
+  test_script:
+    - "%PYTHONPATH%\\python.exe -m tox"
+    
 -
   matrix:
     only:
@@ -84,24 +92,28 @@ for:
         TOXENV: python3.10
     
   install:
+    - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\Scripts;%PATH%"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/GDAL-3.4.3-cp310-cp310-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/rasterio-1.2.10-cp310-cp310-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/Fiona-1.8.21-cp310-cp310-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
-
+  test_script:
+    - "%PYTHONPATH%\\python.exe -m tox"
+    
 -
   matrix:
     only:
       - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
         PYTHON: "3.7"
         TOXENV: python3.7
-    
   install:
     - sh: sudo add-apt-repository ppa:ubuntugis/ppa
     - sh: sudo apt-get update
     - sh: sudo apt-get -y install python-numpy gdal-bin libgdal-dev
     - sh: sudo apt-get -y install python3-pip
     - pip3 install tox
+  test_script:
+    - sh: python3 -m tox
 
 -
   matrix:
@@ -115,6 +127,8 @@ for:
     - sh: sudo apt-get -y install python-numpy gdal-bin libgdal-dev
     - sh: sudo apt-get -y install python3-pip
     - pip3 install tox
+  test_script:
+    - sh: python3 -m tox
 
 -
   matrix:
@@ -128,6 +142,8 @@ for:
     - sh: sudo apt-get -y install python-numpy gdal-bin libgdal-dev
     - sh: sudo apt-get -y install python3-pip
     - pip3 install tox
+  test_script:
+    - sh: python3 -m tox
 
 -
   matrix:
@@ -142,6 +158,6 @@ for:
     - sh: sudo apt-get -y install python3-pip
     - pip3 install https://files.pythonhosted.org/packages/c5/00/29cf4f6c63271136616dc4cad7850dc8073bfa773e8a46de79820c722109/rasterio-1.3a3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
     - pip3 install tox
+  test_script:
+    - sh: python3 -m tox
 
-test_script:
-  - python3 -m tox
