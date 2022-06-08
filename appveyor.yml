@@ -1,8 +1,5 @@
 # appveyor.yml - https://www.appveyor.com/docs/lang/python
 ---
-image:
-  - Ubuntu
-  - Visual Studio 2022
 
 environment:
   matrix:
