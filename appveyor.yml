@@ -45,7 +45,7 @@ for:
         TOXENV: python3.7
     
   install:
-    - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\Scripts;%PATH%"
+    - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
   test_script:
     - "%PYTHONPATH%\\python.exe -m tox"
@@ -58,7 +58,7 @@ for:
         PYTHONPATH: "C:\\Python38-x64"
         TOXENV: python3.8 
   install:
-    - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\Scripts;%PATH%"
+    - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/GDAL-3.4.3-cp38-cp38-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/rasterio-1.2.10-cp38-cp38-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/Fiona-1.8.21-cp38-cp38-win_amd64.whl"
@@ -75,7 +75,7 @@ for:
         TOXENV: python3.9
     
   install:
-    - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\Scripts;%PATH%"
+    - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/GDAL-3.4.3-cp39-cp39-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/rasterio-1.2.10-cp39-cp39-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/Fiona-1.8.21-cp39-cp39-win_amd64.whl"
@@ -92,7 +92,7 @@ for:
         TOXENV: python3.10
     
   install:
-    - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\Scripts;%PATH%"
+    - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/GDAL-3.4.3-cp310-cp310-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/rasterio-1.2.10-cp310-cp310-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/Fiona-1.8.21-cp310-cp310-win_amd64.whl"
