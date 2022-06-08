@@ -10,7 +10,6 @@ def get_type(path):
             bands[i] = os.path.basename(bands[i]).split('.')[0]
     else:
         bands = []
-    print(bands)
     if sorted(bands) == ['B1', 'B11', 'B12', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9']:
         t = 'Sentinel2_p' #sentinel2 preprocessed in RSP
     elif re.search('T\d\d\w\w\w_', path) != None:

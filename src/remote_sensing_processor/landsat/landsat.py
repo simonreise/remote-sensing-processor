@@ -1,4 +1,5 @@
 import os
+import pathlib
 import numpy as np
 from glob import glob
 import xml.etree.ElementTree as ET
@@ -276,7 +277,7 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
         #save
         bname = 'B' + band.split('B')[-1]
         pathres = path + bname
-        outfiles.append(os.path.normpath(pathres))
+        outfiles.append(pathlib.Path(pathres))
         with rio.open(
             pathres,
             'w',
@@ -293,7 +294,8 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
             nodata = 0
         ) as outfile:
             outfile.write(img)
-    for file in glob(os.path.normpath(path + '*')):
+    for file in glob(path + '*'):
+        file = pathlib.Path(file)
         if file not in outfiles:
             os.remove(file)
 
