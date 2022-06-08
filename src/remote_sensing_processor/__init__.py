@@ -80,13 +80,13 @@ def sentinel2(archives, sen2cor = True, superres = True, projection = None, clou
         path1 = glob(path+'*')[0]
         if superres == True:
             Superresolution(input_dir = path1, output_dir = path1, copy_original_bands = True, clip_to_aoi = False, geometry = None, bounds = None).start()
-            img = glob(path+'**\\*_superresolution.tif')[0]
+            img = glob(path+'**/*_superresolution.tif')[0]
             if projection == 'same':
                 projection = get_first_proj(img)
             s2postprocess_superres(img = img, projection = projection, cloud_mask = cloud_mask, clipper = clipper, path = path, path1 = path1)
         else:
             if projection == 'same':
-                img = glob(path1 + '\**\*.jp2')[0]
+                img = glob(path1 + '/**/*.jp2')[0]
                 projection = get_first_proj(img)
             s2postprocess_no_superres(projection = projection, cloud_mask = cloud_mask, clipper = clipper, path = path, path1 = path1)
         shutil.rmtree(path1)
@@ -229,10 +229,10 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper
     mb = ismultiband(inputs[0])
     if mb == True:
         for i in range(len(inputs)):
-            if not inputs[i].endswith(r'\\'):
-                inputs[i] = inputs[i] + r'\\'
-    if not output_dir.endswith(r'\\'):
-        output_dir = output_dir + r'\\'
+            if not inputs[i].endswith(r'/'):
+                inputs[i] = inputs[i] + r'/'
+    if not output_dir.endswith(r'/'):
+        output_dir = output_dir + r'/'
     if nodata_order == True:
         inputs = order(inputs)
     paths = mosaic_main(inputs = inputs, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster, mb = mb, keep_all_channels = keep_all_channels)
@@ -267,8 +267,8 @@ def normalized_difference(name, folder = None, b1 = None, b2 = None):
         '/home/rsp_test/mosaics/sentinel/NDVI.tif'
     """
     if (folder != None) and ((b1 == None) or (b2 == None)):
-        if not folder.endswith(r'\\'):
-            folder = folder + r'\\'
+        if not folder.endswith(r'/'):
+            folder = folder + r'/'
         t = get_type(folder)
         try:
             if t == 'Undefined':

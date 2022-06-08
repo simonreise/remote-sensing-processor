@@ -10,6 +10,7 @@ def get_type(path):
             bands[i] = os.path.basename(bands[i]).split('.')[0]
     else:
         bands = []
+    print(bands)
     if sorted(bands) == ['B1', 'B11', 'B12', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9']:
         t = 'Sentinel2_p' #sentinel2 preprocessed in RSP
     elif re.search('T\d\d\w\w\w_', path) != None:
@@ -36,7 +37,7 @@ def get_type(path):
                 t = 'Landsat5_up_l2' #landsat5 without processing level 2
             else:
                 t = 'Undefined_Landsat5'
-    elif re.search('L\w\d\d', bands[0]).group(0) == 'LE07':
+    elif re.search('L\w\d\d', path).group(0) == 'LE07':
         if len(sorted(bands)[0]) <= 3:
             t = 'Landsat7_p' #landsat7 processed in RSP
         else:
@@ -46,7 +47,7 @@ def get_type(path):
                 t = 'Landsat7_up_l2' #landsat7 without processing level 2
             else:
                 t = 'Undefined_Landsat7'
-    elif re.search('L\w\d\d', bands[0]).group(0) in ['LC08', 'LC09']:
+    elif re.search('L\w\d\d', path).group(0) in ['LC08', 'LC09']:
         if len(sorted(bands)[0]) <= 3:
             t = 'Landsat8_p' #landsat8 processed in RSP
         else:
@@ -63,11 +64,11 @@ def get_type(path):
 def get_index(t, index, folder):
     index = index.upper()
     if t == 'Sentinel2_up':
-        folder = folder + 'GRANULE\\'
+        folder = folder + 'GRANULE/'
         folder = glob(folder + '*')[0]
-        folder = folder + '\\IMG_DATA\\'
-        if os.path.isdir(folder + 'R10m\\'):
-            bands = glob(folder + 'R10m\\*B*.jp2') + glob(folder + 'R20m\\*B*.jp2') + glob(path + 'R60m\\*B*.jp2')
+        folder = folder + '/IMG_DATA/'
+        if os.path.isdir(folder + 'R10m/'):
+            bands = glob(folder + 'R10m/*B*.jp2') + glob(folder + 'R20m/*B*.jp2') + glob(path + 'R60m/*B*.jp2')
         else:
             bands = glob(folder + '*B*.jp2')
     else:

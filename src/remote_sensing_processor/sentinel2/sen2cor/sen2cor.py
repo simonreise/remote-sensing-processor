@@ -53,12 +53,12 @@ def sen2correct(input_path):
         ver = 'Sen2Cor-02.08.00-win64'
     #check_install(ver)
     my_env = os.environ.copy()
-    #print(pathlib.Path.home().joinpath(r'.snap\auxdata\\' + ver))
-    my_env['PATH'] = str(pathlib.Path.home().joinpath(r'.snap\auxdata\\' + ver + '\bin/')) +';' + str(pathlib.Path.home().joinpath(r'.snap\auxdata\\' + ver)) + ';' + my_env['PATH']
-    my_env['SEN2COR_HOME'] = str(pathlib.Path.home().joinpath(r'.snap\auxdata\\' + ver))
-    my_env['SEN2COR_BIN'] = str(pathlib.Path.home().joinpath(r'.snap\auxdata\\' + ver + '\lib\python2.7\site-packages\sen2cor'))
+    #print(pathlib.Path.home().joinpath(r'.snap/auxdata/' + ver))
+    my_env['PATH'] = str(pathlib.Path.home().joinpath(r'.snap/auxdata/' + ver + '/bin/')) +';' + str(pathlib.Path.home().joinpath(r'.snap/auxdata/' + ver)) + ';' + my_env['PATH']
+    my_env['SEN2COR_HOME'] = str(pathlib.Path.home().joinpath(r'.snap/auxdata/' + ver))
+    my_env['SEN2COR_BIN'] = str(pathlib.Path.home().joinpath(r'.snap/auxdata/' + ver + '/lib/python2.7/site-packages/sen2cor'))
     my_env['LC_NUMERIC'] = 'C'
-    my_env['GDAL_DATA'] = str(pathlib.Path.home().joinpath(r'.snap\auxdata\\' + ver + '\share\gdal'))
+    my_env['GDAL_DATA'] = str(pathlib.Path.home().joinpath(r'.snap/auxdata/' + ver + '/share/gdal'))
     my_env['GDAL_DRIVER_PATH']= 'disable'
     try:
         if platform == "linux" or platform == "linux2":

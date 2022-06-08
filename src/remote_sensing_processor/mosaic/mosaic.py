@@ -164,11 +164,11 @@ def get_bands(paths, keep_all_channels):
     for path in paths:
         im_type = get_type(path)
         if im_type == 'Sentinel2_up':
-            path = path + 'GRANULE\\'
+            path = path + 'GRANULE/'
             path = glob(path + '*')[0]
-            path = path + '\\IMG_DATA\\'
-            if os.path.isdir(path + 'R10m\\'):
-                bands = glob(path + 'R10m\\*B*.jp2') + glob(path + 'R20m\\*B*.jp2') + glob(path + 'R60m\\*B*.jp2')
+            path = path + '/IMG_DATA/'
+            if os.path.isdir(path + 'R10m/'):
+                bands = glob(path + 'R10m/*B*.jp2') + glob(path + 'R20m/*B*.jp2') + glob(path + 'R60m/*B*.jp2')
             else:
                 bands = glob(path + '*B*.jp2')
         else:

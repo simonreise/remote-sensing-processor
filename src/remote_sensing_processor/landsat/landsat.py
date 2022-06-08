@@ -85,9 +85,11 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
             elif (lsver in ['Landsat7_up_l1', 'Landsat7_up_l2']) and (('B4' in band) or ('B04' in band)):
                 nir = upscale(band, pan_trans, pan_res, pan.shape, resample)
         if lsver in ['Landsat8_up_l1', 'Landsat8_up_l2']:
-            pan = pan / ((0.42 * blue + 0.98 * green + 0.6 * red) / 2)
+            with np.errstate(invalid='ignore', divide='ignore'):
+                pan = pan / ((0.42 * blue + 0.98 * green + 0.6 * red) / 2)
         elif lsver in ['Landsat7_up_l1', 'Landsat7_up_l2']:
-            pan = pan / ((0.42 * blue + 0.98 * green + 0.6 * red + 1 * nir) / 3)
+            with np.errstate(invalid='ignore', divide='ignore'):
+                pan = pan / ((0.42 * blue + 0.98 * green + 0.6 * red + 1 * nir) / 3)
         red = None
         green = None
         blue = None
@@ -201,7 +203,8 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
                 add = float(mtl.findall('LEVEL1_RADIOMETRIC_RESCALING/RADIANCE_ADD_BAND_' + btitle)[0].text)
                 k1 = float(mtl.findall('LEVEL1_THERMAL_CONSTANTS/K1_CONSTANT_BAND_' + btitle)[0].text)
                 k2 = float(mtl.findall('LEVEL1_THERMAL_CONSTANTS/K2_CONSTANT_BAND_' + btitle)[0].text)
-                img = np.where(img == nodata, nodata, (k2 / np.log(k1/((img * mult) + add) + 1)) - deg)
+                with np.errstate(invalid='ignore'):
+                    img = np.where(img == nodata, nodata, (k2 / np.log(k1/((img * mult) + add) + 1)) - deg)
             elif lsver in ['Landsat5_up_l2', 'Landsat7_up_l2', 'Landsat8_up_l2']:
                 mult = float(mtl.findall('LEVEL2_SURFACE_TEMPERATURE_PARAMETERS/TEMPERATURE_MULT_BAND_ST_B' + btitle)[0].text)
                 add = float(mtl.findall('LEVEL2_SURFACE_TEMPERATURE_PARAMETERS/TEMPERATURE_ADD_BAND_ST_B' + btitle)[0].text)
@@ -273,7 +276,7 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
         #save
         bname = 'B' + band.split('B')[-1]
         pathres = path + bname
-        outfiles.append(pathres)
+        outfiles.append(os.path.normpath(pathres))
         with rio.open(
             pathres,
             'w',
@@ -290,7 +293,7 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
             nodata = 0
         ) as outfile:
             outfile.write(img)
-    for file in glob(path + '*'):
+    for file in glob(os.path.normpath(path + '*')):
         if file not in outfiles:
             os.remove(file)
 

@@ -28,13 +28,14 @@ def nd(name, b1, b2, folder = None):
         elif meta1 != meta2:
             raise RuntimeError('Datasets have different transforms')
         else:
-            final = (band1.astype('float64') - band2.astype('float64')) / (band1.astype('float64') + band2.astype('float64'))
+            with np.errstate(divide='ignore', invalid = 'ignore'):
+                final = (band1.astype('float64') - band2.astype('float64')) / (band1.astype('float64') + band2.astype('float64'))
             if folder == None:
                 savefolder = os.path.dirname(b1)
             else:
                 savefolder = folder
             with rio.open(
-                savefolder + '\\' + name + '.tif',
+                savefolder + '/' + name + '.tif',
                 'w',
                 driver='GTiff',
                 height=final.shape[1],
@@ -51,4 +52,4 @@ def nd(name, b1, b2, folder = None):
     except RuntimeError as e:
         print(e)
         sys.exit(1)
-    return savefolder + '\\' + name + '.tif'
+    return savefolder + '/' + name + '.tif'

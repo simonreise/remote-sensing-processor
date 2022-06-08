@@ -29,7 +29,7 @@ def s2postprocess_superres(img, projection, cloud_mask, clipper, path, path1):
     if cloud_mask == True:
         #masking clouds by mask
         try:
-            shape = glob(path1 + '\\GRANULE\\**\\QI_DATA\\MSK_CLOUDS_B00.gml')[0]
+            shape = glob(path1 + '/GRANULE/**/QI_DATA/MSK_CLOUDS_B00.gml')[0]
             cloudmask = gpd.read_file(clipper).to_crs(crs)
             cloudmask = convert_3D_2D(cloudmask)
             #with fiona.open(shape, "r") as shapefile:
@@ -50,7 +50,7 @@ def s2postprocess_superres(img, projection, cloud_mask, clipper, path, path1):
         except:
             pass
         #masking clouds by algorythm
-        l1path = glob(path1 + r'\GRANULE\*\IMG_DATA\R20m\*SCL_20m.jp2')
+        l1path = glob(path1 + r'/GRANULE/*/IMG_DATA/R20m/*SCL_20m.jp2')
         with rio.open(l1path[0]) as classification:
             cls = classification.read()
             clsmeta = classification.profile
@@ -113,7 +113,7 @@ def s2postprocess_superres(img, projection, cloud_mask, clipper, path, path1):
                 img, transform = rio.mask.mask(temp, shape, crop=True, filled=True)
     #save
     for i in range(img.shape[0]):
-        pathres = path + '\\' + descs[i].split(' ')[1] + '.tif'
+        pathres = path + '/' + descs[i].split(' ')[1] + '.tif'
         with rio.open(
             pathres,
             'w',
@@ -137,15 +137,15 @@ def s2postprocess_no_superres(projection, cloud_mask, clipper, path, path1):
     bandnames = ['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B09', 'B11', 'B12']
     bands = []
     for b in bandnames:
-        band = glob(path1 + '\**\*' + b + '_10m.jp2', recursive = True) 
+        band = glob(path1 + '/**/*' + b + '_10m.jp2', recursive = True) 
         if band != []:
             bands.append(band[0])
         else:
-            band = glob(path1 + '\**\*' + b + '_20m.jp2', recursive = True)
+            band = glob(path1 + '/**/*' + b + '_20m.jp2', recursive = True)
             if band != []:
                 bands.append(band[0])
             else: 
-                band = glob(path1 + '\**\*' + b + '_60m.jp2', recursive = True)
+                band = glob(path1 + '/**/*' + b + '_60m.jp2', recursive = True)
                 if band != []:
                     bands.append(band[0])
     bandoutnames = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9', 'B11', 'B12']
@@ -165,7 +165,7 @@ def s2postprocess_no_superres(projection, cloud_mask, clipper, path, path1):
         if cloud_mask == True:
             #masking clouds by mask
             try:
-                shape = glob(path1 + '\\GRANULE\\**\\QI_DATA\\MSK_CLOUDS_B00.gml')[0]
+                shape = glob(path1 + '/GRANULE/**/QI_DATA/MSK_CLOUDS_B00.gml')[0]
                 cloudmask = gpd.read_file(clipper).to_crs(crs)
                 cloudmask = convert_3D_2D(cloudmask)
                 #with fiona.open(shape, "r") as shapefile:
@@ -186,7 +186,7 @@ def s2postprocess_no_superres(projection, cloud_mask, clipper, path, path1):
             except:
                 pass
             #masking clouds by algorythm
-            l1path = glob(path1 + r'\GRANULE\*\IMG_DATA\R20m\*SCL_20m.jp2')
+            l1path = glob(path1 + r'/GRANULE/*/IMG_DATA/R20m/*SCL_20m.jp2')
             with rio.open(l1path[0]) as classification:
                 cls = classification.read()
                 clsmeta = classification.profile
@@ -264,7 +264,7 @@ def s2postprocess_no_superres(projection, cloud_mask, clipper, path, path1):
                     temp.write(img)
                     img, transform = rio.mask.mask(temp, shape, crop=True, filled=True)
         #save
-        pathres = path + '\\' + bandoutnames[i] + '.tif'
+        pathres = path + '/' + bandoutnames[i] + '.tif'
         with rio.open(
             pathres,
             'w',
