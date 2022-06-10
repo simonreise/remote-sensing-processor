@@ -46,9 +46,9 @@ for:
     
   install:
     - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
-    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%2123180%26authkey=ANRN8GGmMBoWQcU"
-    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%2123176%26authkey=APkWJiPB84TDr8E"
-    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%2123167%26authkey=ABQpH76ChDCuI5M"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%252123180%26authkey=ANRN8GGmMBoWQcU"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%252123176%26authkey=APkWJiPB84TDr8E"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%252123167%26authkey=ABQpH76ChDCuI5M"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
   test_script:
     - "%PYTHONPATH%\\python.exe -m tox"
@@ -62,9 +62,9 @@ for:
         TOXENV: python3.8 
   install:
     - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
-    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%2123179%26authkey=AKu8Oz6taUjTZ4I"
-    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%2123173%26authkey=AAa3ZIbVi3WuGQU"
-    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%2123170%26authkey=AAdIkUzE21OnNHs"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%252123179%26authkey=AKu8Oz6taUjTZ4I"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%252123173%26authkey=AAa3ZIbVi3WuGQU"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%252123170%26authkey=AAdIkUzE21OnNHs"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
   test_script:
     - "%PYTHONPATH%\\python.exe -m tox"    
@@ -79,9 +79,9 @@ for:
     
   install:
     - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
-    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%2123177%26authkey=ANksMmOZFSriprw"
-    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%2123174%26authkey=APZjZ2d8YEIQseI"
-    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%2123169%26authkey=AJklZekr88cAeQU"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%252123177%26authkey=ANksMmOZFSriprw"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%252123174%26authkey=APZjZ2d8YEIQseI"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%252123169%26authkey=AJklZekr88cAeQU"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
   test_script:
     - "%PYTHONPATH%\\python.exe -m tox"
@@ -96,9 +96,9 @@ for:
     
   install:
     - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
-    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%2123178%26authkey=AK7cp_Z-u-vZ9b0"
-    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%2123175%26authkey=ALauzZbXlTXUcbw"
-    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%2123168%26authkey=APui_76KFfzj68Y"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%252123178%26authkey=AK7cp_Z-u-vZ9b0"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%252123175%26authkey=ALauzZbXlTXUcbw"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A%26resid=c9974ffdbf7f1c3a%252123168%26authkey=APui_76KFfzj68Y"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
   test_script:
     - "%PYTHONPATH%\\python.exe -m tox"
