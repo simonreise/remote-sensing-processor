@@ -46,6 +46,9 @@ for:
     
   install:
     - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123180&authkey=ANRN8GGmMBoWQcU"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123176&authkey=APkWJiPB84TDr8E"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123167&authkey=ABQpH76ChDCuI5M"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
   test_script:
     - "%PYTHONPATH%\\python.exe -m tox"
@@ -59,9 +62,9 @@ for:
         TOXENV: python3.8 
   install:
     - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
-    - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/GDAL-3.4.3-cp38-cp38-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/rasterio-1.2.10-cp38-cp38-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/Fiona-1.8.21-cp38-cp38-win_amd64.whl"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123179&authkey=AKu8Oz6taUjTZ4I"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123173&authkey=AAa3ZIbVi3WuGQU"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123170&authkey=AAdIkUzE21OnNHs"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
   test_script:
     - "%PYTHONPATH%\\python.exe -m tox"    
@@ -76,9 +79,9 @@ for:
     
   install:
     - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
-    - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/GDAL-3.4.3-cp39-cp39-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/rasterio-1.2.10-cp39-cp39-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/Fiona-1.8.21-cp39-cp39-win_amd64.whl"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123177&authkey=ANksMmOZFSriprw"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123174&authkey=APZjZ2d8YEIQseI"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123169&authkey=AJklZekr88cAeQU"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
   test_script:
     - "%PYTHONPATH%\\python.exe -m tox"
@@ -93,9 +96,9 @@ for:
     
   install:
     - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
-    - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/GDAL-3.4.3-cp310-cp310-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/rasterio-1.2.10-cp310-cp310-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://download.lfd.uci.edu/pythonlibs/a4hvik9m/Fiona-1.8.21-cp310-cp310-win_amd64.whl"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123178&authkey=AK7cp_Z-u-vZ9b0"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123175&authkey=ALauzZbXlTXUcbw"
+    - "%PYTHONPATH%\\python.exe -m pip install https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123168&authkey=APui_76KFfzj68Y"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
   test_script:
     - "%PYTHONPATH%\\python.exe -m tox"
