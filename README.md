@@ -5,6 +5,7 @@
 
 ![AppVeyor](https://img.shields.io/appveyor/build/simonreise/remote-sensing-processor)
 ![PyPI](https://img.shields.io/pypi/v/remote-sensing-processor)
+![Conda](https://img.shields.io/conda/pn/moskovchenkomike/remote-sensing-processor)
 
 RSP is a tool for geospatial raster data processing.
 
