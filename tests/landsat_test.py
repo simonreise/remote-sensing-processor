@@ -11,7 +11,7 @@ urllib.request.urlretrieve("https://onedrive.live.com/download?cid=C9974FFDBF7F1
 #urllib.request.urlretrieve("https://onedrive.live.com/download?cid=C9974FFDBF7F1C3A&resid=c9974ffdbf7f1c3a%2123148&authkey=ADgB4Pw98Wfi580", archives[3])
 landsats = rsp.landsat(archives)
 assert landsats != None
-clipper = str(pathlib.Path(__file__).parent.resolve()) + r'/' + 'roi.gpkg'
+clipper = str(pathlib.Path(__file__).parent.resolve()) + r'/files/roi.gpkg'
 merged = rsp.mosaic(landsats, str(pathlib.Path(__file__).parent.resolve()), fill_nodata = True, clipper = clipper)
 assert merged != None
 ndvi = rsp.normalized_difference('NDVI', b1 = str(pathlib.Path(__file__).parent.resolve()) + '/B5.tif', b2 = str(pathlib.Path(__file__).parent.resolve()) + '/B4.tif')
