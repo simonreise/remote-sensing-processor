@@ -46,9 +46,9 @@ for:
     
   install:
     - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
-    - "%PYTHONPATH%\\python.exe -m pip install https://disk.yandex.ru/d/W73491bhV-Cbsg/GDAL-3.4.2-cp37-cp37m-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://disk.yandex.ru/d/W73491bhV-Cbsg/rasterio-1.2.10-cp37-cp37m-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://disk.yandex.ru/d/W73491bhV-Cbsg/Fiona-1.8.21-cp37-cp37m-win_amd64.whl"
+    - "%PYTHONPATH%\\python.exe -m pip install https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/W73491bhV-Cbsg/GDAL-3.4.2-cp37-cp37m-win_amd64.whl"
+    - "%PYTHONPATH%\\python.exe -m pip install https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/W73491bhV-Cbsg/rasterio-1.2.10-cp37-cp37m-win_amd64.whl"
+    - "%PYTHONPATH%\\python.exe -m pip install https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/W73491bhV-Cbsg/Fiona-1.8.21-cp37-cp37m-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
   test_script:
     - "%PYTHONPATH%\\python.exe -m tox"
@@ -62,9 +62,9 @@ for:
         TOXENV: python3.8 
   install:
     - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
-    - "%PYTHONPATH%\\python.exe -m pip install https://disk.yandex.ru/d/W73491bhV-Cbsg/GDAL-3.4.3-cp38-cp38-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://disk.yandex.ru/d/W73491bhV-Cbsg/rasterio-1.2.10-cp38-cp38-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://disk.yandex.ru/d/W73491bhV-Cbsg/Fiona-1.8.21-cp38-cp38-win_amd64.whl"
+    - "%PYTHONPATH%\\python.exe -m pip install https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/W73491bhV-Cbsg/GDAL-3.4.3-cp38-cp38-win_amd64.whl"
+    - "%PYTHONPATH%\\python.exe -m pip install https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/W73491bhV-Cbsg/rasterio-1.2.10-cp38-cp38-win_amd64.whl"
+    - "%PYTHONPATH%\\python.exe -m pip install https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/W73491bhV-Cbsg/Fiona-1.8.21-cp38-cp38-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
   test_script:
     - "%PYTHONPATH%\\python.exe -m tox"    
@@ -79,9 +79,9 @@ for:
     
   install:
     - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
-    - "%PYTHONPATH%\\python.exe -m pip install https://disk.yandex.ru/d/W73491bhV-Cbsg/GDAL-3.4.3-cp39-cp39-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://disk.yandex.ru/d/W73491bhV-Cbsg/rasterio-1.2.10-cp39-cp39-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://disk.yandex.ru/d/W73491bhV-Cbsg/Fiona-1.8.21-cp39-cp39-win_amd64.whl"
+    - "%PYTHONPATH%\\python.exe -m pip install https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/W73491bhV-Cbsg/GDAL-3.4.3-cp39-cp39-win_amd64.whl"
+    - "%PYTHONPATH%\\python.exe -m pip install https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/W73491bhV-Cbsg/rasterio-1.2.10-cp39-cp39-win_amd64.whl"
+    - "%PYTHONPATH%\\python.exe -m pip install https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/W73491bhV-Cbsg/Fiona-1.8.21-cp39-cp39-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
   test_script:
     - "%PYTHONPATH%\\python.exe -m tox"
@@ -96,9 +96,9 @@ for:
     
   install:
     - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
-    - "%PYTHONPATH%\\python.exe -m pip install https://disk.yandex.ru/d/W73491bhV-Cbsg/GDAL-3.4.3-cp310-cp310-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://disk.yandex.ru/d/W73491bhV-Cbsg/rasterio-1.2.10-cp310-cp310-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://disk.yandex.ru/d/W73491bhV-Cbsg/Fiona-1.8.21-cp310-cp310-win_amd64.whl"
+    - "%PYTHONPATH%\\python.exe -m pip install https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/W73491bhV-Cbsg/GDAL-3.4.3-cp310-cp310-win_amd64.whl"
+    - "%PYTHONPATH%\\python.exe -m pip install https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/W73491bhV-Cbsg/rasterio-1.2.10-cp310-cp310-win_amd64.whl"
+    - "%PYTHONPATH%\\python.exe -m pip install https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/W73491bhV-Cbsg/Fiona-1.8.21-cp310-cp310-win_amd64.whl"
     - "%PYTHONPATH%\\python.exe -m pip install tox"
   test_script:
     - "%PYTHONPATH%\\python.exe -m tox"
