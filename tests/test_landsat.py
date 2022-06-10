@@ -3,7 +3,7 @@ import urllib.request
 import pathlib
 import remote_sensing_processor as rsp
 
-def landsat_test():
+def test_landsat():
     archives = ["LM05_L1TP_161023_19930803_20211018_02_T2.tar", "LT05_L1TP_162023_20110812_20200820_02_T1.tar",
                 "LT05_L1TP_160023_20110814_20200820_02_T1.tar"]
     archives = [str(pathlib.Path(__file__).parent.resolve()) + r'/' + a for a in archives]
