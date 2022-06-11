@@ -3,10 +3,17 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+with open("src/remote_sensing_processor/__init__.py") as f:
+    for line in f:
+        if line.find("__version__") >= 0:
+            version = line.split("=")[1].strip()
+            version = version.strip('"')
+            version = version.strip("'")
+            continue
 
 setuptools.setup(
 	name = 'remote-sensing-processor',
-	version = '0.0.1',
+	version = version,
 	author = 'Mikhail Moskovchenko',
 	author_email = 'moskovchenkomike@gmail.com',
 	description = 'RSP is a tool for geospatial raster data processing',

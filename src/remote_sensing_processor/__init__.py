@@ -18,6 +18,9 @@ from remote_sensing_processor.imagery_types.types import get_type, get_index
 
 from remote_sensing_processor.postprocessing.tiles import get_tiles, predict_map
 
+
+__version__ = '0.1'
+
 def sentinel2(archives, sen2cor = True, superres = True, projection = None, cloud_mask = True, clipper = None):
     """
     Preprocess Sentinel-2 imagery

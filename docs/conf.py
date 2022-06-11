@@ -24,9 +24,18 @@ copyright = "2022, Mikhail Moskovchenko"
 author = "Mikhail Moskovchenko"
 
 # The short X.Y version
-version = "0.0.1"
+try:
+    version = remote_sensing_processor.__version__
+except:
+    with open('../src/remote_sensing_processor/__init__.py') as f:
+        for line in f:
+            if line.find("__version__") >= 0:
+                version = line.split("=")[1].strip()
+                version = version.strip('"')
+                version = version.strip("'")
+                continue
 # The full version, including alpha/beta/rc tags
-release = "0.0.1"
+release = version
 
 
 # -- General configuration ---------------------------------------------------
