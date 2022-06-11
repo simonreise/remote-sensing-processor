@@ -28,9 +28,9 @@ environment:
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
       PYTHON: "3.9"
       TOXENV: python3.9
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      PYTHON: "3.10"
-      TOXENV: python3.10
+#    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+#      PYTHON: "3.10"
+#      TOXENV: python3.10
 stack: python %PYTHON%
 
 build: false
@@ -148,19 +148,19 @@ for:
   test_script:
     - sh: python3 -m tox
 
--
-  matrix:
-    only:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-        PYTHON: "3.10"
-        TOXENV: python3.10
-  install: 
-    - sh: sudo add-apt-repository ppa:ubuntugis/ppa
-    - sh: sudo apt-get update
-    - sh: sudo apt-get -y install python-numpy gdal-bin libgdal-dev
-    - sh: sudo apt-get -y install python3-pip
-    - pip3 install https://files.pythonhosted.org/packages/c5/00/29cf4f6c63271136616dc4cad7850dc8073bfa773e8a46de79820c722109/rasterio-1.3a3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-    - pip3 install tox
-  test_script:
-    - sh: python3 -m tox
+#-
+#  matrix:
+#    only:
+#      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+#        PYTHON: "3.10"
+#        TOXENV: python3.10
+#  install:
+#    - sh: sudo add-apt-repository ppa:ubuntugis/ppa
+#    - sh: sudo apt-get update
+#    - sh: sudo apt-get -y install python-numpy gdal-bin libgdal-dev
+#    - sh: sudo apt-get -y install python3-pip
+#    - pip3 install https://files.pythonhosted.org/packages/c5/00/29cf4f6c63271136616dc4cad7850dc8073bfa773e8a46de79820c722109/rasterio-1.3a3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+#    - pip3 install tox
+#  test_script:
+#    - sh: python3 -m tox
 
