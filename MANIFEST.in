@@ -1,2 +1,2 @@
 include src/remote_sensing_processor/sentinel2/superres/weights/*.hdf5
-include logo-wide.png
+include logo_wide.png
