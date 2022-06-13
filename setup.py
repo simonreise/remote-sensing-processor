@@ -35,8 +35,8 @@ setuptools.setup(
     keywords = 'remote sensing, landsat, sentinel, gdal, rasterio',
 	package_dir = {"": "src"},
     packages = setuptools.find_packages(where="src"),
-    setup_requires = ['cython', 'numpy'],
-    install_requires = [ 'numpy', 'h5py', 'tensorflow>=2.3', 'scikit-image', 'rasterio', 'pyproj', 'geopandas'],
+    setup_requires = ['cython', 'numpy>=1.17'],
+    install_requires = [ 'numpy>=1.17', 'h5py', 'tensorflow>=2.3', 'scikit-image', 'rasterio', 'pyproj', 'geopandas'],
     python_requires = ">=3.7",
     include_package_data = True
 )

@@ -12,11 +12,10 @@ requirements:
     - python
     - setuptools
     - cython
-    - numpy
-
+    - numpy>=1.17
   run:
     - python
-    - numpy
+    - numpy>=1.17
     - h5py
     - tensorflow>=2.3
     - scikit-image
@@ -25,6 +24,8 @@ requirements:
     - shapely
     - geopandas
 
+build:
+  preserve_egg_dir: True
 
 about:
   home:
