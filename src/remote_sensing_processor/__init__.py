@@ -314,9 +314,9 @@ def generate_tiles(x, y, tile_size = 128, categorical = True, num_classes = None
     split : list of ints (optional)
         Splitting data in subsets. Is a list of integers defining proportions of every subset. [3, 1, 1] will generate 3 subsets in proportion 3 to 1 to 1.
     x_outputs : list of paths as strings (optional)
-        List of paths to save generated output x data. Data is saved in numpy .npy format.
+        List of paths to save generated output x data. Data is saved in .h5 format.
     y_outputs : list of paths as strings (optional)
-        List of paths to save generated output y data. Data is saved in numpy .npy format.
+        List of paths to save generated output y data. Data is saved in .h5 format.
     dtype : dtype definition as a string (optional)
         If you run out of memory, you can try to convert your data to less memory consuming format.
     nodata : int or float (optional)

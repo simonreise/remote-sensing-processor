@@ -1,4 +1,5 @@
 import numpy as np
+import h5py
 
 import rasterio as rio
 
@@ -77,10 +78,14 @@ def get_tiles(x, y, tile_size, num_classes, categorical, shuffle, samples_file, 
             y_bag = y_tiles[j:j+round(split[i]/sum(split)*len(samples))]
             #saving outputs
             if x_outputs != None:
-                np.save(x_outputs[i], x_bag)
+                #np.savez(x_outputs[i], x_bag)
+                with h5py.File(x_outputs[i], "w") as hf:
+                    dset = f.create_dataset("data", data=x_bag, compression="gzip", compression_opts=9, shuffle=False)
             x_bags.append(x_bag)
             if y_outputs != None:
-                np.save(y_outputs[i], y_bag)
+                #np.savez(y_outputs[i], y_bag)
+                with h5py.File(y_outputs[i], "w") as hf:
+                    dset = f.create_dataset("data", data=y_bag, compression="gzip", compression_opts=9, shuffle=False)
             y_bags.append(y_bag)
             #calculating start point for next bag
             j=j+round(split[i]/sum(split)*len(samples))
