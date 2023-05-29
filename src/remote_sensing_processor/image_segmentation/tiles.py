@@ -98,7 +98,7 @@ def get_tiles(x, y, tile_size, num_classes, categorical, shuffle, samples_file, 
     return x_bags, y_bags, tiles, samples
     
     
-def predict_map(x, y_true, model, categorical, tiles, samples, samples_file, output, nodata):
+def predict_map_from_tiles(x, y_true, model, categorical, tiles, samples, samples_file, output, nodata):
     #loading tiles
     if samples_file != None:
         with open(samples_file, "rb") as fp:
@@ -116,7 +116,9 @@ def predict_map(x, y_true, model, categorical, tiles, samples, samples_file, out
     j = 0
     for i in range(len(x)):
         if isinstance(x[i], str):
-            x_bag = np.load(x[i])
+            db = h5py.File(x[i])
+            x_bag = db['data'][...]
+            #x_bag = np.load(x[i])
         else:
             x_bag = x[i]
         bag = samples[j:len(x_bag)]
@@ -130,6 +132,8 @@ def predict_map(x, y_true, model, categorical, tiles, samples, samples_file, out
             t = bag[i]
             t = tiles[t]
             y_pred[t[0]:t[2],t[1]:t[3]] = prediction
+        if isinstance(x[i], str):
+            db.close()
     #clipping
     y_pred = y_pred[:shp_in[0], :shp_in[1]]
     #writing to file

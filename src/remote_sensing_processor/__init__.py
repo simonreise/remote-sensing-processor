@@ -16,7 +16,7 @@ from remote_sensing_processor.mosaic.mosaic import mosaic_main, order, ismultiba
 from remote_sensing_processor.indices.normalized_difference import nd
 from remote_sensing_processor.imagery_types.types import get_type, get_index
 
-from remote_sensing_processor.postprocessing.tiles import get_tiles, predict_map
+from remote_sensing_processor.image_segmentation.tiles import get_tiles, predict_map_from_tiles
 
 
 __version__ = '0.1'
