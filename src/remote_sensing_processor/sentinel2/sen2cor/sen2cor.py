@@ -47,11 +47,11 @@ def winapi_path(dos_path, encoding=None):
         
 def sen2correct(input_path):
     if platform == "linux" or platform == "linux2":
-        ver = 'Sen2Cor-02.08.00-Linux64'
+        ver = 'Sen2Cor-02.11.00-Linux64'
     elif platform == "darwin":
-        ver = 'Sen2Cor-02.08.00-Darwin64'
+        ver = 'Sen2Cor-02.09.00-Darwin64'
     elif platform == "win32":
-        ver = 'Sen2Cor-02.08.00-win64'
+        ver = 'Sen2Cor-02.11.00-win64'
     #check_install(ver)
     my_env = os.environ.copy()
     #print(pathlib.Path.home().joinpath(r'.snap/auxdata/' + ver))

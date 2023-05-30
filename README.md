@@ -83,7 +83,7 @@ To run RSP you need these packages to be installed:
 - Geopandas
 - Tensorflow >= 2.3
 
-Also you need a Sen2Cor to be installed to process Sentinel-2 data. You should install it via SNAP plugin installer. [Here](http://wiki.awf.forst.uni-goettingen.de/wiki/index.php/Installation_of_SNAP) is the instruction how you can do it.
+Also you need a Sen2Cor to be installed to process Sentinel-2 data.  You should install it via SNAP plugin installer. [Here](http://wiki.awf.forst.uni-goettingen.de/wiki/index.php/Installation_of_SNAP) is the instruction how you can do it.
 
 ## Installation
 

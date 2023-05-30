@@ -65,6 +65,10 @@ conda install -c moskovchenkomike remote-sensing-processor
 
 ## Installing Sen2Cor
 
-Sen2Cor is needed for Sentinel-2 atmospheric correction and conversion from L1 to L2. You should install it via SNAP plugin installer. [Here](http://wiki.awf.forst.uni-goettingen.de/wiki/index.php/Installation_of_SNAP) is the instruction how you can do it.
+Sen2Cor is needed for Sentinel-2 atmospheric correction and conversion from L1 to L2.
 
-If you don't want to install SNAP, you can download and manually install [Sen2Cor 2.8](http://step.esa.int/main/snap-supported-plugins/sen2cor/sen2cor_v2-8/) to `%HOME%/.snap/auxdata/`.
+Required version is 2.11 for Windows and Linux and 2.9 for Mac OS
+
+You should install it via SNAP plugin installer. [Here](http://wiki.awf.forst.uni-goettingen.de/wiki/index.php/Installation_of_SNAP) is the instruction how you can do it.
+
+If you don't want to install SNAP, you can download and manually install [Sen2Cor 2.11](http://step.esa.int/main/snap-supported-plugins/sen2cor/sen2cor-v2-11/) or [Sen2Cor 2.9](https://step.esa.int/main/snap-supported-plugins/sen2cor/sen2cor-v2-9/) to `%HOME%/.snap/auxdata/`.
