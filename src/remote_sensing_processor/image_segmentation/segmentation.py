@@ -92,7 +92,7 @@ def create_hdf5_generator(x_in, y_in, batch_size, categorical, x_nodata, y_nodat
     #getting nodata and categorical attributes
     if isinstance(x_in, h5py.File) and x_nodata == None:
         x_nodata = x_in.attrs['nodata']
-    if isinstance(y_in, h5py.File)
+    if isinstance(y_in, h5py.File):
         if y_nodata == None:
             y_nodata = y_in.attrs['nodata']
         categorical = y_in.attrs['categorical']

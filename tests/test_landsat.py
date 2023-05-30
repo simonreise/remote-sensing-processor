@@ -16,5 +16,5 @@ def test_landsat():
     clipper = str(pathlib.Path(__file__).parent.resolve()) + r'/files/roi.gpkg'
     merged = rsp.mosaic(landsats, str(pathlib.Path(__file__).parent.resolve()), fill_nodata = True, clipper = clipper)
     assert merged != None
-    ndvi = rsp.normalized_difference('NDVI', b1 = str(pathlib.Path(__file__).parent.resolve()) + '/B5.tif', b2 = str(pathlib.Path(__file__).parent.resolve()) + '/B4.tif')
+    ndvi = rsp.calculate_index('NDVI', b1 = str(pathlib.Path(__file__).parent.resolve()) + '/B5.tif', b2 = str(pathlib.Path(__file__).parent.resolve()) + '/B4.tif')
     assert ndvi != None

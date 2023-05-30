@@ -245,7 +245,7 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper
 
 def calculate_index(name, folder = None, b1 = None, b2 = None):
     """
-    Calculates normalized difference indexes.
+    Calculates vegetation indexes.
     
     Parameters
     ----------
