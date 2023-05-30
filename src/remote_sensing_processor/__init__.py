@@ -1,6 +1,7 @@
 from glob import glob
 import shutil
 import os
+import sys
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 
 from remote_sensing_processor.unzip.unzip import unzip_sentinel, unzip_landsat
@@ -16,6 +17,7 @@ from remote_sensing_processor.mosaic.mosaic import mosaic_main, order, ismultiba
 from remote_sensing_processor.indices.normalized_difference import nd
 from remote_sensing_processor.imagery_types.types import get_type, get_index
 
+from remote_sensing_processor.image_segmentation.segmentation import segmentation_train, segmentation_test
 from remote_sensing_processor.image_segmentation.tiles import get_tiles, predict_map_from_tiles
 
 
@@ -241,7 +243,7 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper
     paths = mosaic_main(inputs = inputs, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster, mb = mb, keep_all_channels = keep_all_channels)
     return paths
 
-def normalized_difference(name, folder = None, b1 = None, b2 = None):
+def calculate_index(name, folder = None, b1 = None, b2 = None):
     """
     Calculates normalized difference indexes.
     
@@ -261,11 +263,11 @@ def normalized_difference(name, folder = None, b1 = None, b2 = None):
     
     Examples
     --------
-        >>> ndvi = rsp.normalized_difference('NDVI', '/home/rsp_test/mosaics/sentinel/')
+        >>> ndvi = rsp.calculate_index('NDVI', '/home/rsp_test/mosaics/sentinel/')
         >>> print(ndvi)
         '/home/rsp_test/mosaics/sentinel/NDVI.tif'
         
-        >>> ndvi = rsp.normalized_difference('NDVI', b1 = '/home/rsp_test/mosaics/sentinel/B8.tif', b2 = '/home/rsp_test/mosaics/sentinel/B4.tif')
+        >>> ndvi = rsp.calculate_index('NDVI', b1 = '/home/rsp_test/mosaics/sentinel/B8.tif', b2 = '/home/rsp_test/mosaics/sentinel/B4.tif')
         >>> print(ndvi)
         '/home/rsp_test/mosaics/sentinel/NDVI.tif'
     """
@@ -291,7 +293,7 @@ def normalized_difference(name, folder = None, b1 = None, b2 = None):
     return path
         
              
-def generate_tiles(x, y, tile_size = 128, categorical = True, num_classes = None, shuffle = False, samples_file = None, split = [1], x_outputs = None, y_outputs = None, dtype = None, nodata = None):
+def generate_tiles(x, y, tile_size = 128, categorical = True, num_classes = None, shuffle = False, samples_file = None, split = [1], x_outputs = None, y_outputs = None, dtype = None, x_nodata = None, y_nodata = None):
     """
     Cut rasters into tiles
     
@@ -319,8 +321,10 @@ def generate_tiles(x, y, tile_size = 128, categorical = True, num_classes = None
         List of paths to save generated output y data. Data is saved in .h5 format.
     dtype : dtype definition as a string (optional)
         If you run out of memory, you can try to convert your data to less memory consuming format.
-    nodata : int or float (optional)
-        If you want to ignore tiles that contain only nodata, you can define which value in y raster corresponds to nodata and tiles that contain only nodata will be omited.
+    x_nodata : int or float (optional)
+        You can define which value in x raster corresponds to nodata and areas that contain nodata in x raster will be ignored while training and testing. Tiles that contain only nodata in both x and y will be omited.
+    y_nodata : int or float (optional)
+        You can define which value in y raster corresponds to nodata and areas that contain nodata in y raster will be ignored while training and testing. Tiles that contain only nodata in both x and y will be omited.
     
     Returns
     ----------
@@ -334,6 +338,8 @@ def generate_tiles(x, y, tile_size = 128, categorical = True, num_classes = None
             List of tile coordinates.
         samples : list
             List with order of samples.
+        y_nodata : int or float 
+            Nodata value for y tiles or nodata category index if y is converted to categorical.
             
     Examples
     --------
@@ -351,13 +357,13 @@ def generate_tiles(x, y, tile_size = 128, categorical = True, num_classes = None
         ... '/home/rsp_test/mosaics/sentinel/B12.tif']
         >>> y = '/home/rsp_test/mosaics/landcover.tif'
         >>> s_file = '/home/rsp_test/model/samples.pickle'
-        >>> x_train_file = '/home/rsp_test/model/x_train.npy'
-        >>> x_val_file = '/home/rsp_test/model/x_val.npy'
-        >>> x_test_file = '/home/rsp_test/model/x_test.npy'
-        >>> y_train_file = '/home/rsp_test/model/y_train.npy'
-        >>> y_val_file = '/home/rsp_test/model/y_val.npy'
-        >>> y_test_file = '/home/rsp_test/model/y_test.npy'
-        >>> x_i, y_i, tiles, samples = rsp.generate_tiles(x, y, num_classes = 11, tile_size = 256, shuffle = True, samples_file = s_file, split = [3, 1, 1], x_outputs = [x_train_file, x_val_file, x_test_file], y_outputs = [y_train_file, y_val_file, y_test_file], nodata = -1)
+        >>> x_train_file = '/home/rsp_test/model/x_train.h5'
+        >>> x_val_file = '/home/rsp_test/model/x_val.h5'
+        >>> x_test_file = '/home/rsp_test/model/x_test.h5'
+        >>> y_train_file = '/home/rsp_test/model/y_train.h5'
+        >>> y_val_file = '/home/rsp_test/model/y_val.h5'
+        >>> y_test_file = '/home/rsp_test/model/y_test.h5'
+        >>> x_i, y_i, tiles, samples, y_nodata = rsp.generate_tiles(x, y, num_classes = 11, tile_size = 256, shuffle = True, samples_file = s_file, split = [3, 1, 1], x_outputs = [x_train_file, x_val_file, x_test_file], y_outputs = [y_train_file, y_val_file, y_test_file], x_nodata = 0, y_nodata = -1)
         >>> x_train = x_i[0]
         >>> print(x_train.shape)
         (3000, 256, 256, 12)
@@ -380,12 +386,123 @@ def generate_tiles(x, y, tile_size = 128, categorical = True, num_classes = None
         5000
         >>> print(samples[:5])
         [1876, 684, 25, 7916, 1347]
+        >>> print(y_nodata)
+        0
     """
-    x, y, tiles, samples = get_tiles(x = x, y = y, tile_size = tile_size, num_classes = num_classes, categorical = categorical, shuffle = shuffle, samples_file = samples_file, split = split, x_outputs = x_outputs, y_outputs = y_outputs, dtype = dtype, nodata = nodata)
+    x, y, tiles, samples, y_nodata = get_tiles(x = x, y = y, tile_size = tile_size, num_classes = num_classes, categorical = categorical, shuffle = shuffle, samples_file = samples_file, split = split, x_outputs = x_outputs, y_outputs = y_outputs, dtype = dtype, x_nodata = x_nodata, y_nodata = y_nodata)
     if len(split) == 1:
         x = x[0]
         y = y[0]
-    return x, y, tiles, samples
+    return x, y, tiles, samples, y_nodata
+
+    
+def train_segmentation_model(x_train, x_val, y_train, y_val, model, model_file = None, epochs = 5, batch_size = 16, categorical = True, x_nodata = None, y_nodata = None):
+    """
+    Trains segmentation model
+    
+    Parameters
+    ----------
+    x_train : path as a string or numpy array
+        Training tiles generated by generate_tiles() function.
+    x_val : path as a string or numpy array
+        Validation tiles generated by generate_tiles() function.
+    y_train : path as a string or numpy array
+        Training tiles generated by generate_tiles() function.
+    y_val : path as a string or numpy array
+        Validation tiles generated by generate_tiles() function.
+    model : str
+        Name of model architecture to be used. Available models are UNet ('unet'), DeepLabv3 ('deeplabv3') and Vision Transformers ('transformer').
+    model_file : path as a string (optional)
+        File where model will be saved after training.
+    epochs : int (default = 5)
+        Number of training epochs.
+    batch_size : int (default = 16)
+        Number of training samples used in one iteration.
+    categorical : bool (default = True)
+        If y data is categorical. Usually True for classification and segmentation tasks and False for regression tasks.
+    x_nodata : int or float (optional)
+        You can define which value in x raster corresponds to nodata and areas that contain nodata in x raster will be ignored while training and testing. Tiles that contain only nodata in both x and y will be omited.
+    y_nodata : int or float (optional)
+        You can define which value in y raster corresponds to nodata and areas that contain nodata in y raster will be ignored while training and testing. Tiles that contain only nodata in both x and y will be omited.
+    
+    Returns
+    ----------
+    tuple:
+    
+        tf.keras.Model
+            Trained model.
+        tf.keras.callbacks.History
+            Callback that records training events. Stores e.g. metrics data for every epoch.
+            
+    Examples
+    --------
+        >>> x_i, y_i, tiles, samples, y_nodata = rsp.generate_tiles(x, y, num_classes = 11, tile_size = 256, shuffle = True, split = [3, 1, 1], x_nodata = 0, y_nodata = -1)
+        >>> x_train = x_i[0]
+        >>> x_val = x_i[1]
+        >>> x_test = x_i[2]
+        >>> y_train = x_i[0]
+        >>> y_val = x_i[1]
+        >>> y_test = x_i[2]
+        >>> model, history = train_segmentation_model(x_train, x_val, y_train, y_val, model = 'unet', model_file = '/home/rsp_test/model/u-net.hdf5', epochs = 10, batch_size = 32, categorical = True, x_nodata = 0, y_nodata = y_nodata)
+        >>> print(history.history['val_accuracy'])
+        [0.8546499013900757,
+        0.8599732518196106,
+        0.8228882551193237,
+        0.8659436106681824,
+        0.8699859976768494,
+        0.8719748258590698,
+        0.871995210647583,
+        0.876193642616272,
+        0.8765510320663452,
+        0.8758618235588074]
+    """
+    model, history = segmentation_train(x_train =x_train, x_val = x_val, y_train = y_train, y_val = y_val, model = model, model_file = model_file, epochs = epochs, categorical = categorical, x_nodata = x_nodata, y_nodata = y_nodata)
+    return model, history
+    
+def test_segmentation_model(x_test, y_test, model, batch_size = 16, categorical = True, x_nodata = None, y_nodata = None):
+    """
+    Tests segmentation model
+    
+    Parameters
+    ----------
+    x_test : path as a string or numpy array
+        Training tiles generated by generate_tiles() function.
+    y_test : path as a string or numpy array
+        Training tiles generated by generate_tiles() function.
+    model : tf.keras.Model or path as a string
+        Model to test.
+    batch_size : int (default = 16)
+        Number of training samples used in one iteration.
+    categorical : bool (default = True)
+        If y data is categorical. Usually True for classification and segmentation tasks and False for regression tasks.
+    x_nodata : int or float (optional)
+        You can define which value in x raster corresponds to nodata and areas that contain nodata in x raster will be ignored while training and testing. Tiles that contain only nodata in both x and y will be omited.
+    y_nodata : int or float (optional)
+        You can define which value in y raster corresponds to nodata and areas that contain nodata in y raster will be ignored while training and testing. Tiles that contain only nodata in both x and y will be omited.
+    
+    Returns
+    ----------
+    list:
+        List that contains loss and metrics.
+            
+    Examples
+    --------
+        >>> x_i, y_i, tiles, samples, y_nodata = rsp.generate_tiles(x, y, num_classes = 11, tile_size = 256, shuffle = True, split = [3, 1, 1], x_nodata = 0, y_nodata = -1)
+        >>> x_train = x_i[0]
+        >>> x_val = x_i[1]
+        >>> x_test = x_i[2]
+        >>> y_train = x_i[0]
+        >>> y_val = x_i[1]
+        >>> y_test = x_i[2]
+        >>> model, history = train_segmentation_model(x_train, x_val, y_train, y_val, model = 'unet', epochs = 10, batch_size = 32, categorical = True, x_nodata = 0, y_nodata = y_nodata)
+        >>> result = test_segmentation_model(x_test, y_test, model = model, batch_size = 32, categorical = True, x_nodata = 0, y_nodata = y_nodata)
+        >>> print('Test loss:', result[0])
+        Test loss: 0.32643221716880798
+        >>> print('Test accuracy:', result[1])
+        Test accuracy: 0.8751000292778015
+    """
+    result = segmentation_test(x_test = x_test, y_test = y_test, model = model, batch_size = batch_size, categorical = categorical, x_nodata = x_nodata, y_nodata = y_nodata)
+    return result
     
  
 def generate_map(x, y_true, model, output, tiles = None, samples = None, samples_file = None, categorical = True, nodata = None):
@@ -419,15 +536,21 @@ def generate_map(x, y_true, model, output, tiles = None, samples = None, samples
         >>> x_train = x_i[0]
         >>> x_val = x_i[1]
         >>> x_test = x_i[2]
-        >>> # Here model is initialised
-        >>> model.fit(x_train, y_train, batch_size = 16, epochs = 20, validation_data = (x_val, y_val), callbacks = callbacks)
+        >>> x_i, y_i, tiles, samples, y_nodata = rsp.generate_tiles(x, y, num_classes = 11, tile_size = 256, shuffle = True, split = [3, 1, 1], x_nodata = 0, y_nodata = -1)
+        >>> x_train = x_i[0]
+        >>> x_val = x_i[1]
+        >>> x_test = x_i[2]
+        >>> y_train = x_i[0]
+        >>> y_val = x_i[1]
+        >>> y_test = x_i[2]
+        >>> model, history = train_segmentation_model(x_train, x_val, y_train, y_val, model = 'unet', epochs = 10, batch_size = 32, categorical = True, x_nodata = 0, y_nodata = y_nodata)
         >>> y_reference = '/home/rsp_test/mosaics/landcover.tif'
         >>> output_map = '/home/rsp_test/prediction.tif'
         >>> rsp.generate_map([x_train, x_val, x_test], y_reference, model, output_map, tiles = tiles, samples = samples, nodata = -1)
         
-        >>> x_train_file = '/home/rsp_test/model/x_train.npy'
-        >>> x_val_file = '/home/rsp_test/model/x_val.npy'
-        >>> x_test_file = '/home/rsp_test/model/x_test.npy'
+        >>> x_train_file = '/home/rsp_test/model/x_train.h5'
+        >>> x_val_file = '/home/rsp_test/model/x_val.h5'
+        >>> x_test_file = '/home/rsp_test/model/x_test.h5'
         >>> s_file = '/home/rsp_test/model/samples.pickle'
         >>> model = '/home/rsp_test/model/u-net.hdf5'
         >>> y_reference = '/home/rsp_test/mosaics/landcover.tif'
@@ -437,6 +560,6 @@ def generate_map(x, y_true, model, output, tiles = None, samples = None, samples
     if (tiles != None and samples != None) or (samples_file != None):
         if isinstance(x, list):
             x = [x]
-        predict_map(x = x, y_true = y_true, model = model, categorical = categorical, samples_file = samples_file, tiles = tiles, samples = samples, output = output, nodata = nodata)
+        predict_map_from_tiles(x = x, y_true = y_true, model = model, categorical = categorical, samples_file = samples_file, tiles = tiles, samples = samples, output = output, nodata = nodata)
     else:
         print('Tiles and samples must be specified')

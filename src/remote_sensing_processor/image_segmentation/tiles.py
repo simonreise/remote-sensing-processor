@@ -7,7 +7,7 @@ import tensorflow as tf
 from tensorflow import keras
 
 
-def get_tiles(x, y, tile_size, num_classes, categorical, shuffle, samples_file, split, x_outputs, y_outputs, dtype, nodata):
+def get_tiles(x, y, tile_size, num_classes, categorical, shuffle, samples_file, split, x_outputs, y_outputs, dtype, x_nodata, y_nodata):
     shp_in, shp_work, shp_pad, xdtype, transform, crs = shapes(x[0], tile_size)
     if dtype == None:
         dtype = xdtype
@@ -56,16 +56,26 @@ def get_tiles(x, y, tile_size, num_classes, categorical, shuffle, samples_file, 
         container = y_tiles[i:i+1,:,:,:]
         container[:] = y_train_conv[c[0]:c[2], c[1]:c[3],:]
     #deleting tiles that contain only nodata (if needed)
-    if nodata != None:
-        todelete = []
-        for i in range(len(y_tiles)):
-            if set(np.unique(y_tiles[i])) == {nodata}:
-                todelete.append(i)
+    if (y_nodata != None) or (y_nodata != None):
+        #getting y nodata tiles
+        ytodelete = []
+        if y_nodata != None:
+            for i in range(len(y_tiles)):
+                if set(np.unique(y_tiles[i])) == {y_nodata}:
+                    todelete.append(i)
+        #getting x nodata tiles
+        xtodelete = []
+        if x_nodata != None:           
+            for i in range(len(x_tiles)):
+                if set(np.unique(x_tiles[i])) == {x_nodata}:
+                    todelete.append(i)
+        todelete = list(set(xtodelete) & set(ytodelete))
         x_tiles = np.delete(x_tiles, todelete, axis = 0)
         y_tiles = np.delete(y_tiles, todelete, axis = 0)
         for index in sorted(todelete, reverse=True):
             del samples[index]
     if categorical == True:
+        y_nodata = categories = np.where(np.unique(y_tiles) == y_nodata)[0][0]
         y_tiles = tf.keras.utils.to_categorical(y_tiles, num_classes=num_classes, dtype = 'float32')
     #splitting data
     if len(split) > 1:
@@ -81,11 +91,14 @@ def get_tiles(x, y, tile_size, num_classes, categorical, shuffle, samples_file, 
                 #np.savez(x_outputs[i], x_bag)
                 with h5py.File(x_outputs[i], "w") as hf:
                     dset = f.create_dataset("data", data=x_bag, compression="gzip", compression_opts=9, shuffle=False)
+                    dset.attrs['nodata'] = x_nodata
             x_bags.append(x_bag)
             if y_outputs != None:
                 #np.savez(y_outputs[i], y_bag)
                 with h5py.File(y_outputs[i], "w") as hf:
                     dset = f.create_dataset("data", data=y_bag, compression="gzip", compression_opts=9, shuffle=False)
+                    dset.attrs['nodata'] = y_nodata
+                    dset.attrs['categorical'] = categorical
             y_bags.append(y_bag)
             #calculating start point for next bag
             j=j+round(split[i]/sum(split)*len(samples))
@@ -95,7 +108,7 @@ def get_tiles(x, y, tile_size, num_classes, categorical, shuffle, samples_file, 
     if samples_file != None:
         with open(samples_file, "wb") as fp:
             pickle.dump([tiles, samples], fp)
-    return x_bags, y_bags, tiles, samples
+    return x_bags, y_bags, tiles, samples, y_nodata
     
     
 def predict_map_from_tiles(x, y_true, model, categorical, tiles, samples, samples_file, output, nodata):

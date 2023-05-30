@@ -1,7 +1,7 @@
 Vegetation indices
 ==================
 .. automodule:: remote_sensing_processor
-   :members: normalized_difference
+   :members: calculate_index
    :show-inheritance:
 
 Table of supported indices and products:
