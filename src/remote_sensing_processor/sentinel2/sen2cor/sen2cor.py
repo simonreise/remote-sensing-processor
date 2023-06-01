@@ -4,9 +4,9 @@ from sys import platform
 import pathlib
 import subprocess
 import shutil
-import urllib.request
-import zipfile
-from glob import glob
+#import urllib.request
+#import zipfile
+#from glob import glob
 
 
 """#function for handling too long ways

@@ -10,7 +10,7 @@ These libraries are:
 - Shapely
 - Fiona
 - Geopandas
-- Tensorflow >= 2.3
+- Pytorch >= 1.10
 
 Most of them are installed when you install RSP, but you can have problems when installing GDAL, Rasterio and Fiona with pip. So it is recommended to install them manually.
 
@@ -20,13 +20,13 @@ Also you need a Sen2Cor to be installed to process Sentinel-2 data.
 
 ### Windows
 
-Before installing RSP in Windows you have to download and install binary wheels for [GDAL](http://www.lfd.uci.edu/~gohlke/pythonlibs/#gdal), [Rasterio](http://www.lfd.uci.edu/~gohlke/pythonlibs/#rasterio) and [Fiona](https://www.lfd.uci.edu/~gohlke/pythonlibs/#fiona) from Christoph Gohlke's website.
+Before installing RSP in Windows you have to download and install binary wheels for GDAL, Rasterio and Fiona from [Christoph Gohlke's github](https://github.com/cgohlke/geospatial-wheels).
 
 Then install downloaded wheels.
 ```
-pip install GDAL-3.4.3-cp39-cp39-win_amd64.whl
-pip install rasterio-1.2.10-cp39-cp39-win_amd64.whl
-pip install Fiona-1.8.21-cp39-cp39-win_amd64.whl
+pip install GDAL-3.6.4-cp39-cp39-win_amd64.whl
+pip install rasterio-1.3.6-cp39-cp39-win_amd64.whl
+pip install Fiona-1.9.3-cp39-cp39-win_amd64.whl
 ```
 Now you can install RSP.
 ```

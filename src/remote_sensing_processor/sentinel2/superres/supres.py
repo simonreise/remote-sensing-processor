@@ -1,16 +1,18 @@
-from __future__ import division
+#from __future__ import division
 
 import os
-import gc
+#import gc
 import pathlib
-import tensorflow as tf
+#import tensorflow as tf
 import numpy as np
-import urllib.request
+#import urllib.request
 #from tqdm import tqdm
-from tensorflow import keras
+#from tensorflow import keras
+import torch
 #from blockutils.logging import get_logger
 
-from remote_sensing_processor.sentinel2.superres.DSen2Net import s2model
+#from remote_sensing_processor.sentinel2.superres.DSen2Net import s2model
+from remote_sensing_processor.sentinel2.superres.DSen2Net import DSen2Net
 from remote_sensing_processor.sentinel2.superres.patches import get_test_patches, get_test_patches60, recompose_images
 
 #LOGGER = get_logger(__name__)
@@ -22,10 +24,15 @@ SCALE = 2000
 #MDL_PATH = "./weights/"
 MDL_PATH  = pathlib.Path(__file__).parents[0].joinpath('weights/') 
 
-L1C_MDL_PATH_20M_DSEN2 = MDL_PATH.joinpath("l1c_dsen2_20m_s2_038_lr_1e-04.hdf5")
-L1C_MDL_PATH_60M_DSEN2 = MDL_PATH.joinpath("l1c_dsen2_60m_s2_038_lr_1e-04.hdf5")
-L2A_MDL_PATH_20M_DSEN2 = MDL_PATH.joinpath("l2a_dsen2_20m_s2_038_lr_1e-04.hdf5")
-L2A_MDL_PATH_60M_DSEN2 = MDL_PATH.joinpath("l2a_dsen2_60m_s2_038_lr_1e-04.hdf5")
+#L1C_MDL_PATH_20M_DSEN2 = MDL_PATH.joinpath("l1c_dsen2_20m_s2_038_lr_1e-04.hdf5")
+#L1C_MDL_PATH_60M_DSEN2 = MDL_PATH.joinpath("l1c_dsen2_60m_s2_038_lr_1e-04.hdf5")
+#L2A_MDL_PATH_20M_DSEN2 = MDL_PATH.joinpath("l2a_dsen2_20m_s2_038_lr_1e-04.hdf5")
+#L2A_MDL_PATH_60M_DSEN2 = MDL_PATH.joinpath("l2a_dsen2_60m_s2_038_lr_1e-04.hdf5")
+
+L1C_MDL_PATH_20M_DSEN2 = MDL_PATH.joinpath("L1C20M.pt")
+L1C_MDL_PATH_60M_DSEN2 = MDL_PATH.joinpath("L1C60M.pt")
+L2A_MDL_PATH_20M_DSEN2 = MDL_PATH.joinpath("L2A20M.pt")
+L2A_MDL_PATH_60M_DSEN2 = MDL_PATH.joinpath("L2A60M.pt")
 
 '''
 if not os.path.exists(L1C_MDL_PATH_20M_DSEN2):
@@ -38,7 +45,7 @@ if not os.path.exists(L2A_MDL_PATH_60M_DSEN2):
     urllib.request.urlretrieve('https://github.com/up42/s2-superresolution/raw/master/weights/l2a_dsen2_60m_s2_038_lr_1e-04.hdf5', L2A_MDL_PATH_60M_DSEN2)
 '''    
 
-gpus = tf.config.list_physical_devices('GPU')
+"""gpus = tf.config.list_physical_devices('GPU')
 if gpus:
     try:
         # Currently, memory growth needs to be the same across GPUs
@@ -48,10 +55,9 @@ if gpus:
         #print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
     except RuntimeError as e:
         # Memory growth must be set before GPUs have been initialized
-        print(e)
+        print(e)"""
 
-STRATEGY = tf.distribute.MirroredStrategy()
-
+#STRATEGY = tf.distribute.MirroredStrategy()
 
 def dsen2_20(d10, d20, image_level):
     # Input to the funcion must be of shape:
@@ -127,20 +133,32 @@ class BatchGenerator:
 
 
 def _predict(test, model_filename, input_shape):
-    with STRATEGY.scope():
-        model = s2model(input_shape, num_layers=6, feature_size=128)
-        model.load_weights(model_filename)
+    #with STRATEGY.scope():
+        #model = s2model(input_shape, num_layers=6, feature_size=128)
+        #model.load_weights(model_filename)
         #model = keras.models.load_model(model_filename)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = DSen2Net(input_shape, num_layers=6, feature_size=128)
+    model.load_state_dict(torch.load(model_filename))
+    model.eval()
+    model.to(device)
     #print("Symbolic Model Created.")
     #print(f"Predicting using file: {model_filename}")
     first = True
     #for a_slice in tqdm(BatchGenerator(test)):
     for a_slice in BatchGenerator(test):
+        a_slice = list(a_slice)
+        for i in range(len(a_slice)):
+            a_slice[i] = torch.Tensor(a_slice[i]).to(device)
         if first:
             first = False
-            prediction = model.predict(a_slice, verbose=0)
+            #prediction = model.predict(a_slice, verbose=0)
+            with torch.inference_mode():
+                prediction = model(a_slice).cpu().numpy()
         else:
-            prediction = np.append(prediction, model.predict(a_slice, verbose=0), axis=0)
+            #prediction = np.append(prediction, model.predict(a_slice, verbose=0), axis=0)
+            with torch.inference_mode():
+                prediction = np.append(prediction, model(a_slice).cpu().numpy(), axis=0)
 
     #print("Predicted...")
     del model

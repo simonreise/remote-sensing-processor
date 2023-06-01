@@ -1,5 +1,5 @@
 import tensorflow as tf
-import tensorflow_addons as tfa
+#import tensorflow_addons as tfa
 from tensorflow.keras import layers, models, optimizers
 from tensorflow.keras.layers.experimental.preprocessing import Rescaling
 
@@ -210,7 +210,7 @@ class TransformerBlock(tf.keras.layers.Layer):
         self.att = MultiHeadSelfAttention(embed_dim, num_heads)
         self.mlp = tf.keras.Sequential(
             [
-                layers.Dense(mlp_dim, activation=tfa.activations.gelu),
+                layers.Dense(mlp_dim, activation=tf.keras.activations.gelu),
                 layers.Dropout(dropout),
                 layers.Dense(embed_dim),
                 layers.Dropout(dropout),
@@ -267,7 +267,7 @@ class VisionTransformer(tf.keras.Model):
         self.mlp_head = tf.keras.Sequential(
             [
                 layers.LayerNormalization(epsilon=1e-6),
-                layers.Dense(mlp_dim, activation=tfa.activations.gelu),
+                layers.Dense(mlp_dim, activation=tf.keras.activations.gelu),
                 layers.Dropout(dropout),
                 layers.Dense(num_classes),
             ]

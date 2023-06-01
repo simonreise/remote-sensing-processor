@@ -36,7 +36,7 @@ setuptools.setup(
 	package_dir = {"": "src"},
     packages = setuptools.find_packages(where="src"),
     setup_requires = ['cython', 'numpy>=1.17'],
-    install_requires = [ 'numpy>=1.17', 'h5py', 'tensorflow>=2.3', 'scikit-image', 'rasterio', 'pyproj', 'geopandas'],
+    install_requires = [ 'numpy>=1.17', 'h5py', 'pytorch>=1.10', 'scikit-image', 'rasterio', 'pyproj', 'geopandas'],
     python_requires = ">=3.7",
     include_package_data = True
 )

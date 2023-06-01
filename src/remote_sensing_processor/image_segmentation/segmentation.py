@@ -111,7 +111,7 @@ def create_hdf5_generator(x_in, y_in, batch_size, categorical, x_nodata, y_nodat
             #writing x nodata values to y and vice versa
             if x_nodata != None or y_nodata != None:
                 for i in range(len(x)):
-                    if categorical = True:
+                    if categorical == True:
                         if x_nodata != None:
                             x[i] = np.where(np.broadcast_to((y[i][:,:,y_nodata:y_nodata+1]), x[i].shape) == 1, x_nodata, x[i])
                         if y_nodata != None:    

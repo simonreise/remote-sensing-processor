@@ -2,7 +2,7 @@ import sys
 import os
 import gc
 import re
-import json
+#import json
 from collections import defaultdict
 #import subprocess
 
@@ -20,7 +20,7 @@ import pyproj as proj
 
 from remote_sensing_processor.sentinel2.superres.supres import dsen2_20, dsen2_60
 
-warnings.filterwarnings(action="ignore", category=FutureWarning)
+warnings.filterwarnings(action="ignore")
 
 # This code is adapted from this repository
 # https://github.com/lanha/DSen2 and is distributed under the same
