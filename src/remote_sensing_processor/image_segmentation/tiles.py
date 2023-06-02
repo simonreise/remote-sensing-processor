@@ -3,8 +3,8 @@ import h5py
 
 import rasterio as rio
 
-import tensorflow as tf
-from tensorflow import keras
+#import tensorflow as tf
+#from tensorflow import keras
 
 
 def get_tiles(x, y, tile_size, num_classes, categorical, shuffle, samples_file, split, x_outputs, y_outputs, dtype, x_nodata, y_nodata):
@@ -22,8 +22,7 @@ def get_tiles(x, y, tile_size, num_classes, categorical, shuffle, samples_file, 
     #reading y file
     with rio.open(y) as bnd:
         y_train_conv = bnd.read().astype(dtype)
-    y_train_conv = np.pad(y_train_conv, ((0,0),(0,shp_pad[0]),(0,shp_pad[1])), mode='constant', constant_values=0)
-    y_train_conv = np.transpose(y_train_conv, axes=[1, 2, 0])
+    y_train_conv = np.transpose(np.pad(y_train_conv, ((0,0),(0,shp_pad[0]),(0,shp_pad[1])), mode='constant', constant_values=0), axes=[1, 2, 0])
     #generating tiles
     tiles = []
     x1 = 0
@@ -75,8 +74,8 @@ def get_tiles(x, y, tile_size, num_classes, categorical, shuffle, samples_file, 
         for index in sorted(todelete, reverse=True):
             del samples[index]
     if categorical == True:
-        y_nodata = categories = np.where(np.unique(y_tiles) == y_nodata)[0][0]
-        y_tiles = tf.keras.utils.to_categorical(y_tiles, num_classes=num_classes, dtype = 'float32')
+        #y_nodata = np.where(np.unique(y_tiles) == y_nodata)[0][0]
+        y_tiles = to_categorical(y_tiles, num_classes=num_classes, dtype = dtype)
     #splitting data
     if len(split) > 1:
         x_bags = []
@@ -166,9 +165,25 @@ def predict_map_from_tiles(x, y_true, model, categorical, tiles, samples, sample
         nodata = nodata
     ) as outfile:
         outfile.write(y_pred, 1)
-        
-        
-        
+
+
+def to_categorical(y, num_classes=None, dtype="float32"):
+    y = np.array(y, dtype="int")
+    input_shape = y.shape
+    # Shrink the last dimension if the shape is (..., 1).
+    if input_shape and input_shape[-1] == 1 and len(input_shape) > 1:
+        input_shape = tuple(input_shape[:-1])
+    y = y.reshape(-1)
+    if not num_classes:
+        num_classes = np.max(y) + 1
+    n = y.shape[0]
+    categorical = np.zeros((n, num_classes), dtype=dtype)
+    categorical[np.arange(n), y] = 1
+    output_shape = input_shape + (num_classes,)
+    categorical = np.reshape(categorical, output_shape)
+    return categorical
+
+
 def shapes(i, tile_size):
     #getting shape, proj and transform of input image
     with rio.open(i) as f:

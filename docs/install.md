@@ -67,7 +67,7 @@ conda install -c moskovchenkomike remote-sensing-processor
 
 Sen2Cor is needed for Sentinel-2 atmospheric correction and conversion from L1 to L2.
 
-Required version is 2.11 for Windows and Linux and 2.9 for Mac OS
+Required version is 2.11 for Windows and Linux and 2.9 for Mac OS.
 
 You should install it via SNAP plugin installer. [Here](http://wiki.awf.forst.uni-goettingen.de/wiki/index.php/Installation_of_SNAP) is the instruction how you can do it.
 

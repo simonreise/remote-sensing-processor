@@ -83,7 +83,7 @@ To run RSP you need these packages to be installed:
 - Geopandas
 - Pytorch >= 1.10
 
-Also you need a Sen2Cor to be installed to process Sentinel-2 data.  You should install it via SNAP plugin installer. [Here](http://wiki.awf.forst.uni-goettingen.de/wiki/index.php/Installation_of_SNAP) is the instruction how you can do it.
+Also you need a Sen2Cor to be installed to process Sentinel-2 data. Required version is 2.11 for Windows and Linux and 2.9 for Mac OS. You should install it via SNAP plugin installer. [Here](http://wiki.awf.forst.uni-goettingen.de/wiki/index.php/Installation_of_SNAP) is the instruction how you can do it.
 
 ## Installation
 

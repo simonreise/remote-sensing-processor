@@ -9,6 +9,7 @@ import numpy as np
 #from tqdm import tqdm
 #from tensorflow import keras
 import torch
+from torch.utils.data import TensorDataset, DataLoader
 #from blockutils.logging import get_logger
 
 #from remote_sensing_processor.sentinel2.superres.DSen2Net import s2model
@@ -108,7 +109,7 @@ def dsen2_60(d10, d20, d60, image_level):
     return images
 
 
-class BatchGenerator:
+"""class BatchGenerator:
     def __init__(self, dataset_list, batch_size=32):
         self.batch_size = batch_size
         self.n_batches = dataset_list[0].shape[0] // batch_size
@@ -129,7 +130,7 @@ class BatchGenerator:
         return next(self.iter)
 
     def __iter__(self):
-        return self
+        return self"""
 
 
 def _predict(test, model_filename, input_shape):
@@ -146,6 +147,22 @@ def _predict(test, model_filename, input_shape):
     #print(f"Predicting using file: {model_filename}")
     first = True
     #for a_slice in tqdm(BatchGenerator(test)):
+    for i in range(len(test)):
+        test[i] = torch.Tensor(test[i])
+    ds = TensorDataset(*test)
+    loader = DataLoader(ds, batch_size=32, num_workers=8, pin_memory=True)
+    with torch.inference_mode():
+        for data in loader:
+            data = list(data)
+            for i in range(len(data)):
+                data[i] = data[i].to(device)
+            if first:
+                first = False
+                prediction = model(data).cpu().numpy()
+            else:
+                prediction = np.append(prediction, model(data).cpu().numpy(), axis=0)
+        
+    """ #old bad realisation of predict loop
     for a_slice in BatchGenerator(test):
         a_slice = list(a_slice)
         for i in range(len(a_slice)):
@@ -158,7 +175,7 @@ def _predict(test, model_filename, input_shape):
         else:
             #prediction = np.append(prediction, model.predict(a_slice, verbose=0), axis=0)
             with torch.inference_mode():
-                prediction = np.append(prediction, model(a_slice).cpu().numpy(), axis=0)
+                prediction = np.append(prediction, model(a_slice).cpu().numpy(), axis=0)"""
 
     #print("Predicted...")
     del model
