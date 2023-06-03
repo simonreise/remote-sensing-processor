@@ -16,46 +16,51 @@ def get_type(path):
         t = 'Sentinel2_up' #sentinel2 without processing
     elif re.search('MTD_MSIL1C.xml', path) != None:
         t = 'Sentinel2_up' #sentinel2 without processing
-    elif re.search('L\w\d\d', path).group(0) in ['LM05', 'LM04', 'LM03', 'LM02', 'LM01']:
-        if len(sorted(bands)[0]) <= 3:
-            t = 'Landsat1_p' #landsat1 processed in RSP
-        else:
-            if re.search('L\d\w\w', path).group(0) == 'L1TP':
-                t = 'Landsat1_up_l1' #landsat1 without processing level 1
-            elif re.search('L\d\w\w', path).group(0) == 'L2SP':
-                t = 'Landsat1_up_l2' #landsat1 without processing level 2
+    elif re.search('L\w\d\d', path):
+        if re.search('L\w\d\d', path).group(0) in ['LM05', 'LM04', 'LM03', 'LM02', 'LM01']:
+            if len(sorted(bands)[0]) <= 3:
+                t = 'Landsat1_p' #landsat1 processed in RSP
             else:
-                t = 'Undefined_Landsat1'
-    elif re.search('L\w\d\d', path).group(0) in ['LT05', 'LT04']:
-        if len(sorted(bands)[0]) <= 3:
-            t = 'Landsat5_p' #landsat5 processed in RSP
-        else:
-            if re.search('L\d\w\w', path).group(0) == 'L1TP':
-                t = 'Landsat5_up_l1' #landsat5 without processing level 1
-            elif re.search('L\d\w\w', path).group(0) == 'L2SP':
-                t = 'Landsat5_up_l2' #landsat5 without processing level 2
+                if re.search('L\d\w\w', path):
+                    if re.search('L\d\w\w', path).group(0) == 'L1TP':
+                        t = 'Landsat1_up_l1' #landsat1 without processing level 1
+                    elif re.search('L\d\w\w', path).group(0) == 'L2SP':
+                        t = 'Landsat1_up_l2' #landsat1 without processing level 2
+                else:
+                    t = 'Undefined_Landsat1'
+        elif re.search('L\w\d\d', path).group(0) in ['LT05', 'LT04']:
+            if len(sorted(bands)[0]) <= 3:
+                t = 'Landsat5_p' #landsat5 processed in RSP
             else:
-                t = 'Undefined_Landsat5'
-    elif re.search('L\w\d\d', path).group(0) == 'LE07':
-        if len(sorted(bands)[0]) <= 3:
-            t = 'Landsat7_p' #landsat7 processed in RSP
-        else:
-            if re.search('L\d\w\w', path).group(0) == 'L1TP':
-                t = 'Landsat7_up_l1' #landsat7 without processing level 1
-            elif re.search('L\d\w\w', path).group(0) == 'L2SP':
-                t = 'Landsat7_up_l2' #landsat7 without processing level 2
+                if re.search('L\d\w\w', path):
+                    if re.search('L\d\w\w', path).group(0) == 'L1TP':
+                        t = 'Landsat5_up_l1' #landsat5 without processing level 1
+                    elif re.search('L\d\w\w', path).group(0) == 'L2SP':
+                        t = 'Landsat5_up_l2' #landsat5 without processing level 2
+                else:
+                    t = 'Undefined_Landsat5'
+        elif re.search('L\w\d\d', path).group(0) == 'LE07':
+            if len(sorted(bands)[0]) <= 3:
+                t = 'Landsat7_p' #landsat7 processed in RSP
             else:
-                t = 'Undefined_Landsat7'
-    elif re.search('L\w\d\d', path).group(0) in ['LC08', 'LC09']:
-        if len(sorted(bands)[0]) <= 3:
-            t = 'Landsat8_p' #landsat8 processed in RSP
-        else:
-            if re.search('L\d\w\w', path).group(0) == 'L1TP':
-                t = 'Landsat8_up_l1' #landsat8 without processing level 1
-            elif re.search('L\d\w\w', path).group(0) == 'L2SP':
-                t = 'Landsat8_up_l2' #landsat8 without processing level 2
+                if re.search('L\d\w\w', path):
+                    if re.search('L\d\w\w', path).group(0) == 'L1TP':
+                        t = 'Landsat7_up_l1' #landsat7 without processing level 1
+                    elif re.search('L\d\w\w', path).group(0) == 'L2SP':
+                        t = 'Landsat7_up_l2' #landsat7 without processing level 2
+                else:
+                    t = 'Undefined_Landsat7'
+        elif re.search('L\w\d\d', path).group(0) in ['LC08', 'LC09']:
+            if len(sorted(bands)[0]) <= 3:
+                t = 'Landsat8_p' #landsat8 processed in RSP
             else:
-                t = 'Undefined_Landsat8'
+                if re.search('L\d\w\w', path):
+                    if re.search('L\d\w\w', path).group(0) == 'L1TP':
+                        t = 'Landsat8_up_l1' #landsat8 without processing level 1
+                    elif re.search('L\d\w\w', path).group(0) == 'L2SP':
+                        t = 'Landsat8_up_l2' #landsat8 without processing level 2
+                else:
+                    t = 'Undefined_Landsat8'
     else:
         t = 'Undefined'
     return t

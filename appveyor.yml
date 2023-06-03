@@ -4,10 +4,6 @@
 environment:
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
-      PYTHON: "3.7"
-      PYTHONPATH: "C:\\Python37-x64"
-      TOXENV: python3.7
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       PYTHON: "3.8"
       PYTHONPATH: "C:\\Python38-x64"
       TOXENV: python3.8
@@ -20,39 +16,19 @@ environment:
       PYTHONPATH: "C:\\Python310-x64"
       TOXENV: python3.10
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      PYTHON: "3.7"
-      TOXENV: python3.7
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
       PYTHON: "3.8"
       TOXENV: python3.8
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
       PYTHON: "3.9"
       TOXENV: python3.9
-#    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-#      PYTHON: "3.10"
-#      TOXENV: python3.10
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+      PYTHON: "3.10"
+      TOXENV: python3.10
 stack: python %PYTHON%
 
 build: false
 
 for:
--
-  matrix:
-    only:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
-        PYTHON: "3.7"
-        PYTHONPATH: "C:\\Python37-x64"
-        TOXENV: python3.7
-    
-  install:
-    - "SET PATH=%PYTHONPATH%;%PYTHONPATH%\\Scripts;%PATH%"
-    - "%PYTHONPATH%\\python.exe -m pip install https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/W73491bhV-Cbsg/GDAL-3.4.2-cp37-cp37m-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/W73491bhV-Cbsg/rasterio-1.2.10-cp37-cp37m-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/W73491bhV-Cbsg/Fiona-1.8.21-cp37-cp37m-win_amd64.whl"
-    - "%PYTHONPATH%\\python.exe -m pip install tox"
-  test_script:
-    - "%PYTHONPATH%\\python.exe -m tox"
-
 -
   matrix:
     only:
@@ -102,21 +78,6 @@ for:
     - "%PYTHONPATH%\\python.exe -m pip install tox"
   test_script:
     - "%PYTHONPATH%\\python.exe -m tox"
-    
--
-  matrix:
-    only:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-        PYTHON: "3.7"
-        TOXENV: python3.7
-  install:
-    - sh: sudo add-apt-repository ppa:ubuntugis/ppa
-    - sh: sudo apt-get update
-    - sh: sudo apt-get -y install python-numpy gdal-bin libgdal-dev
-    - sh: sudo apt-get -y install python3-pip
-    - pip3 install tox
-  test_script:
-    - sh: python3 -m tox
 
 -
   matrix:
