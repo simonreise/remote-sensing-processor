@@ -135,7 +135,7 @@ Here we define x data (that will be used by CNN as input training data) and y da
 ```
 We will cut Sentinel (x) and landcover (y) data to 256x256 px tiles (`tile_size = 256`). To have lower bias we will random shuffe tiles (`shuffle = True`). To evaluate model performance on a data that was not used in model training we will split data into train, validation and test subsets in proportion 3 to 1 to 1 (`split = [3, 1, 1]`) and ignoring tiles with only nodata values (`nodata = -1`). Landcover data have 10 classes, and one class is for nodata. We need to define number of classes to convert landcover data to categorical format (`num_classes = 11`).
 ```
->>> x_i, y_i, tiles, samples = rsp.generate_tiles(x, y, num_classes = 11, tile_size = 256, shuffle = True, split = [3, 1, 1], nodata = -1)
+>>> x_i, y_i, tiles, samples = rsp.generate_segmentation_tiles(x, y, num_classes = 11, tile_size = 256, shuffle = True, split = [3, 1, 1], nodata = -1)
 >>> x_train = x_i[0]
 >>> x_val = x_i[1]
 >>> x_test = x_i[2]

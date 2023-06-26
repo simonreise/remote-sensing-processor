@@ -1,6 +1,6 @@
 # Installation
 
-RSP needs python >= 3.7 to run and depends on several python libraries.
+RSP needs python >= 3.8 to run and depends on several python libraries.
 
 These libraries are:
 - Numpy

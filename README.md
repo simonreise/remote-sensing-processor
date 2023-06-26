@@ -48,32 +48,30 @@ mosaic_landcover = rsp.mosaic(lcs, '/home/rsp_test/mosaics/landcover/', clipper 
 # and ignoring tiles with only nodata values
 x = mosaic_sentinel
 y = mosaic_landcover[0]
-x_i, y_i, tiles, samples = rsp.generate_tiles(x, y, num_classes = 11, tile_size = 256, shuffle = True, split = [3, 1, 1], nodata = -1)
+x_i, y_i, tiles, samples, classification, num_classes, classes, x_nodata, y_nodata = rsp.segmentation.generate_tiles(x, y, tile_size = 256, shuffle = True, split = [3, 1, 1])
 x_train = x_i[0]
 x_val = x_i[1]
 x_test = x_i[2]
 y_train = y_i[0]
 y_val = y_i[1]
 y_test = y_i[2]
+x_train = x_i[0]
 
-# training U-Net that predicts landcover class based on sentinel imagery
-from tensorflow import keras
-# =======================
-# here must be u-net code
-# =======================
-model.fit(x_train, y_train, batch_size = 16, epochs = 20, validation_data = (x_val, y_val), callbacks = callbacks)
+# training UperNet that predicts landcover class based on sentinel imagery
+model = rsp.segmentation.train(x_train, y_train, x_val, y_val, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 10, classification = classification, num_classes = num_classes, x_nodata = x_nodata, y_nodata = y_nodata)
+
 # testing_model
-model.evaluate(x_test, y_test)
+rsp.segmentation.test(x_test, y_test, model = model)
 
-# mapping landcover based on predictions of our U-Net
+# mapping landcover based on predictions of our UperNet
 y_reference = '/home/rsp_test/mosaics/landcover/landcover01_mosaic.tif'
 output_map = '/home/rsp_test/prediction.tif'
-rsp.generate_map([x_train, x_val, x_test], y_reference, model, output_map, tiles = tiles, samples = samples)
+rsp.segmentation.generate_map([x_train, x_val, x_test], y_reference, model, output_map, tiles = tiles, samples = samples)
 ```
 
 ## Requirements
 To run RSP you need these packages to be installed:
-- Python >= 3.7
+- Python >= 3.8
 - Numpy
 - GDAL
 - Rasterio
@@ -82,6 +80,7 @@ To run RSP you need these packages to be installed:
 - Fiona
 - Geopandas
 - Pytorch >= 1.10
+- Torchvision >= 0.10
 
 Also you need a Sen2Cor to be installed to process Sentinel-2 data. Required version is 2.11 for Windows and Linux and 2.9 for Mac OS. You should install it via SNAP plugin installer. [Here](http://wiki.awf.forst.uni-goettingen.de/wiki/index.php/Installation_of_SNAP) is the instruction how you can do it.
 

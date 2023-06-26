@@ -138,7 +138,13 @@ def _predict(test, model_filename, input_shape):
         #model = s2model(input_shape, num_layers=6, feature_size=128)
         #model.load_weights(model_filename)
         #model = keras.models.load_model(model_filename)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = (
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps"
+        if torch.backends.mps.is_available()
+        else "cpu"
+    )
     model = DSen2Net(input_shape, num_layers=6, feature_size=128)
     model.load_state_dict(torch.load(model_filename))
     model.eval()

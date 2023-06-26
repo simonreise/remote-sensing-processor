@@ -10,7 +10,7 @@ Another key idea of RSP is easy pipeline buildings, where outputs from one funct
 ```
 output_sentinels = rsp.sentinel2(sentinel2_imgs)
 x = rsp.mosaic(output_sentinels, '/home/rsp_test/mosaics/sentinel/')
-x_i, y_i, tiles, samples = rsp.generate_tiles(x, y)
+x_i, y_i, tiles, samples = rsp.segmentation.generate_tiles(x, y)
 ```
 
 ## FAQ
@@ -25,7 +25,7 @@ With `mosaic` you can merge several rasters (or Sentinel-2 or Landsat products) 
 
 With `calculate_index` you can calculate normalized difference indexes like NDVI.
 
-With `generate_tiles` you can cut rasters into tiles that can be used e.g. for convolutional neural network (CNN) training and with `generate_map` you can create map from predictions of pre-trained CNN.
+With `segmentation.generate_tiles` you can cut rasters into tiles that can be used e.g. for convolutional neural network (CNN) training and with `segmentation.generate_map` you can create map from predictions of pre-trained CNN.
 
 ### Are you planning to add preprocessing of other imagery types (Sentinel-1, MODIS, GEOS etc.)?
 

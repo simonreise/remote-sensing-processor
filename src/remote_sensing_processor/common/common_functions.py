@@ -59,6 +59,8 @@ def get_resampling(resample):
         resample = Resampling.sum
     elif resample == 'rms':
         resample = Resampling.rms
+    elif resample == 'nearest':
+        resample = Resampling.nearest
     else:
         resample = Resampling.nearest
     return resample

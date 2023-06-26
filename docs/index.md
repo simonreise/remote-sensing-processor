@@ -37,7 +37,7 @@ mosaic_landcover = rsp.mosaic(lcs, '/home/rsp_test/mosaics/landcover/', clipper 
 # and ignoring tiles with only nodata values
 x = mosaic_sentinel
 y = mosaic_landcover[0]
-x_i, y_i, tiles, samples = rsp.generate_tiles(x, y, num_classes = 11, tile_size = 256, shuffle = True, split = [3, 1, 1], nodata = -1)
+x_i, y_i, tiles, samples = rsp.segmentation.generate_tiles(x, y, num_classes = 11, tile_size = 256, shuffle = True, split = [3, 1, 1], nodata = -1)
 x_train = x_i[0]
 x_val = x_i[1]
 x_test = x_i[2]
@@ -57,7 +57,7 @@ model.evaluate(x_test, y_test)
 # mapping landcover based on predictions of our U-Net
 y_reference = '/home/rsp_test/mosaics/landcover/landcover01_mosaic.tif'
 output_map = '/home/rsp_test/prediction.tif'
-rsp.generate_map([x_train, x_val, x_test], y_reference, model, output_map, tiles = tiles, samples = samples)
+rsp.segmentation.generate_map([x_train, x_val, x_test], y_reference, model, output_map, tiles = tiles, samples = samples)
 ```
 
 ```{eval-rst}

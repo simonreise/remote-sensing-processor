@@ -15,13 +15,14 @@ import rasterio.mask
 from rasterio.io import MemoryFile
 from rasterio.enums import Resampling
 
-from remote_sensing_processor.common.common_functions import convert_3D_2D
+from remote_sensing_processor.common.common_functions import convert_3D_2D, get_resampling
 
 from remote_sensing_processor.imagery_types.types import get_type
 
 
-def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clipper, crs, nodata, reference_raster, mb, keep_all_channels):
+def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clipper, crs, nodata, reference_raster, resample, mb, keep_all_channels):
     paths = []
+    resample = get_resampling(resample)
     if reference_raster != None:
         with rio.open(reference_raster) as r:
             crs = r.crs
@@ -36,7 +37,7 @@ def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clipper, crs, no
                 pathfile = rio.open(path)
                 pathfile, crs = check_crs(pathfile = pathfile, crs = crs, nodata = nodata)
                 files.append(pathfile)
-            path = mosaic_process(files = files, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster, band = band)
+            path = mosaic_process(files = files, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster, resample = resample, band = band)
             paths.append(path)
             print('Processing band ' + band + ' is completed')
     else:
@@ -46,7 +47,7 @@ def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clipper, crs, no
             pathfile, crs = check_crs(pathfile = pathfile, crs = crs,  nodata = nodata)
             files.append(pathfile)
         band = os.path.basename(inputs[0])[:-4]+'_mosaic'
-        path = mosaic_process(files = files, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster, band = band)
+        path = mosaic_process(files = files, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster,  resample = resample, band = band)
         paths.append(path)
         print('Processing completed')
     return paths
@@ -91,7 +92,7 @@ def check_crs(pathfile, crs, nodata):
         return pathfile, crs
 
 
-def mosaic_process(files, output_dir, fill_nodata, fill_distance, clipper, crs, nodata, reference_raster, band):
+def mosaic_process(files, output_dir, fill_nodata, fill_distance, clipper, crs, nodata, reference_raster, resample, band):
     #merging files
     final, final_trans = rio.merge.merge(files, method = 'last', nodata = nodata)
     #filling nodata
@@ -135,7 +136,7 @@ def mosaic_process(files, output_dir, fill_nodata, fill_distance, clipper, crs, 
             dst_crs=ref.crs,
             dst_nodata = nodata,
             num_threads = 4,
-            resampling=Resampling.average)
+            resampling=resample)
         final = f1
         final_trans = ref.transform
         crs = ref.crs
