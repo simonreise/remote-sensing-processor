@@ -30,6 +30,7 @@ def nd(name, b1, b2, folder = None):
         else:
             with np.errstate(divide='ignore', invalid = 'ignore'):
                 final = (band1.astype('float64') - band2.astype('float64')) / (band1.astype('float64') + band2.astype('float64'))
+            final = np.nan_to_num(final, nan = -1)
             if folder == None:
                 savefolder = os.path.dirname(b1)
             else:
@@ -46,7 +47,7 @@ def nd(name, b1, b2, folder = None):
                 crs=meta1['crs'],
                 transform=meta1['transform'],
                 BIGTIFF='YES',
-                nodata = meta1['nodata']
+                nodata = -1
             ) as outfile:
                 outfile.write(final)
     except RuntimeError as e:

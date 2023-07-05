@@ -36,6 +36,8 @@ List of available models
 
 You can fine-tune pre-trained model by defining `weights`. For models from Transformers you can get available weights from [Huggingface Hub](https://huggingface.co/models?pipeline_tag=image-segmentation&sort=downloads), for Torchvision models you just set `weights = True`.
 
+`rsp.segmentation.train` also saves CSV and Tensorboard logs in directory where checkpoint file is saved.
+
 [^1]: These models can freeze forever on one of first steps. It happens due to some confusion matrix-based metrics related error. Try to restart training with `less_metrics = True`.
 
 [^2]: These models showed very poor performance on tests. They only converged slowly with `lr=1e-5`, but much more slow than other models. I do not recommend using them.

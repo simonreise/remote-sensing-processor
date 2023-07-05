@@ -2,13 +2,16 @@ import os
 import collections
 import numpy as np
 import h5py
+import joblib
+
+import sklearn.metrics
 
 import torch
 import torchmetrics
 import transformers
 import lightning as l
 
-from remote_sensing_processor.segmentation.models import load_model
+from remote_sensing_processor.segmentation.models import load_model, load_sklearn_model
 
 
 def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoint, weights, model_file, epochs, batch_size, classification, num_classes, x_nodata, y_nodata, less_metrics, lr):
@@ -42,39 +45,77 @@ def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoi
             else:
                 num_classes = 1
     num_classes = int(num_classes)
-    #loading model
-    if checkpoint != None:
-        model = Model.load_from_checkpoint(checkpoint, input_shape = input_shape, input_dims = input_dims, num_classes = num_classes, classification = classification, y_nodata = y_nodata, lr = lr)
-    else:
-        model = Model(model, backbone, weights, input_shape, input_dims, num_classes, classification, y_nodata, less_metrics, lr)
-    #setting up data sets generators
-    ds_train = H5Dataset(x_train, y_train)
-    ds_val = H5Dataset(x_val, y_val)
-    train_dataloader = torch.utils.data.DataLoader(ds_train, batch_size=batch_size, pin_memory=True)
-    val_daloader = torch.utils.data.DataLoader(ds_val, batch_size=batch_size, pin_memory=True)
-    #training
-    checkpoint_callback = l.pytorch.callbacks.ModelCheckpoint(
-        save_top_k=1,
-        monitor="val_loss",
-        mode="min",
-        dirpath=os.path.dirname(model_file),
-        filename=os.path.basename(os.path.splitext(model_file)[0]),
-    )
-    tb_logger = l.pytorch.loggers.TensorBoardLogger(save_dir=os.path.join(os.path.dirname(model_file), 'logs' , 'tensorboard'))
-    csv_logger = l.pytorch.loggers.CSVLogger(save_dir=os.path.join(os.path.dirname(model_file), 'logs' , 'csv'))
-    trainer = l.Trainer(max_epochs=epochs, callbacks=[checkpoint_callback], logger=[tb_logger, csv_logger])
-    trainer.fit(model, train_dataloader, val_daloader)
+    if model in ['BEiT', 'ConditionalDETR', 'Data2Vec', 'DETR', 'DPT', 'Mask2Former', 'MaskFormer', 'MobileNetV2', 'MobileViT', 'MobileViTV2', 'OneFormer', 'SegFormer', 'UperNet', 'DeepLabV3', 'FCN', 'LRASPP']:
+        #deep learning pytorch models
+        #loading model
+        if checkpoint != None:
+            model = Model.load_from_checkpoint(checkpoint, input_shape = input_shape, input_dims = input_dims, num_classes = num_classes, classification = classification, y_nodata = y_nodata, lr = lr)
+        else:
+            model = Model(model, backbone, weights, input_shape, input_dims, num_classes, classification, y_nodata, less_metrics, lr)
+        #setting up data sets generators
+        ds_train = H5Dataset(x_train, y_train)
+        if x_val != None and y_val != None:
+            ds_val = H5Dataset(x_val, y_val)
+        train_dataloader = torch.utils.data.DataLoader(ds_train, batch_size=batch_size, pin_memory=True)
+        if x_val != None and y_val != None:
+            val_daloader = torch.utils.data.DataLoader(ds_val, batch_size=batch_size, pin_memory=True)
+        #training
+        checkpoint_callback = l.pytorch.callbacks.ModelCheckpoint(
+            save_top_k=1,
+            monitor="val_loss",
+            mode="min",
+            dirpath=os.path.dirname(model_file),
+            filename=os.path.basename(os.path.splitext(model_file)[0]),
+        )
+        tb_logger = l.pytorch.loggers.TensorBoardLogger(save_dir=os.path.join(os.path.dirname(model_file), 'logs' , 'tensorboard'))
+        csv_logger = l.pytorch.loggers.CSVLogger(save_dir=os.path.join(os.path.dirname(model_file), 'logs' , 'csv'))
+        trainer = l.Trainer(max_epochs=epochs, callbacks=[checkpoint_callback], logger=[tb_logger, csv_logger])
+        if x_val != None and y_val != None:
+            trainer.fit(model, train_dataloader, val_daloader)
+        else:
+            trainer.fit(model, train_dataloader)
+    elif model in ["Nearest Neighbors", "Logistic Regression", "SVM", "Gaussian Process", "Decision Tree", "Random Forest", "Gradient Boosting", "Multilayer Perceptron", "AdaBoost", "Naive Bayes", "QDA", "Ridge", "Lasso", "ElasticNet"]:
+        #loading train datasets
+        x_train = sklearn_load_dataset(x_train, classification)
+        y_train = sklearn_load_dataset(y_train, classification)
+        #loading val datasets
+        x_val = sklearn_load_dataset(x_val, classification)
+        y_val = sklearn_load_dataset(y_val, classification)
+        if checkpoint != None:
+            model = joblib.load(checkpoint)
+            if model.model_name in ["Random Forest", "Gradient Boosting"]:
+                model.model.n_estimators += 50
+        else:
+            model = SklearnModel(model, backbone, classification, epochs)
+        model.fit(x_train, y_train)
+        model.test(x_val, y_val)
+        try:
+            joblib.dump(model, model_file, compress=9)
+        except:
+            print('Error while saving model, check if enough free space is available.')
     return model
 
     
 def segmentation_test(x_test, y_test, model, batch_size):
     #loading model
     if isinstance(model, str):
-        model = Model.load_from_checkpoint(model)
-    ds_test = H5Dataset(x_test, y_test)
-    test_dataloader = torch.utils.data.DataLoader(ds_test, batch_size=batch_size, pin_memory=True)
-    trainer = l.Trainer()
-    trainer.test(model, dataloaders=test_dataloader)
+        if '.ckpt' in model:
+            model = Model.load_from_checkpoint(model)
+        elif '.joblib' in model:
+            model = joblib.load(model)
+    if model.model_name in ['BEiT', 'ConditionalDETR', 'Data2Vec', 'DETR', 'DPT', 'Mask2Former', 'MaskFormer', 'MobileNetV2', 'MobileViT', 'MobileViTV2', 'OneFormer', 'SegFormer', 'UperNet', 'DeepLabV3', 'FCN', 'LRASPP']:
+        #neural networks
+        ds_test = H5Dataset(x_test, y_test)
+        test_dataloader = torch.utils.data.DataLoader(ds_test, batch_size=batch_size, pin_memory=True)
+        trainer = l.Trainer()
+        trainer.test(model, dataloaders=test_dataloader)
+    elif model.model_name in ["Nearest Neighbors", "Logistic Regression", "SVM", "Gaussian Process", "Decision Tree", "Random Forest", "Gradient Boosting", "Multilayer Perceptron", "AdaBoost", "Naive Bayes", "QDA", "Ridge", "Lasso", "ElasticNet"]:
+        #sklearn models
+        classification = model.classification
+        #loading test datasets
+        x_test = sklearn_load_dataset(x_test, classification)
+        y_test = sklearn_load_dataset(y_test, classification)
+        model.test(x_test, y_test)
     
 
 class H5Dataset(torch.utils.data.Dataset):
@@ -112,7 +153,9 @@ class H5Dataset(torch.utils.data.Dataset):
         if self.y_dataset is None and self.y_file_path != None:
             self.y_dataset = h5py.File(self.y_file_path, 'r')["data"]
         x = self.x_dataset[index]
+        #x = (x / 15000)
         y = self.y_dataset[index]
+        #y = (y + 1)/(1+1)
         """if self.nfn and self.x_nodata != None and self.y_nodata != None:
             if self.categorical == True:
                 x = np.where(np.broadcast_to(y[self.y_nodata], x.shape) == 1, self.x_nodata, x)  
@@ -169,14 +212,14 @@ class Model(l.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         
+        self.model_name = model
         self.model = load_model(model, backbone, weights, input_shape, input_dims, num_classes)
         self.classification = classification
         self.less_metrics = less_metrics
         self.num_classes = num_classes
+        self.y_nodata = y_nodata
         if classification:
             self.loss_fn = torch.nn.CrossEntropyLoss(ignore_index = int(y_nodata))
-        else:
-            self.loss_fn = torch.nn.MSELoss()
         self.lr = lr
     
     def forward(self, x):
@@ -201,7 +244,13 @@ class Model(l.LightningModule):
         pred = self.forward(x)
         y = self.ytype(y)
         pred = self.process_output(pred, x)
-        loss = self.loss_fn(pred, y)
+        #print(torch.unique(torch.isnan(pred)))
+        #print(y.min(), y.max())
+        #print(pred.min(), pred.max())
+        if self.classification:
+            loss = self.loss_fn(pred, y)
+        else:
+            loss = self.mse_loss(pred.squeeze(), y.squeeze(), ignore_index = self.y_nodata)
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar = True)
         if self.classification:
             #commented metrics somehow make detr freeze after first steps, hope this is temporary fix
@@ -218,8 +267,8 @@ class Model(l.LightningModule):
                 self.log('train_auroc', torchmetrics.functional.auroc(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
                 self.log('train_iou', torchmetrics.functional.jaccard_index(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
         else:
-            self.log('train_r2', torchmetrics.functional.r2_score(pred, y), on_step=True, on_epoch=True, prog_bar = True)
-            self.log('train_kendall', torchmetrics.functional.kendall_rank_corrcoef(pred, y), on_step=True, on_epoch=True, prog_bar = True)
+            self.log('train_r2', torchmetrics.functional.r2_score(torch.reshape(torch.squeeze(pred), (pred.shape[0], -1)), torch.reshape(y, (y.shape[0], -1))), on_step=True, on_epoch=True, prog_bar = True)
+            self.log('train_kendall', torchmetrics.functional.kendall_rank_corrcoef(torch.reshape(torch.squeeze(pred), (pred.shape[0], -1)), torch.reshape(y, (y.shape[0], -1))).mean(), on_step=True, on_epoch=True, prog_bar = True)
         return loss
         
     def validation_step(self, batch, batch_idx):
@@ -227,7 +276,10 @@ class Model(l.LightningModule):
         pred = self.forward(x)
         y = self.ytype(y)
         pred = self.process_output(pred, x)
-        loss = self.loss_fn(pred, y)
+        if self.classification:
+            loss = self.loss_fn(pred, y)
+        else:
+            loss = self.mse_loss(pred.squeeze(), y.squeeze(), ignore_index = self.y_nodata)
         self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar = True)
         if self.classification:
             if self.less_metrics:
@@ -243,15 +295,18 @@ class Model(l.LightningModule):
                 self.log('val_auroc', torchmetrics.functional.auroc(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
                 self.log('val_iou', torchmetrics.functional.jaccard_index(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
         else:
-            self.log('val_r2', torchmetrics.functional.r2_score(pred, y), on_step=True, on_epoch=True, prog_bar = True)
-            self.log('val_kendall', torchmetrics.functional.kendall_rank_corrcoef(pred, y), on_step=True, on_epoch=True, prog_bar = True)
+            self.log('val_r2', torchmetrics.functional.r2_score(torch.reshape(torch.squeeze(pred), (pred.shape[0], -1)), torch.reshape(y, (y.shape[0], -1))), on_step=True, on_epoch=True, prog_bar = True)
+            self.log('val_kendall', torchmetrics.functional.kendall_rank_corrcoef(torch.reshape(torch.squeeze(pred), (pred.shape[0], -1)), torch.reshape(y, (y.shape[0], -1))).mean(), on_step=True, on_epoch=True, prog_bar = True)
     
     def test_step(self, batch, batch_idx):
         x, y = batch
         pred = self.forward(x)
         y = self.ytype(y)
         pred = self.process_output(pred, x)
-        loss = self.loss_fn(pred, y)
+        if self.classification:
+            loss = self.loss_fn(pred, y)
+        else:
+            loss = self.mse_loss(pred.squeeze(), y.squeeze(), ignore_index = self.y_nodata)
         self.log("test_loss", loss, on_step=True, on_epoch=True, prog_bar = True)
         if self.classification:
             # commented metrics somehow make detr freeze after first steps, hope this is temporary fix
@@ -268,8 +323,8 @@ class Model(l.LightningModule):
                 self.log('test_auroc', torchmetrics.functional.auroc(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
                 self.log('test_iou', torchmetrics.functional.jaccard_index(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
         else:
-            self.log('test_r2', torchmetrics.functional.r2_score(pred, y), on_step=True, on_epoch=True, prog_bar = True)
-            self.log('test_kendall', torchmetrics.functional.kendall_rank_corrcoef(pred, y), on_step=True, on_epoch=True, prog_bar = True)
+            self.log('test_r2', torchmetrics.functional.r2_score(torch.reshape(torch.squeeze(pred), (pred.shape[0], -1)), torch.reshape(y, (y.shape[0], -1))), on_step=True, on_epoch=True, prog_bar = True)
+            self.log('test_kendall', torchmetrics.functional.kendall_rank_corrcoef(torch.reshape(torch.squeeze(pred), (pred.shape[0], -1)), torch.reshape(y, (y.shape[0], -1))).mean(), on_step=True, on_epoch=True, prog_bar = True)
     
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         x = batch
@@ -277,6 +332,8 @@ class Model(l.LightningModule):
         pred = self.process_output(pred, x)
         if self.classification:
             pred = pred.argmax(dim = 1)
+        else:
+            pred = pred.squeeze()
         return pred
     
     def process_output(self, pred, x):
@@ -352,7 +409,59 @@ class Model(l.LightningModule):
             y = y.float()
         return y
     
+    def mse_loss(self, pred, target, ignore_index = 0.0, reduction = 'mean'):
+        mask = target == ignore_index
+        out = (pred[~mask]-target[~mask])**2
+        if reduction == "mean":
+            return out.mean()
+        elif reduction == "None":
+            return out
+    
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr)
         return optimizer
         
+class SklearnModel:
+    def __init__(self, model, backbone, classification, epochs):
+        self.classification = classification
+        self.model_name = model
+        self.model = load_sklearn_model(model, backbone, classification, epochs)
+    
+    def fit(self, x, y):
+        self.model.fit(x, y)
+    
+    def test(self, x, y):
+        pred = self.predict(x)
+        #print(np.unique(pred))
+        if self.classification:
+            print('Accuracy: ', sklearn.metrics.accuracy_score(y.flatten(), pred.flatten()))
+            print('Precision: ', sklearn.metrics.precision_score(y.flatten(), pred.flatten(), average = 'macro'))
+            print('Recall: ', sklearn.metrics.recall_score(y.flatten(), pred.flatten(), average = 'macro'))
+            #print('ROC_AUC: ', sklearn.metrics.roc_auc_score(y.flatten(), pred.flatten(), average = 'micro', multi_class = 'ovr'))
+            print('IOU: ', sklearn.metrics.jaccard_score(y.flatten(), pred.flatten(), average = 'micro'))
+        else:
+            print('R2: ', sklearn.metrics.r2_score(y, pred))
+            print('MSE: ', sklearn.metrics.mean_squared_error(y, pred))
+    
+    def predict(self, x):
+        pred = self.model.predict(x)
+        return pred
+        
+    
+def sklearn_load_dataset(ds, classification):
+    if isinstance(ds, str):
+        with h5py.File(ds, 'r') as file:
+            ds = file['data']
+            ds = ds[...]
+    #if x dataset
+    if len(ds.shape) == 4:
+        #stack all tiles to single image
+        ds = np.hstack([i for i in ds])
+        ds = ds.reshape(ds.shape[0], -1)
+        ds = np.moveaxis(ds, 0, -1)
+    #if y dataset
+    elif len(ds.shape) == 3:
+        #stack all tiles to single image
+        ds = np.vstack([i for i in ds])
+        ds = ds.reshape(-1)
+    return ds

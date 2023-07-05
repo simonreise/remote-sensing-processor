@@ -67,7 +67,7 @@ def get_ss_tiles(x, y, tile_size, classification, shuffle, samples_file, split, 
         #y_nodata = int(y_nodata)
     else:
         num_classes = 1
-        classes = None
+        classes = 0
     #generating y tiles
     y_tiles = np.empty((len(samples), tile_size, tile_size), dtype = y_dtype)
     #y_tiles = np.empty((len(samples), tile_size, tile_size, 1), dtype = y_dtype)

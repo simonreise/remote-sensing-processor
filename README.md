@@ -35,7 +35,7 @@ border = '/home/rsp_test/border.gpkg'
 mosaic_sentinel = rsp.mosaic(output_sentinels, '/home/rsp_test/mosaics/sentinel/', clipper = border, projection = 'EPSG:4326', nodata_order = True)
 
 # calculating NDVI for sentinel-2 mosaic
-ndvi = rsp.normalized_difference('NDVI', '/home/rsp_test/mosaics/sentinel/')
+ndvi = rsp.calculate_index('NDVI', '/home/rsp_test/mosaics/sentinel/')
 
 # merging landcover files into mosaic 
 #and bringing it to resolution and projection of a reference file (one of sentinel mosaic bands)

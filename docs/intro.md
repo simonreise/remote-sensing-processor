@@ -41,7 +41,7 @@ You need to have Nvidia GPU in your PC to run pytorch models. Actually, it must 
 
 If you have GPU and recieved this error, try to re-install `pytorch` using [official guide](https://pytorch.org/get-started/locally/). Or try another pytorch version.
 
-If you are get such error while Sentinel 2 processing, try to run `sentinel2` with `superres = False` flag.
+If you are get such error while Sentinel-2 processing, try to run `sentinel2` with `superres = False` flag.
 
 ### I want to report an error / suggest adding a new feature
 

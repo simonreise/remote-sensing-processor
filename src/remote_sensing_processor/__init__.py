@@ -279,20 +279,12 @@ def calculate_index(name, folder = None, b1 = None, b2 = None):
         if not folder.endswith(r'/'):
             folder = folder + r'/'
         t = get_type(folder)
-        try:
-            if t == 'Undefined':
-                raise ValueError('Cannot define imagery type')
-        except ValueError as e:
-            print(e)
-            sys.exit(1)
+        if t == 'Undefined':
+            raise ValueError('Cannot define imagery type')
         b1, b2 = get_index(t, name, folder)
-    try:
-        if (b1 != None) and (b2 != None):
-            path = nd(name = name, b1 = b1, b2 = b2, folder = folder)
-        else:
-            raise ValueError('Bands 1 and 2 must be defined')
-    except ValueError as e:
-        print(e)
-        sys.exit(1)
+    if (b1 != None) and (b2 != None):
+        path = nd(name = name, b1 = b1, b2 = b2, folder = folder)
+    else:
+        raise ValueError('Bands 1 and 2 must be defined')
     return path
     

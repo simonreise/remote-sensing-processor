@@ -1,6 +1,20 @@
+#from functools import partial
+
 import torch
 import torchvision
 import transformers
+
+from sklearn.linear_model import LogisticRegression, Ridge, Lasso, ElasticNet
+from sklearn.neural_network import MLPClassifier, MLPRegressor
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.svm import SVC, SVR
+from sklearn.gaussian_process import GaussianProcessClassifier, GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier, RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor
+from sklearn.naive_bayes import GaussianNB
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+#import skimage
 
 
 def load_model(model, bb, weights, input_shape, input_dims, num_classes):
@@ -179,4 +193,82 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes):
         else:    
             model = torchvision.models.segmentation.lraspp_mobilenet_v3_large(num_classes = num_classes)
         model.backbone['0'][0] = torch.nn.Conv2d(input_dims, 16, kernel_size=3, stride=(2, 2), padding=(1, 1), bias=False)
+    return model
+    
+    
+def load_sklearn_model(model, bb, classification, epochs):
+    if classification:
+        if model == "Nearest Neighbors":
+            clf = KNeighborsClassifier(n_jobs = -1)
+        elif model == "Logistic Regression":
+            if bb == 'lbfgs' or bb == None:
+                clf = LogisticRegression(solver = 'lbfgs', n_jobs = -1, warm_start=True, verbose = 1)
+            elif bb == 'liblinear':
+                clf = LogisticRegression(solver = 'liblinear', n_jobs = -1, warm_start=True, verbose = 1)
+            elif bb == 'newton-cg':
+                clf = LogisticRegression(solver = 'newton-cg', n_jobs = -1, warm_start=True, verbose = 1)
+            elif bb == 'newton-cholesky':
+                clf = LogisticRegression(solver = 'newton-cholesky', n_jobs = -1, warm_start=True, verbose = 1)
+            elif bb == 'sag':
+                clf = LogisticRegression(solver = 'sag', n_jobs = -1, warm_start=True, verbose = 1)
+            elif bb == 'saga':
+                clf = LogisticRegression(solver = 'saga', penalty = 'elasticnet', l1_ratio = 0.5, n_jobs = -1, warm_start=True, verbose = 1)
+        elif model == "SVM":
+            if bb == 'rbf' or bb == None:
+                clf = SVC(kernel = 'rbf', verbose = True)
+            elif bb == 'linear':
+                clf = SVC(kernel = 'linear', verbose = True)
+            elif bb == 'poly':
+                clf = SVC(kernel = 'poly', verbose = True)
+            elif bb == 'sigmoid':
+                clf = SVC(kernel = 'sigmoid', verbose = True)
+        elif model == "Gaussian Process":
+            clf = GaussianProcessClassifier(n_jobs = -1, warm_start=True)
+        elif model == "Decision Tree":
+            clf = DecisionTreeClassifier(criterion = 'entropy')
+        elif model == "Random Forest":
+            clf = RandomForestClassifier(max_depth=2, n_jobs = -1, warm_start=True, verbose = 1)
+        elif model == "Gradient Boosting":
+            clf = GradientBoostingClassifier(warm_start=True, n_iter_no_change=5, verbose = 1000)
+        elif model == "Multilayer Perceptron":
+            clf = MLPClassifier(alpha=1, max_iter=epochs, warm_start=True, verbose = True)
+        elif model == "AdaBoost":
+            clf = AdaBoostClassifier()
+        elif model == "Naive Bayes":
+            clf = GaussianNB()
+        elif model == "QDA":
+            clf = QuadraticDiscriminantAnalysis()
+    else:
+        if model == "Nearest Neighbors":
+            clf = KNeighborsRegressor(n_jobs = -1)
+        elif model == "Ridge":
+            clf = Ridge()
+        elif model == "Lasso":
+            clf = Lasso()
+        elif model == "ElasticNet":
+            clf = ElasticNet()
+        elif model == "SVM":
+            if bb == 'rbf' or bb == None:
+                clf = SVR(kernel = 'rbf', verbose = True)
+            elif bb == 'linear':
+                clf = SVR(kernel = 'linear', verbose = True)
+            elif bb == 'poly':
+                clf = SVR(kernel = 'poly', verbose = True)
+            elif bb == 'sigmoid':
+                clf = SVR(kernel = 'sigmoid', verbose = True)
+        elif model == "Gaussian Process":
+            clf = GaussianProcessRegressor()
+        elif model == "Decision Tree":
+            clf = DecisionTreeRegressor()
+        elif model == "Random Forest":
+            clf = RandomForestRegressor(max_depth=2, n_jobs = -1, warm_start=True, verbose = 1)
+        elif model == "Gradient Boosting":
+            clf = GradientBoostingRegressor(warm_start=True, n_iter_no_change=5, verbose = 1000)
+        elif model == "Multilayer Perceptron":
+            clf = MLPRegressor(alpha=1, max_iter=epochs, warm_start=True, verbose = True)
+        elif model == "AdaBoost":
+            clf = AdaBoostRegressor()
+    model = clf
+    #ff = partial(skimage.feature.multiscale_basic_features, channel_axis = 0)
+    #model = skimage.future.TrainableSegmenter(clf = clf, features_func = ff)
     return model
