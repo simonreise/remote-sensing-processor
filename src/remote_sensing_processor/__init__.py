@@ -21,7 +21,7 @@ from remote_sensing_processor.imagery_types.types import get_type, get_index
 from remote_sensing_processor import segmentation
 
 
-__version__ = '0.1'
+__version__ = '0.2'
 
 cuda_test()
 
