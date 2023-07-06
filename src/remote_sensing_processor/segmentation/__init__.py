@@ -185,7 +185,6 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ep
         IPU available: False, using: 0 IPUs
         HPU available: False, using: 0 HPUs
         LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
-
           | Name    | Type                           | Params
         -----------------------------------------------------------
         0 | model   | UperNetForSemanticSegmentation | 59.8 M
@@ -212,7 +211,6 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ep
         IPU available: False, using: 0 IPUs
         HPU available: False, using: 0 HPUs
         LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
-
           | Name    | Type                           | Params
         -----------------------------------------------------------
         0 | model   | UperNetForSemanticSegmentation | 59.8 M
