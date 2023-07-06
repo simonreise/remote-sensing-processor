@@ -161,9 +161,9 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ep
     num_classes: int (optional)
         Number of classes for classification task. If not stated then is read from y_train h5 file or is set to np.max + 1.
     x_nodata : int or float (optional)
-        You can define which value in x raster corresponds to nodata and areas that contain nodata in x raster will be ignored while training and testing.
+        You can define which value in x raster corresponds to nodata and areas that contain nodata in x raster will be ignored while training and testing. If not stated then is read from x_train h5 file.
     y_nodata : int or float (optional)
-        You can define which value in y raster corresponds to nodata and areas that contain nodata in y raster will be ignored while training and testing.
+        You can define which value in y raster corresponds to nodata and areas that contain nodata in y raster will be ignored while training and testing. If not stated then is read from y_train h5 file.
     
     Returns
     ----------
@@ -180,6 +180,33 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ep
         >>> y_val = x_i[1]
         >>> y_test = x_i[2]
         >>> model = rsp.segmentation.train(x_train, y_train, x_val, y_val, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 10, batch_size = 32, classification = classification, num_classes = num_classes, x_nodata = x_nodata, y_nodata = y_nodata)
+        GPU available: True (cuda), used: True
+        TPU available: False, using: 0 TPU cores
+        IPU available: False, using: 0 IPUs
+        HPU available: False, using: 0 HPUs
+        LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+          | Name    | Type                           | Params
+        -----------------------------------------------------------
+        0 | model   | UperNetForSemanticSegmentation | 59.8 M
+        1 | loss_fn | CrossEntropyLoss               | 0     
+        -----------------------------------------------------------
+        59.8 M    Trainable params
+        0         Non-trainable params
+        59.8 M    Total params
+        239.395   Total estimated model params size (MB)
+        Epoch 9: 100% #############################################
+        223/223 [1:56:20<00:00, 31.30s/it, v_num=54, train_loss_step=0.326, train_acc_step=0.871, train_auroc_step=0.796, train_iou_step=0.655,
+        val_loss_step=0.324, val_acc_step=0.869, val_auroc_step=0.620, val_iou_step=0.678,
+        val_loss_epoch=0.334, val_acc_epoch=0.807, val_auroc_epoch=0.795, val_iou_epoch=0.688,
+        train_loss_epoch=0.349, train_acc_epoch=0.842, train_auroc_epoch=0.797, train_iou_epoch=0.648]
+        `Trainer.fit` stopped: `max_epochs=10` reached.
+        
+        >>> x_train = '/home/rsp_test/model/x_train.h5'
+        >>> x_val = '/home/rsp_test/model/x_val.h5'
+        >>> y_train = '/home/rsp_test/model/y_train.h5'
+        >>> y_val = '/home/rsp_test/model/y_val.h5'
+        >>> model = rsp.segmentation.train(x_train, y_train, x_val, y_val, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 10, batch_size = 32)
         GPU available: True (cuda), used: True
         TPU available: False, using: 0 TPU cores
         IPU available: False, using: 0 IPUs
@@ -286,14 +313,14 @@ def generate_map(x, y_true, model, output, tiles = None, samples = None, classes
         ...
         >>> y_reference = '/home/rsp_test/mosaics/landcover.tif'
         >>> output_map = '/home/rsp_test/prediction.tif'
-        >>> rsp.segmentation.generate_map([x_train, x_val, x_test], y_reference, model, output_map, tiles = tiles, samples = samples, classes = classes, nodata = -1)
+        >>> rsp.segmentation.generate_map([x_train, x_val, x_test], y_reference, model, output_map, tiles = tiles, samples = samples, classes = classes, nodata = y_nodata)
         Predicting: 100% #################### 372/372 [32:16, 1.6s/it]
         
         >>> x_train_file = '/home/rsp_test/model/x_train.h5'
         >>> x_val_file = '/home/rsp_test/model/x_val.h5'
         >>> x_test_file = '/home/rsp_test/model/x_test.h5'
         >>> s_file = '/home/rsp_test/model/samples.pickle'
-        >>> model = '/home/rsp_test/model/u-net.hdf5'
+        >>> model = '/home/rsp_test/model/upernet.ckpt'
         >>> y_reference = '/home/rsp_test/mosaics/landcover.tif'
         >>> output_map = '/home/rsp_test/prediction.tif'
         >>> rsp.segmentation.generate_map([x_train_file, x_val_file, x_test_file], y_reference, model, output_map, samples_file = s_file, nodata = -1)

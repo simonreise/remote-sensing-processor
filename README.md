@@ -15,7 +15,7 @@ Read the documentation for more details: https://remote-sensing-processor.readth
 
 ## Example
 
-Here is an example of some features that RSP provides. Sentinel-2 images are being preprocessed and merged into a mosaic, NDVI of that Sentinel-2 mosaic is calculated. Landcover images are merged into mosaic at the same resolution and projection as Sentinel-2 data. Then Sentinel-2 and landcover data is divided into tiles and U-Net model that predicts landcover based on Sentinel-2 data is trained. This model is used to create landcover map. 
+Here is an example of some features that RSP provides. Sentinel-2 images are being preprocessed and merged into a mosaic, NDVI of that Sentinel-2 mosaic is calculated. Landcover images are merged into mosaic at the same resolution and projection as Sentinel-2 data. Then Sentinel-2 and landcover data is divided into tiles and UperNet model that predicts landcover based on Sentinel-2 data is trained. This model is used to create landcover map. 
 ```
 from glob import glob
 import remote_sensing_processor as rsp
@@ -38,7 +38,7 @@ mosaic_sentinel = rsp.mosaic(output_sentinels, '/home/rsp_test/mosaics/sentinel/
 ndvi = rsp.calculate_index('NDVI', '/home/rsp_test/mosaics/sentinel/')
 
 # merging landcover files into mosaic 
-#and bringing it to resolution and projection of a reference file (one of sentinel mosaic bands)
+# and bringing it to resolution and projection of a reference file (one of sentinel mosaic bands)
 lcs = glob('/home/rsp_test/landcover/*.tif')
 mosaic_landcover = rsp.mosaic(lcs, '/home/rsp_test/mosaics/landcover/', clipper = border, reference_raster = '/home/rsp_test/mosaics/sentinel/B1.tif', nodata = -1)
 
@@ -79,8 +79,11 @@ To run RSP you need these packages to be installed:
 - Shapely
 - Fiona
 - Geopandas
+- Scikit-learn
 - Pytorch >= 1.10
 - Torchvision >= 0.10
+- Lightning
+- Transformers
 
 Also you need a Sen2Cor to be installed to process Sentinel-2 data. Required version is 2.11 for Windows and Linux and 2.9 for Mac OS. You should install it via SNAP plugin installer. [Here](http://wiki.awf.forst.uni-goettingen.de/wiki/index.php/Installation_of_SNAP) is the instruction how you can do it.
 

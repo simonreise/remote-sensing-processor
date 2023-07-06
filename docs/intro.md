@@ -6,11 +6,11 @@ Usually preprocessing remote sensing data in Python is complicated and need lots
 
 RSP provides high-level functions that automate routine processing operations like remote sensing data preprocessing, merging and calculating vegetation indices. For example, you can preprocess Sentinel-2 image from L1 zip archive with operations of atmospheric correction, 20- and 60-m bands superresolution, cloud masking and reprojecting to needed projection with one line of code.
 
-Another key idea of RSP is easy pipeline buildings, where outputs from one function can be used as inputs to other functions. For example, you can preprocess several Sentinel-2 images with ```sentinel2``` function, then megre preprocessed images with ```mosaic``` function, and then cut merged band rasters into tiles with ```generate_tiles``` function.
+Another key idea of RSP is easy pipeline construction, where outputs from one function can be used as inputs to other functions. For example, you can preprocess several Sentinel-2 images with ```sentinel2``` function, then megre preprocessed images with ```mosaic``` function, and then cut merged band rasters into tiles with ```generate_tiles``` function.
 ```
 output_sentinels = rsp.sentinel2(sentinel2_imgs)
 x = rsp.mosaic(output_sentinels, '/home/rsp_test/mosaics/sentinel/')
-x_i, y_i, tiles, samples = rsp.segmentation.generate_tiles(x, y)
+x_i, y_i, tiles, samples, classification, num_classes, classes, x_nodata, y_nodata = rsp.segmentation.generate_tiles(x, y)
 ```
 
 ## FAQ
@@ -25,7 +25,15 @@ With `mosaic` you can merge several rasters (or Sentinel-2 or Landsat products) 
 
 With `calculate_index` you can calculate normalized difference indexes like NDVI.
 
-With `segmentation.generate_tiles` you can cut rasters into tiles that can be used e.g. for convolutional neural network (CNN) training and with `segmentation.generate_map` you can create map from predictions of pre-trained CNN.
+With `segmentation` module you can train segmentation model and use it for predictions.
+
+With `segmentation.generate_tiles` you can cut rasters into tiles that can be used e.g. for convolutional neural network (CNN) training and
+
+With `segmentation.train` you can train a machine learning model for image segmentation using generated tiles.
+
+With `segmentation.test` you can test segmentation model.
+
+With `segmentation.generate_map` you can create map from predictions of pre-trained segmentation model.
 
 ### Are you planning to add preprocessing of other imagery types (Sentinel-1, MODIS, GEOS etc.)?
 

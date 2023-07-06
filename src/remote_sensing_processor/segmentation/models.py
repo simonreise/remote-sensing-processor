@@ -229,7 +229,7 @@ def load_sklearn_model(model, bb, classification, epochs):
         elif model == "Random Forest":
             clf = RandomForestClassifier(max_depth=2, n_jobs = -1, warm_start=True, verbose = 1)
         elif model == "Gradient Boosting":
-            clf = GradientBoostingClassifier(warm_start=True, n_iter_no_change=5, verbose = 1000)
+            clf = HistGradientBoostingClassifier(warm_start=True, n_iter_no_change=10, verbose = 1000)
         elif model == "Multilayer Perceptron":
             clf = MLPClassifier(alpha=1, max_iter=epochs, warm_start=True, verbose = True)
         elif model == "AdaBoost":
@@ -263,7 +263,7 @@ def load_sklearn_model(model, bb, classification, epochs):
         elif model == "Random Forest":
             clf = RandomForestRegressor(max_depth=2, n_jobs = -1, warm_start=True, verbose = 1)
         elif model == "Gradient Boosting":
-            clf = GradientBoostingRegressor(warm_start=True, n_iter_no_change=5, verbose = 1000)
+            clf = HistGradientBoostingRegressor(warm_start=True, n_iter_no_change=10, verbose = 1000)
         elif model == "Multilayer Perceptron":
             clf = MLPRegressor(alpha=1, max_iter=epochs, warm_start=True, verbose = True)
         elif model == "AdaBoost":

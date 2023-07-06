@@ -3,6 +3,7 @@
 RSP needs python >= 3.8 to run and depends on several python libraries.
 
 These libraries are:
+- Python >= 3.8
 - Numpy
 - GDAL
 - Rasterio
@@ -10,7 +11,11 @@ These libraries are:
 - Shapely
 - Fiona
 - Geopandas
+- Scikit-learn
 - Pytorch >= 1.10
+- Torchvision >= 0.10
+- Lightning
+- Transformers
 
 Most of them are installed when you install RSP, but you can have problems when installing GDAL, Rasterio and Fiona with pip. So it is recommended to install them manually.
 
