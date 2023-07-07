@@ -20,13 +20,13 @@ requirements:
     - pip
     - pyproj
     - python {{ python }}
+    - pytorch >=1.10
     - rasterio
     - scikit-image
     - scikit-learn
     - tensorboard
     - timm
-    - torch >=1.10
-    - torchvision >= 1.10
+    - torchvision
     - transformers
   run:
     - geopandas
@@ -35,13 +35,13 @@ requirements:
     - numpy >=1.17
     - pyproj
     - python {{ python }}
+    - pytorch >=1.10
     - rasterio
     - scikit-image
     - scikit-learn
     - tensorboard
     - timm
-    - torch >=1.10
-    - torchvision >= 1.10
+    - torchvision
     - transformers
 
 
