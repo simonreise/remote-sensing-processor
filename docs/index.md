@@ -2,7 +2,7 @@
 
 RSP is a tool for geospatial raster data processing.
 
-Most of remote sensing data like Sentinel of Landsat imagery needs to be preprocessed before using. RSP can preprocess Sentinel-2 and Landsat imagery, create raster mosaics, calculate vegetation indices, cut rasters into tiles.
+RSP can preprocess Sentinel-2 and Landsat imagery, create raster mosaics, calculate vegetation indices and perform image segmentation tasks.
 
 Here is an example of some features that RSP provides. Sentinel-2 images are being preprocessed and merged into a mosaic, NDVI of that Sentinel-2 mosaic is calculated. Landcover images are merged into mosaic at the same resolution and projection as Sentinel-2 data. Then Sentinel-2 and landcover data is divided into tiles and U-Net model that predicts landcover based on Sentinel-2 data is trained. This model is used to create landcover map. 
 ```
@@ -49,7 +49,7 @@ x_train = x_i[0]
 # training UperNet that predicts landcover class based on sentinel imagery
 model = rsp.segmentation.train(x_train, y_train, x_val, y_val, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 10, classification = classification, num_classes = num_classes, x_nodata = x_nodata, y_nodata = y_nodata)
 
-# testing_model
+# testing model
 rsp.segmentation.test(x_test, y_test, model = model)
 
 # mapping landcover based on predictions of our UperNet

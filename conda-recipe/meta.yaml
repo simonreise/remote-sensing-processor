@@ -18,7 +18,6 @@ requirements:
     - lightning
     - numpy >=1.17
     - pip
-    - pydantic <2.0 # temp fix for lightning broken dependency
     - pyproj
     - python {{ python }}
     - pytorch >=1.10
@@ -34,7 +33,6 @@ requirements:
     - h5py
     - lightning
     - numpy >=1.17
-    - pydantic <2.0 # temp fix for lightning broken dependency
     - pyproj
     - python {{ python }}
     - pytorch >=1.10
