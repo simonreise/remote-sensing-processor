@@ -9,7 +9,7 @@ source:
 
 requirements:
   build:
-    - python {{ python }}
+    - python >=3.8
     - cython
     - numpy >=1.17
   host:
@@ -19,7 +19,7 @@ requirements:
     - numpy >=1.17
     - pip
     - pyproj
-    - python {{ python }}
+    - python >=3.8
     - pytorch >=1.10
     - rasterio
     - scikit-image
@@ -34,7 +34,7 @@ requirements:
     - lightning
     - numpy >=1.17
     - pyproj
-    - python {{ python }}
+    - python >=3.8
     - pytorch >=1.10
     - rasterio
     - scikit-image
@@ -43,10 +43,9 @@ requirements:
     - timm
     - torchvision
     - transformers
-
-
+    
 build:
-  noarch: python
+    noarch: python
 
 test:
   imports:
