@@ -22,9 +22,9 @@ def get_type(path):
                 t = 'Landsat1_p' #landsat1 processed in RSP
             else:
                 if re.search('L\d\w\w', path):
-                    if re.search('L\d\w\w', path).group(0) == 'L1TP':
+                    if re.search('L\d\w\w', path).group(0) in ['L1TP', 'L1GT', 'L1GS']:
                         t = 'Landsat1_up_l1' #landsat1 without processing level 1
-                    elif re.search('L\d\w\w', path).group(0) == 'L2SP':
+                    elif re.search('L\d\w\w', path).group(0) in ['L2SP', 'L2SR']:
                         t = 'Landsat1_up_l2' #landsat1 without processing level 2
                 else:
                     t = 'Undefined_Landsat1'
@@ -33,9 +33,9 @@ def get_type(path):
                 t = 'Landsat5_p' #landsat5 processed in RSP
             else:
                 if re.search('L\d\w\w', path):
-                    if re.search('L\d\w\w', path).group(0) == 'L1TP':
+                    if re.search('L\d\w\w', path).group(0) in ['L1TP', 'L1GT', 'L1GS']:
                         t = 'Landsat5_up_l1' #landsat5 without processing level 1
-                    elif re.search('L\d\w\w', path).group(0) == 'L2SP':
+                    elif re.search('L\d\w\w', path).group(0) in ['L2SP', 'L2SR']:
                         t = 'Landsat5_up_l2' #landsat5 without processing level 2
                 else:
                     t = 'Undefined_Landsat5'
@@ -44,9 +44,9 @@ def get_type(path):
                 t = 'Landsat7_p' #landsat7 processed in RSP
             else:
                 if re.search('L\d\w\w', path):
-                    if re.search('L\d\w\w', path).group(0) == 'L1TP':
+                    if re.search('L\d\w\w', path).group(0) in ['L1TP', 'L1GT', 'L1GS']:
                         t = 'Landsat7_up_l1' #landsat7 without processing level 1
-                    elif re.search('L\d\w\w', path).group(0) == 'L2SP':
+                    elif re.search('L\d\w\w', path).group(0) in ['L2SP', 'L2SR']:
                         t = 'Landsat7_up_l2' #landsat7 without processing level 2
                 else:
                     t = 'Undefined_Landsat7'
@@ -55,9 +55,9 @@ def get_type(path):
                 t = 'Landsat8_p' #landsat8 processed in RSP
             else:
                 if re.search('L\d\w\w', path):
-                    if re.search('L\d\w\w', path).group(0) == 'L1TP':
+                    if re.search('L\d\w\w', path).group(0) in ['L1TP', 'L1GT', 'L1GS']:
                         t = 'Landsat8_up_l1' #landsat8 without processing level 1
-                    elif re.search('L\d\w\w', path).group(0) == 'L2SP':
+                    elif re.search('L\d\w\w', path).group(0) in ['L2SP', 'L2SR']:
                         t = 'Landsat8_up_l2' #landsat8 without processing level 2
                 else:
                     t = 'Undefined_Landsat8'
