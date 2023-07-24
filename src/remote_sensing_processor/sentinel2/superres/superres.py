@@ -20,7 +20,7 @@ import pyproj as proj
 
 from remote_sensing_processor.sentinel2.superres.supres import dsen2_20, dsen2_60
 
-warnings.filterwarnings(action="ignore")
+warnings.filterwarnings("ignore", category=rio.errors.NotGeoreferencedWarning)
 
 # This code is adapted from this repository
 # https://github.com/lanha/DSen2 and is distributed under the same
