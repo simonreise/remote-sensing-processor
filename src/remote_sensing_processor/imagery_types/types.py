@@ -5,7 +5,7 @@ import re
 
 def get_type(path):
     if os.path.isdir(path) == True:
-        bands = glob(path + '*.[!zip]*')
+        bands = glob(path + '*.*[!(zip|tar|tar.gz|aux.xml)*]')
         for i in range(len(bands)):
             bands[i] = os.path.basename(bands[i]).split('.')[0]
     else:

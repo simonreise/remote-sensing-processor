@@ -28,6 +28,7 @@ def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clipper, crs, no
             crs = r.crs
     if mb == True:
         bands = get_bands(inputs, keep_all_channels)
+        orig_nodata = nodata
         #print(bands)
         for b in bands:
             #opening files
@@ -35,15 +36,26 @@ def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clipper, crs, no
             files = []
             for path in b['bands']:
                 pathfile = rio.open(path)
+                if nodata == None:
+                    if pathfile.nodata == None:
+                        nodata = 0
+                    else:
+                        nodata = pathfile.nodata
                 pathfile, crs = check_crs(pathfile = pathfile, crs = crs, nodata = nodata)
                 files.append(pathfile)
             path = mosaic_process(files = files, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster, resample = resample, band = band)
             paths.append(path)
+            nodata = orig_nodata
             print('Processing band ' + band + ' is completed')
     else:
         files = []
         for inp in inputs:
             pathfile = rio.open(inp)
+            if nodata == None:
+                if pathfile.nodata == None:
+                    nodata = 0
+                else:
+                    nodata = pathfile.nodata
             pathfile, crs = check_crs(pathfile = pathfile, crs = crs,  nodata = nodata)
             files.append(pathfile)
         band = os.path.basename(inputs[0])[:-4]+'_mosaic'
@@ -173,7 +185,7 @@ def get_bands(paths, keep_all_channels):
             else:
                 bands = glob(path + '*B*.jp2')
         else:
-            bands = glob(path + '*.*')
+            bands = glob(path + '*.*[!(zip|tar|tar.gz|aux.xml)*]')
         sets.append([bands, im_type])
     # getting imagery type and bands list
     unique_types = set(x[1] for x in sets)

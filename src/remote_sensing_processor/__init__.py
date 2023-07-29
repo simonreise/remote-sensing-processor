@@ -165,7 +165,7 @@ def landsat(archives, projection = None, cloud_mask = True, pansharpen = True, k
     return paths
 
 
-def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper = None, crs = None, nodata = 0, reference_raster = None, resample = 'average', nodata_order = False, keep_all_channels = True):
+def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper = None, crs = None, nodata = None, reference_raster = None, resample = 'average', nodata_order = False, keep_all_channels = True):
     """
     Creates mosaic from several rasters.
     
@@ -183,12 +183,12 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper
         Path to vector file to be used to crop the image.
     crs : string (optional)
         CRS in which output data should be.
-    nodata : int or float (default = 0)
-        Nodata value.
+    nodata : int or float (default = None)
+        Nodata value. If not set then is read from file or set to 0.
     reference_raster : path to reference raster as a string (optional)
         Reference raster is needed to bring output mosaic raster to same resolution and projection as other data source. Is useful when you need to use data from different sources together.
     resample : resampling method from rasterio as a string (default = 'average
-        Resampling method that will be used to reshape to a reference raster shape. You can read more about resampling methods `here <https://rasterio.readthedocs.io/en/latest/topics/resampling.html>`. Use 'nearest' if you want to keep only class values.
+        Resampling method that will be used to reshape to a reference raster shape. You can read more about resampling methods `here <https://rasterio.readthedocs.io/en/latest/topics/resampling.html>`_. Use 'nearest' if you want to keep only class values.
     nodata_order : bool (default = False)
         Is needed to merge images in order from images with most nodata values on bottom (they usually are most distorted and cloudy) to images with less nodata on top (they are usually clear).
     keep_all_channels : bool (default = True)
