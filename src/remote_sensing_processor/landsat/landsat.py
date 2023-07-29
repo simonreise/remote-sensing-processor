@@ -22,34 +22,61 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
     bands = glob(path + '*B*.tif')
     if bands == []:
         bands = glob(path + '*B*.TIF')
+    #removing quality band from bands list if it is there
+    bands = [x for x in bands if not 'BQA' in x]
     resample = get_resampling(resample)
     # deleting gm bands for landsat 7
     bands = [band for band in bands if '_GM_' not in band]
     lsver = get_type(path)
-    mtl = glob(path + '*MTL.xml')[0]
-    mtl = ET.parse(mtl).getroot()
+    mtl = glob(path + '*MTL.xml')
+    if mtl != []:
+        mtl = mtl[0]
+        mtl = ET.parse(mtl).getroot()
+    else:
+        mtl = glob(path + '*MTL.txt')[0]
+        with open(mtl) as file:
+            mtl = [line.rstrip() for line in file]
     # reading quality assessment band
     if cloud_mask == True:
         qa = glob(path + '*QA*')
         if len(qa) == 1:
             qa = qa[0]
+            #old qa images have different values
+            if 'BQA' in qa:
+                old = True
+            else:
+                old = False
             with rio.open(qa) as landsat_qa_file:
                 qa = landsat_qa_file.read(1)
                 qatransform = landsat_qa_file.transform
         else:
             qar = sorted(qa)[1]
             qa = sorted(qa)[0]
+            #old qa images have different values
+            if 'BQA' in qa:
+                old = True
+            else:
+                old = False
             with rio.open(qa) as landsat_qa_file:
                 qa = landsat_qa_file.read(1)
                 qatransform = landsat_qa_file.transform
             with rio.open(qar) as landsat_qar_file:
                 qar = landsat_qar_file.read(1)
-        if lsver in ['Landsat8_up_l1', 'Landsat8_up_l2']:
-            mask = np.where(qa == 21824, 0, 1)
-        elif lsver in ['Landsat7_up_l1', 'Landsat7_up_l2', 'Landsat5_up_l1', 'Landsat5_up_l2']:
-            mask = np.where(qa == 5440, 0, 1)
-        elif lsver in ['Landsat1_up_l1', 'Landsat1_up_l2']:
-            mask = np.where(qa == 256, 0, 1)
+        #old qa images have different values
+        if old:
+            if lsver in ['Landsat8_up_l1', 'Landsat8_up_l2']:
+                mask = np.where(qa == 2720, 0, 1)
+            elif lsver in ['Landsat7_up_l1', 'Landsat7_up_l2', 'Landsat5_up_l1', 'Landsat5_up_l2']:
+                mask = np.where(qa == 672, 0, 1)
+            elif lsver in ['Landsat1_up_l1', 'Landsat1_up_l2']:
+                mask = np.where(qa == 256, 0, 1)
+        else:
+            if lsver in ['Landsat8_up_l1', 'Landsat8_up_l2']:
+                mask = np.where(qa == 21824, 0, 1)
+            elif lsver in ['Landsat7_up_l1', 'Landsat7_up_l2', 'Landsat5_up_l1', 'Landsat5_up_l2']:
+                mask = np.where(qa == 5440, 0, 1)
+            elif lsver in ['Landsat1_up_l1', 'Landsat1_up_l2']:
+                mask = np.where(qa == 256, 0, 1)
         if 'qar' in locals():
             mask = np.where(qar == 0, mask, 1)
         qa = None
@@ -110,7 +137,10 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
             transform = b.transform
             resolution = b.res
             try:
-                nodata = b.nodata
+                if b.nodata == None:
+                    nodata = 0
+                else:
+                    nodata = b.nodata
             except:
                 nodata = 0
         #masking clouds
@@ -134,12 +164,20 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
         if band not in tbands:
             if lsver in ['Landsat8_up_l1', 'Landsat7_up_l1', 'Landsat5_up_l1', 'Landsat1_up_l1']:
                 btitle = band.split('B')[-1].split('.')[0]
-                radM = float(mtl.findall('LEVEL1_MIN_MAX_RADIANCE/RADIANCE_MAXIMUM_BAND_' + btitle)[0].text)
-                refM = float(mtl.findall('LEVEL1_MIN_MAX_REFLECTANCE/REFLECTANCE_MAXIMUM_BAND_' + btitle)[0].text)
-                eSD = float(mtl.findall('IMAGE_ATTRIBUTES/EARTH_SUN_DISTANCE')[0].text)
-                sE = float(mtl.findall('IMAGE_ATTRIBUTES/SUN_ELEVATION')[0].text)
-                m = float(mtl.findall('LEVEL1_RADIOMETRIC_RESCALING/RADIANCE_MULT_BAND_' + btitle)[0].text)
-                a = float(mtl.findall('LEVEL1_RADIOMETRIC_RESCALING/RADIANCE_ADD_BAND_' + btitle)[0].text)
+                if isinstance(mtl, ET.Element):
+                    radM = float(mtl.findall('LEVEL1_MIN_MAX_RADIANCE/RADIANCE_MAXIMUM_BAND_' + btitle)[0].text)
+                    refM = float(mtl.findall('LEVEL1_MIN_MAX_REFLECTANCE/REFLECTANCE_MAXIMUM_BAND_' + btitle)[0].text)
+                    eSD = float(mtl.findall('IMAGE_ATTRIBUTES/EARTH_SUN_DISTANCE')[0].text)
+                    sE = float(mtl.findall('IMAGE_ATTRIBUTES/SUN_ELEVATION')[0].text)
+                    m = float(mtl.findall('LEVEL1_RADIOMETRIC_RESCALING/RADIANCE_MULT_BAND_' + btitle)[0].text)
+                    a = float(mtl.findall('LEVEL1_RADIOMETRIC_RESCALING/RADIANCE_ADD_BAND_' + btitle)[0].text)
+                else:
+                    radM = float([i for i in mtl if 'RADIANCE_MAXIMUM_BAND_' + btitle in i][0].split('=')[1])
+                    refM = float([i for i in mtl if 'REFLECTANCE_MAXIMUM_BAND_' + btitle in i][0].split('=')[1])
+                    eSD = float([i for i in mtl if 'EARTH_SUN_DISTANCE' in i][0].split('=')[1])
+                    sE = float([i for i in mtl if 'SUN_ELEVATION' in i][0].split('=')[1])
+                    m = float([i for i in mtl if 'RADIANCE_MULT_BAND_' + btitle in i][0].split('=')[1])
+                    a = float([i for i in mtl if 'RADIANCE_ADD_BAND_' + btitle in i][0].split('=')[1])
                 if lsver == 'Landsat8_up_l1':
                     eS = (np.pi * eSD * eSD) *radM / refM
                 else:
@@ -191,8 +229,12 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
                 # land surface reflectance ρ = [π * (Lλ - Lp) * d^2]/ (ESUNλ * cosθs)
                 img = np.where(img == nodata, nodata, np.clip((((img * m + a) - Lh) * np.pi * eSD * eSD) / (eS * sA), 0, 1))
             elif lsver in ['Landsat8_up_l2', 'Landsat7_up_l2', 'Landsat5_up_l2', 'Landsat1_up_l2']:
-                m = float(mtl.findall('LEVEL1_RADIOMETRIC_RESCALING/REFLECTANCE_MULT_BAND_' + btitle)[0].text)
-                a = float(mtl.findall('LEVEL1_RADIOMETRIC_RESCALING/REFLECTANCE_ADD_BAND_' + btitle)[0].text)
+                if isinstance(mtl, ET.Element):
+                    m = float(mtl.findall('LEVEL1_RADIOMETRIC_RESCALING/REFLECTANCE_MULT_BAND_' + btitle)[0].text)
+                    a = float(mtl.findall('LEVEL1_RADIOMETRIC_RESCALING/REFLECTANCE_ADD_BAND_' + btitle)[0].text)
+                else:
+                    m = float([i for i in mtl if 'REFLECTANCE_MULT_BAND_' + btitle in i][0].split('=')[1])
+                    a = float([i for i in mtl if 'REFLECTANCE_ADD_BAND_' + btitle in i][0].split('=')[1])
                 img = np.where(img == nodata, nodata, np.clip((img * m + a), 0, 1))
         #temperature
         if band in tbands:
@@ -202,15 +244,25 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
                 deg = 0
             btitle = band.split('B')[-1].split('.')[0]
             if lsver in ['Landsat5_up_l1', 'Landsat7_up_l1', 'Landsat8_up_l1']:
-                mult = float(mtl.findall('LEVEL1_RADIOMETRIC_RESCALING/RADIANCE_MULT_BAND_' + btitle)[0].text)
-                add = float(mtl.findall('LEVEL1_RADIOMETRIC_RESCALING/RADIANCE_ADD_BAND_' + btitle)[0].text)
-                k1 = float(mtl.findall('LEVEL1_THERMAL_CONSTANTS/K1_CONSTANT_BAND_' + btitle)[0].text)
-                k2 = float(mtl.findall('LEVEL1_THERMAL_CONSTANTS/K2_CONSTANT_BAND_' + btitle)[0].text)
+                if isinstance(mtl, ET.Element):
+                    mult = float(mtl.findall('LEVEL1_RADIOMETRIC_RESCALING/RADIANCE_MULT_BAND_' + btitle)[0].text)
+                    add = float(mtl.findall('LEVEL1_RADIOMETRIC_RESCALING/RADIANCE_ADD_BAND_' + btitle)[0].text)
+                    k1 = float(mtl.findall('LEVEL1_THERMAL_CONSTANTS/K1_CONSTANT_BAND_' + btitle)[0].text)
+                    k2 = float(mtl.findall('LEVEL1_THERMAL_CONSTANTS/K2_CONSTANT_BAND_' + btitle)[0].text)
+                else:
+                    mult = float([i for i in mtl if 'RADIANCE_MULT_BAND_' + btitle in i][0].split('=')[1])
+                    add = float([i for i in mtl if 'RADIANCE_ADD_BAND_' + btitle in i][0].split('=')[1])
+                    k1 = float([i for i in mtl if 'K1_CONSTANT_BAND_' + btitle in i][0].split('=')[1])
+                    k2 = float([i for i in mtl if 'K2_CONSTANT_BAND_' + btitle in i][0].split('=')[1])
                 with np.errstate(invalid='ignore'):
                     img = np.where(img == nodata, nodata, (k2 / np.log(k1/((img * mult) + add) + 1)) - deg)
             elif lsver in ['Landsat5_up_l2', 'Landsat7_up_l2', 'Landsat8_up_l2']:
-                mult = float(mtl.findall('LEVEL2_SURFACE_TEMPERATURE_PARAMETERS/TEMPERATURE_MULT_BAND_ST_B' + btitle)[0].text)
-                add = float(mtl.findall('LEVEL2_SURFACE_TEMPERATURE_PARAMETERS/TEMPERATURE_ADD_BAND_ST_B' + btitle)[0].text)
+                if isinstance(mtl, ET.Element):
+                    mult = float(mtl.findall('LEVEL2_SURFACE_TEMPERATURE_PARAMETERS/TEMPERATURE_MULT_BAND_ST_B' + btitle)[0].text)
+                    add = float(mtl.findall('LEVEL2_SURFACE_TEMPERATURE_PARAMETERS/TEMPERATURE_ADD_BAND_ST_B' + btitle)[0].text)
+                else:
+                    mult = float([i for i in mtl if 'TEMPERATURE_MULT_BAND_ST_B' + btitle in i][0].split('=')[1])
+                    add = float([i for i in mtl if 'TEMPERATURE_ADD_BAND_ST_B' + btitle in i][0].split('=')[1])
                 img = np.where(img == nodata, nodata, ((img * mult) + add) - deg)
         #pansharpening
         if pansharpen == True and lsver in ['Landsat8_up_l1' 'Landsat7_up_l1']:
@@ -241,7 +293,7 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
             trans = pan_trans
         else:
             trans = meta['transform']
-            #reprojecting
+        #reprojecting
         if projection != None:
             transform, width, height = calculate_default_transform(
                 meta['crs'], projection, meta['width'], meta['height'], *bounds)
