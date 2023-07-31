@@ -9,4 +9,5 @@ Information on specific functions, classes, and methods.
    api/landsat
    api/mosaic
    api/indices
+   api/normalize
    api/segmentation

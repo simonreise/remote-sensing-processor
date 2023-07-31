@@ -18,6 +18,8 @@ from remote_sensing_processor.mosaic.mosaic import mosaic_main, order, ismultiba
 from remote_sensing_processor.indices.normalized_difference import nd
 from remote_sensing_processor.imagery_types.types import get_type, get_index
 
+from remote_sensing_processor.common.normalize import normalize_file
+
 from remote_sensing_processor import segmentation
 
 
@@ -257,7 +259,7 @@ def calculate_index(name, folder = None, b1 = None, b2 = None):
         Name of index.
     folder: path to input product as a string (optional)
         If you define path to a supported imagery product and a name of supported index, you do not need to define `b1` and `b2`. Bands needed for index calculation are picked automatically.
-    b1, b2 : paths as strings
+    b1, b2 : paths as strings (optional)
         Paths to bands to calculate normalized difference index. If you define bands, you do not need to define `folder`, but still need to define `name` - it will be an output file name.
     
     Returns
@@ -287,4 +289,29 @@ def calculate_index(name, folder = None, b1 = None, b2 = None):
     else:
         raise ValueError('Bands 1 and 2 must be defined')
     return path
+
+
+def normalize(input_file, output_file, minimum = None, maximum = None):
+    """
+    Applies min-max normalization to input file.
     
+    Parameters
+    ----------
+    input_file : string
+        Path to input file.
+    output_file : string
+        Path to output file.
+    min, max: int or float (optional)
+        Min and max values for normalization. If not defined the min and max of data type of `input_file` will be used.
+    
+    Examples
+    --------
+        >>> ndvi = rsp.calculate_index('NDVI', '/home/rsp_test/mosaics/sentinel/')
+        >>> print(ndvi)
+        '/home/rsp_test/mosaics/sentinel/NDVI.tif'
+        
+        >>> ndvi = rsp.calculate_index('NDVI', b1 = '/home/rsp_test/mosaics/sentinel/B8.tif', b2 = '/home/rsp_test/mosaics/sentinel/B4.tif')
+        >>> print(ndvi)
+        '/home/rsp_test/mosaics/sentinel/NDVI.tif'
+    """
+    normalize_file(input_file, output_file, minimum, maximum)

@@ -34,9 +34,9 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
     y_dtype : dtype definition as a string (optional)
         If you run out of memory, you can try to convert your data to less memory consuming format.
     x_nodata : int or float (optional)
-        You can define which value in x raster corresponds to nodata and areas that contain nodata in x raster will be ignored while training and testing. Tiles that contain only nodata in both x and y will be omited.
+        You can define which value in x raster corresponds to nodata and areas that contain nodata in x raster will be ignored while training and testing. Tiles that contain only nodata in both x and y will be omited. If not stated then nodata of first x file will be used.
     y_nodata : int or float (optional)
-        You can define which value in y raster corresponds to nodata and areas that contain nodata in y raster will be ignored while training and testing. Tiles that contain only nodata in both x and y will be omited.
+        You can define which value in y raster corresponds to nodata and areas that contain nodata in y raster will be ignored while training and testing. Tiles that contain only nodata in both x and y will be omited. If not stated then nodata of y file will be used.
     
     Returns
     ----------

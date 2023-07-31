@@ -93,6 +93,13 @@ Processing completed
 ```
 The function returns list of band mosaics.
 
+## Normalizing Sentinel-2 mosaics
+Data normalization usually can significantly improve convergence time and accuracy of neural networks, so we will normalize our Sentinel-2 bands. Min/Max normalization will convert data values from range `[0:10000]` to `[0:1]`.
+```
+# applying min/max normalization to sentinel-2 mosaics (sentinel-2 reflectance values are from 0 to 10 000)
+>>> for band in mosaic_sentinel:
+... 	rsp.normalize(band, band, 0, 10000)
+```
 
 ## Calculating NDVI for sentinel-2 mosaic
 

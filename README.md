@@ -34,6 +34,10 @@ output_sentinels = rsp.sentinel2(sentinel2_imgs)
 border = '/home/rsp_test/border.gpkg'
 mosaic_sentinel = rsp.mosaic(output_sentinels, '/home/rsp_test/mosaics/sentinel/', clipper = border, projection = 'EPSG:4326', nodata_order = True)
 
+# applying min/max normalization to sentinel-2 mosaics (sentinel-2 reflectance values are from 0 to 10 000)
+for band in mosaic_sentinel:
+	rsp.normalize(band, band, 0, 10000)
+
 # calculating NDVI for sentinel-2 mosaic
 ndvi = rsp.calculate_index('NDVI', '/home/rsp_test/mosaics/sentinel/')
 
