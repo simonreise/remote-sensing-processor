@@ -1,4 +1,4 @@
-Landsat preprocessing
+Raster normalization
 =====================
 .. automodule:: remote_sensing_processor
    :members: normalize

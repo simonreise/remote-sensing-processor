@@ -302,16 +302,10 @@ def normalize(input_file, output_file, minimum = None, maximum = None):
     output_file : string
         Path to output file.
     min, max: int or float (optional)
-        Min and max values for normalization. If not defined the min and max of data type of `input_file` will be used.
+        Min and max values for normalization. If not defined then min and max of data type of `input_file` will be used.
     
     Examples
     --------
-        >>> ndvi = rsp.calculate_index('NDVI', '/home/rsp_test/mosaics/sentinel/')
-        >>> print(ndvi)
-        '/home/rsp_test/mosaics/sentinel/NDVI.tif'
-        
-        >>> ndvi = rsp.calculate_index('NDVI', b1 = '/home/rsp_test/mosaics/sentinel/B8.tif', b2 = '/home/rsp_test/mosaics/sentinel/B4.tif')
-        >>> print(ndvi)
-        '/home/rsp_test/mosaics/sentinel/NDVI.tif'
+        >>> rsp.normalize('/home/rsp_test/mosaics/sentinel/B1.tif', '/home/rsp_test/mosaics/sentinel/B1_norm.tif', 0, 10000)
     """
     normalize_file(input_file, output_file, minimum, maximum)
