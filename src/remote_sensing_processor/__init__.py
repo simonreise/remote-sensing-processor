@@ -259,8 +259,8 @@ def calculate_index(name, folder = None, b1 = None, b2 = None):
         Name of index.
     folder: path to input product as a string (optional)
         If you define path to a supported imagery product and a name of supported index, you do not need to define `b1` and `b2`. Bands needed for index calculation are picked automatically.
-    b1, b2 : paths as strings (optional)
-        Paths to bands to calculate normalized difference index. If you define bands, you do not need to define `folder`, but still need to define `name` - it will be an output file name.
+    b1, b2 : path as string (optional)
+        Path to band to calculate normalized difference index. If you define bands, you do not need to define `folder`, but still need to define `name` - it will be an output file name.
     
     Returns
     ----------
@@ -301,8 +301,10 @@ def normalize(input_file, output_file, minimum = None, maximum = None):
         Path to input file.
     output_file : string
         Path to output file.
-    min, max: int or float (optional)
-        Min and max values for normalization. If not defined then min and max of data type of `input_file` will be used.
+    min: int or float (optional)
+        Min value for normalization. If not defined then min and max of data type of `input_file` will be used.
+    max: int or float (optional)
+        Max value for normalization. If not defined then min and max of data type of `input_file` will be used.
     
     Examples
     --------
