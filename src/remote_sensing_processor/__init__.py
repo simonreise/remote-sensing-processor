@@ -38,7 +38,7 @@ def sentinel2(archives, sen2cor = True, superres = True, projection = None, clou
     sen2cor : bool (default = True)
         Is atmospheric correction using Sen2Cor needed. Set to False if you have troubles with Sen2Cor.
     superres : bool (default = True)
-        Is upscaling 20- and 60-m bands to 10 m resolution needed. Set to False if you do not have tensorflow-supported GPU.
+        Is upscaling 20- and 60-m bands to 10 m resolution needed. Set to False if you do not have GPU that supports CUDA.
     projection : string (optional)
         CRS in which output data should be.
     cloud_mask : bool (default = True)
