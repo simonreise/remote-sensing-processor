@@ -89,6 +89,8 @@ To run RSP you need these packages to be installed:
 - Lightning
 - Transformers
 
+If you have a GPU that supports CUDA we strongly recommend you to install Pytorch version that is built with CUDA support before installing RSP. You can find out how to do it on [Pytorch official site](https://pytorch.org/get-started/locally/).
+
 Also you need a Sen2Cor to be installed to process Sentinel-2 data. Required version is 2.11 for Windows and Linux and 2.9 for Mac OS. You should install it via SNAP plugin installer. [Here](http://wiki.awf.forst.uni-goettingen.de/wiki/index.php/Installation_of_SNAP) is the instruction how you can do it.
 
 ## Installation
