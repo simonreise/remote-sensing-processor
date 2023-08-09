@@ -29,7 +29,7 @@ cuda_test()
 
 def sentinel2(archives, sen2cor = True, superres = True, projection = None, cloud_mask = True, clipper = None):
     """
-    Preprocess Sentinel-2 imagery
+    Preprocess Sentinel-2 imagery.
     
     Parameters
     ----------
@@ -106,7 +106,7 @@ def sentinel2(archives, sen2cor = True, superres = True, projection = None, clou
 
 def landsat(archives, projection = None, cloud_mask = True, pansharpen = True, keep_pan_band = False, resample = 'bilinear', t = 'k', clipper = None):
     """
-    Preprocess Landsat imagery
+    Preprocess Landsat imagery.
     
     Parameters
     ----------
