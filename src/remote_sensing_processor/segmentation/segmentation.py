@@ -3,6 +3,7 @@ import collections
 import numpy as np
 import h5py
 import joblib
+import warnings
 
 import sklearn.metrics
 
@@ -13,20 +14,25 @@ import lightning as l
 
 from remote_sensing_processor.segmentation.models import load_model, load_sklearn_model
 
+# this warning usually appears on sanity check if a loaded tile is empty
+warnings.filterwarnings("ignore", message="No positive samples in targets")
 
-def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoint, weights, model_file, epochs, batch_size, classification, num_classes, x_nodata, y_nodata, less_metrics, lr):
+def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoint, weights, model_file, epochs, batch_size, classification, num_classes, x_nodata, y_nodata, less_metrics, lr, multiprocessing):
+    #checking if x and y have same number of datasets
+    if not len(x_train) == len(y_train) or not len(x_val) == len(y_val):
+        raise ValueError("Every x dataset must have a corresponding y dataset")
     #opening files and getting data shapes and metadata
-    if isinstance(x_train, str):
-        with h5py.File(x_train, 'r') as file:
+    if isinstance(x_train[0], str):
+        with h5py.File(x_train[0], 'r') as file:
             input_shape = file['data'].shape[2]
             input_dims = file['data'].shape[1]
             if x_nodata == None:
                 x_nodata = file["data"].attrs['nodata']
-    elif isinstance(x_train, np.ndarray):
-        input_shape = x_train.shape[2]
-        input_dims = x_train.shape[1]
-    if isinstance(y_train, str):
-        with h5py.File(y_train, 'r') as file:
+    elif isinstance(x_train[0], np.ndarray):
+        input_shape = x_train[0].shape[2]
+        input_dims = x_train[0].shape[1]
+    if isinstance(y_train[0], str):
+        with h5py.File(y_train[0], 'r') as file:
             if classification == None:
                 classification = file["data"].attrs['classification']
             if num_classes == None:
@@ -36,29 +42,42 @@ def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoi
                     num_classes = 1
             if y_nodata == None:
                 y_nodata = file["data"].attrs['nodata']
-    elif isinstance(y_train, np.ndarray):
+    elif isinstance(y_train[0], np.ndarray):
         if classification == None:
             classification = True
         if num_classes == None:
             if classification:
-                num_classes = int(np.max(y_train) + 1)
+                num_classes = int(np.max(y_train[0]) + 1)
             else:
                 num_classes = 1
     num_classes = int(num_classes)
     if model in ['BEiT', 'ConditionalDETR', 'Data2Vec', 'DETR', 'DPT', 'Mask2Former', 'MaskFormer', 'MobileNetV2', 'MobileViT', 'MobileViTV2', 'OneFormer', 'SegFormer', 'UperNet', 'DeepLabV3', 'FCN', 'LRASPP']:
         #deep learning pytorch models
+        #checking if file extention is right
+        if os.path.splitext(model_file)[1] != '.ckpt':
+            raise ValueError("Wrong model file format: .ckpt file extention expected for " + model)
         #loading model
         if checkpoint != None:
             model = Model.load_from_checkpoint(checkpoint, input_shape = input_shape, input_dims = input_dims, num_classes = num_classes, classification = classification, y_nodata = y_nodata, lr = lr)
         else:
             model = Model(model, backbone, weights, input_shape, input_dims, num_classes, classification, y_nodata, less_metrics, lr)
         #setting up data sets generators
-        ds_train = H5Dataset(x_train, y_train)
-        if x_val != None and y_val != None:
-            ds_val = H5Dataset(x_val, y_val)
-        train_dataloader = torch.utils.data.DataLoader(ds_train, batch_size=batch_size, pin_memory=True)
-        if x_val != None and y_val != None:
-            val_daloader = torch.utils.data.DataLoader(ds_val, batch_size=batch_size, pin_memory=True)
+        datasets = []
+        for i in range(len(x_train)):
+            datasets.append(H5Dataset(x_train[i], y_train[i]))
+        ds_train = torch.utils.data.ConcatDataset(datasets)
+        if x_val != [None] and y_val != [None]:
+            datasets = []
+            for i in range(len(x_val)):
+                datasets.append(H5Dataset(x_val[i], y_val[i]))
+            ds_val = torch.utils.data.ConcatDataset(datasets)
+        if multiprocessing:
+            cpus = torch.multiprocessing.cpu_count()
+        else:
+            cpus = 0
+        train_dataloader = torch.utils.data.DataLoader(ds_train, batch_size=batch_size, pin_memory=True, num_workers = cpus)
+        if x_val != [None] and y_val != [None]:
+            val_daloader = torch.utils.data.DataLoader(ds_val, batch_size=batch_size, pin_memory=True, num_workers = cpus)
         #training
         checkpoint_callback = l.pytorch.callbacks.ModelCheckpoint(
             save_top_k=1,
@@ -75,12 +94,16 @@ def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoi
         else:
             trainer.fit(model, train_dataloader)
     elif model in ["Nearest Neighbors", "Logistic Regression", "SVM", "Gaussian Process", "Decision Tree", "Random Forest", "Gradient Boosting", "Multilayer Perceptron", "AdaBoost", "Naive Bayes", "QDA", "Ridge", "Lasso", "ElasticNet"]:
+        #checking if file extention is right
+        if os.path.splitext(model_file)[1] != '.joblib':
+            raise ValueError("Wrong model file format: .joblib file extention expected for " + model)
         #loading train datasets
         x_train = sklearn_load_dataset(x_train, classification)
         y_train = sklearn_load_dataset(y_train, classification)
         #loading val datasets
-        x_val = sklearn_load_dataset(x_val, classification)
-        y_val = sklearn_load_dataset(y_val, classification)
+        if x_val != [None] and y_val != [None]:
+            x_val = sklearn_load_dataset(x_val, classification)
+            y_val = sklearn_load_dataset(y_val, classification)
         if checkpoint != None:
             model = joblib.load(checkpoint)
             if model.model_name in ["Random Forest", "Gradient Boosting"]:
@@ -88,7 +111,8 @@ def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoi
         else:
             model = SklearnModel(model, backbone, classification, epochs)
         model.fit(x_train, y_train)
-        model.test(x_val, y_val)
+        if not isinstance(x_val, list) and not isinstance(y_val, list):
+            model.test(x_val, y_val)
         try:
             joblib.dump(model, model_file, compress=9)
         except:
@@ -96,7 +120,9 @@ def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoi
     return model
 
     
-def segmentation_test(x_test, y_test, model, batch_size):
+def segmentation_test(x_test, y_test, model, batch_size, multiprocessing):
+    if not len(x_test) == len(y_test):
+        raise ValueError("Every x dataset must have a corresponding y dataset")
     #loading model
     if isinstance(model, str):
         if '.ckpt' in model:
@@ -105,8 +131,15 @@ def segmentation_test(x_test, y_test, model, batch_size):
             model = joblib.load(model)
     if model.model_name in ['BEiT', 'ConditionalDETR', 'Data2Vec', 'DETR', 'DPT', 'Mask2Former', 'MaskFormer', 'MobileNetV2', 'MobileViT', 'MobileViTV2', 'OneFormer', 'SegFormer', 'UperNet', 'DeepLabV3', 'FCN', 'LRASPP']:
         #neural networks
-        ds_test = H5Dataset(x_test, y_test)
-        test_dataloader = torch.utils.data.DataLoader(ds_test, batch_size=batch_size, pin_memory=True)
+        datasets = []
+        for i in range(len(x_test)):
+            datasets.append(H5Dataset(x_test[i], y_test[i]))
+        ds_test = torch.utils.data.ConcatDataset(datasets)
+        if multiprocessing:
+            cpus = torch.multiprocessing.cpu_count()
+        else:
+            cpus = 0
+        test_dataloader = torch.utils.data.DataLoader(ds_test, batch_size=batch_size, pin_memory=True, num_workers = cpus)
         trainer = l.Trainer()
         trainer.test(model, dataloaders=test_dataloader)
     elif model.model_name in ["Nearest Neighbors", "Logistic Regression", "SVM", "Gaussian Process", "Decision Tree", "Random Forest", "Gradient Boosting", "Multilayer Perceptron", "AdaBoost", "Naive Bayes", "QDA", "Ridge", "Lasso", "ElasticNet"]:
@@ -435,10 +468,10 @@ class SklearnModel:
         #print(np.unique(pred))
         if self.classification:
             print('Accuracy: ', sklearn.metrics.accuracy_score(y.flatten(), pred.flatten()))
-            print('Precision: ', sklearn.metrics.precision_score(y.flatten(), pred.flatten(), average = 'macro'))
-            print('Recall: ', sklearn.metrics.recall_score(y.flatten(), pred.flatten(), average = 'macro'))
+            print('Precision: ', sklearn.metrics.precision_score(y.flatten(), pred.flatten(), average = 'macro', zero_division = 1))
+            print('Recall: ', sklearn.metrics.recall_score(y.flatten(), pred.flatten(), average = 'macro', zero_division = 1))
             #print('ROC_AUC: ', sklearn.metrics.roc_auc_score(y.flatten(), pred.flatten(), average = 'micro', multi_class = 'ovr'))
-            print('IOU: ', sklearn.metrics.jaccard_score(y.flatten(), pred.flatten(), average = 'micro'))
+            print('IOU: ', sklearn.metrics.jaccard_score(y.flatten(), pred.flatten(), average = 'micro', zero_division = 1))
         else:
             print('R2: ', sklearn.metrics.r2_score(y, pred))
             print('MSE: ', sklearn.metrics.mean_squared_error(y, pred))
@@ -449,10 +482,17 @@ class SklearnModel:
         
     
 def sklearn_load_dataset(ds, classification):
-    if isinstance(ds, str):
-        with h5py.File(ds, 'r') as file:
-            ds = file['data']
-            ds = ds[...]
+    if isinstance(ds[0], str):
+        datasets = []
+        for d in ds:
+            with h5py.File(d, 'r') as file:
+                d = file['data']
+                d = d[...]
+                datasets.append(d)
+    else:
+        datasets = ds
+    #concatenate datasets
+    ds = np.concatenate(datasets, axis = 0)
     #if x dataset
     if len(ds.shape) == 4:
         #stack all tiles to single image

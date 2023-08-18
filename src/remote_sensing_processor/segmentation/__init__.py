@@ -124,7 +124,7 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
     return x, y, tiles, samples, classification, num_classes, classes, x_nodata, y_nodata
 
     
-def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, epochs = 5, checkpoint = None, weights = None, batch_size = 32, less_metrics = False, lr = 1e-3, classification = None, num_classes = None, x_nodata = None, y_nodata = None):
+def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, epochs = 5, checkpoint = None, weights = None, batch_size = 32, less_metrics = False, lr = 1e-3, multiprocessing = True, classification = None, num_classes = None, x_nodata = None, y_nodata = None):
     """
     Trains segmentation model.
     
@@ -156,6 +156,8 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ep
         Sometimes Torchmetrics can freeze while calculating precision, recall and IOU. If it happens, try restarting with `less_metrics = True`.
     lr : float (default = 1e-3)
         Learning rate of a model. Lower value results usually in better model convergence, but much slower training.
+    multiprocessing: bool (default = True)
+        Multiprocessing can significantly improve performance but also cause errors in some environments.
     classification : bool (default = None)
         If True then tiles are prepared for classification (e.g. semantic segmentation) task, else are prepared for regression task. If not defined then is read from y_train h5 file or set to True if y_train is np.array.
     num_classes: int (optional)
@@ -227,10 +229,18 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ep
         train_loss_epoch=0.349, train_acc_epoch=0.842, train_auroc_epoch=0.797, train_iou_epoch=0.648]
         `Trainer.fit` stopped: `max_epochs=10` reached.
     """
-    model = segmentation_train(x_train = x_train, x_val = x_val, y_train = y_train, y_val = y_val, model = model, backbone = backbone, checkpoint = checkpoint, weights = weights, model_file = model_file, epochs = epochs, batch_size = batch_size, classification = classification, num_classes = num_classes, x_nodata = x_nodata, y_nodata = y_nodata, less_metrics = less_metrics, lr = lr)
+    if not isinstance(x_train, list):
+        x_train = [x_train]
+    if not isinstance(y_train, list):
+        y_train = [y_train]
+    if not isinstance(x_val, list):
+        x_val = [x_val]
+    if not isinstance(y_val, list):
+        y_val = [y_val]
+    model = segmentation_train(x_train = x_train, x_val = x_val, y_train = y_train, y_val = y_val, model = model, backbone = backbone, checkpoint = checkpoint, weights = weights, model_file = model_file, epochs = epochs, batch_size = batch_size, classification = classification, num_classes = num_classes, x_nodata = x_nodata, y_nodata = y_nodata, less_metrics = less_metrics, lr = lr, multiprocessing = multiprocessing)
     return model
     
-def test(x_test, y_test, model, batch_size = 32):
+def test(x_test, y_test, model, batch_size = 32, multiprocessing = True):
     """
     Tests segmentation model.
     
@@ -244,6 +254,8 @@ def test(x_test, y_test, model, batch_size = 32):
         Model to test. You can pass the model object returned by `train()` function or file (*.ckpt or *.joblib) where model is stored.
     batch_size : int (default = 32)
         Number of samples used in one iteration.
+    multiprocessing: bool (default = True)
+        Multiprocessing can significantly improve performance but also cause errors in some environments.
             
     Examples
     --------
@@ -268,10 +280,14 @@ def test(x_test, y_test, model, batch_size = 32):
         │     test_recall_epoch     │    0.8231202960014343     │
         └───────────────────────────┴───────────────────────────┘
     """
-    segmentation_test(x_test = x_test, y_test = y_test, model = model, batch_size = batch_size)
+    if not isinstance(x_test, list):
+        x_test = [x_test]
+    if not isinstance(y_test, list):
+        y_test = [y_test]
+    segmentation_test(x_test = x_test, y_test = y_test, model = model, batch_size = batch_size, multiprocessing = multiprocessing)
     
  
-def generate_map(x, y_true, model, output, tiles = None, samples = None, classes = None, samples_file = None, nodata = None, batch_size = 32):
+def generate_map(x, y_true, model, output, tiles = None, samples = None, classes = None, samples_file = None, nodata = None, batch_size = 32, multiprocessing = True):
     """
     Create map using pre-trained model.
     
@@ -297,6 +313,8 @@ def generate_map(x, y_true, model, output, tiles = None, samples = None, classes
         Nodata value. If not defined then nodata value of y raster will be used.
     batch_size : int (default = 32)
         Number of samples used in one iteration.
+    multiprocessing: bool (default = True)
+        Multiprocessing can significantly improve performance but also cause errors in some environments.
     
     Examples
     --------
@@ -327,7 +345,7 @@ def generate_map(x, y_true, model, output, tiles = None, samples = None, classes
     if (tiles != None and samples != None) or (samples_file != None):
         if not isinstance(x, list):
             x = [x]
-        predict_map_from_tiles(x = x, y_true = y_true, model = model, tiles = tiles, samples = samples, classes = classes, samples_file = samples_file, output = output, nodata = nodata, batch_size = batch_size)
+        predict_map_from_tiles(x = x, y_true = y_true, model = model, tiles = tiles, samples = samples, classes = classes, samples_file = samples_file, output = output, nodata = nodata, batch_size = batch_size, multiprocessing = multiprocessing)
     else:
         print('Tiles and samples must be specified')
 
