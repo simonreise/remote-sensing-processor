@@ -23,7 +23,7 @@ from remote_sensing_processor.common.normalize import normalize_file
 from remote_sensing_processor import segmentation
 
 
-__version__ = '0.2'
+__version__ = '0.2.1'
 
 cuda_test()
 

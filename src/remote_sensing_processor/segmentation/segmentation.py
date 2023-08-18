@@ -117,6 +117,8 @@ def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoi
             joblib.dump(model, model_file, compress=9)
         except:
             print('Error while saving model, check if enough free space is available.')
+    else:
+        raise ValueError("Wrong model name. Check spelling or read a documentation and choose a supported model")
     return model
 
     
