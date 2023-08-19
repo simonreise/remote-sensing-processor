@@ -89,7 +89,7 @@ def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoi
         tb_logger = l.pytorch.loggers.TensorBoardLogger(save_dir=os.path.join(os.path.dirname(model_file), 'logs' , 'tensorboard'))
         csv_logger = l.pytorch.loggers.CSVLogger(save_dir=os.path.join(os.path.dirname(model_file), 'logs' , 'csv'))
         trainer = l.Trainer(max_epochs=epochs, callbacks=[checkpoint_callback], logger=[tb_logger, csv_logger])
-        if x_val != None and y_val != None:
+        if x_val != [None] and y_val != [None]:
             trainer.fit(model, train_dataloader, val_daloader)
         else:
             trainer.fit(model, train_dataloader)
