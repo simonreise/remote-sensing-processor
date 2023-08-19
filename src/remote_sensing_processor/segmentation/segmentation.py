@@ -16,6 +16,9 @@ from remote_sensing_processor.segmentation.models import load_model, load_sklear
 
 # this warning usually appears on sanity check if a loaded tile is empty
 warnings.filterwarnings("ignore", message="No positive samples in targets")
+warnings.filterwarnings("ignore", message="exists and is not empty")
+warnings.filterwarnings("ignore", message="could not find the monitored key in the returned metrics")
+warnings.filterwarnings("ignore", message="Skipping val loop")
 
 def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoint, weights, model_file, epochs, batch_size, classification, num_classes, x_nodata, y_nodata, less_metrics, lr, multiprocessing):
     #checking if x and y have same number of datasets
@@ -81,7 +84,7 @@ def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoi
         #training
         checkpoint_callback = l.pytorch.callbacks.ModelCheckpoint(
             save_top_k=1,
-            monitor="val_loss",
+            monitor="val_loss" if x_val != [None] and y_val != [None] else "train_loss",
             mode="min",
             dirpath=os.path.dirname(model_file),
             filename=os.path.basename(os.path.splitext(model_file)[0]),
