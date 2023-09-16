@@ -80,7 +80,7 @@ def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoi
             cpus = 0
         train_dataloader = torch.utils.data.DataLoader(ds_train, batch_size=batch_size, pin_memory=True, num_workers = cpus)
         if x_val != [None] and y_val != [None]:
-            val_daloader = torch.utils.data.DataLoader(ds_val, batch_size=batch_size, pin_memory=True, num_workers = cpus)
+            val_dataloader = torch.utils.data.DataLoader(ds_val, batch_size=batch_size, pin_memory=True, num_workers = cpus)
         #training
         checkpoint_callback = l.pytorch.callbacks.ModelCheckpoint(
             save_top_k=1,
@@ -93,7 +93,7 @@ def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoi
         csv_logger = l.pytorch.loggers.CSVLogger(save_dir=os.path.join(os.path.dirname(model_file), 'logs' , 'csv'))
         trainer = l.Trainer(max_epochs=epochs, callbacks=[checkpoint_callback], logger=[tb_logger, csv_logger])
         if x_val != [None] and y_val != [None]:
-            trainer.fit(model, train_dataloader, val_daloader)
+            trainer.fit(model, train_dataloader, val_dataloader)
         else:
             trainer.fit(model, train_dataloader)
     elif model in ["Nearest Neighbors", "Logistic Regression", "SVM", "Gaussian Process", "Decision Tree", "Random Forest", "Gradient Boosting", "Multilayer Perceptron", "AdaBoost", "Naive Bayes", "QDA", "Ridge", "Lasso", "ElasticNet"]:
