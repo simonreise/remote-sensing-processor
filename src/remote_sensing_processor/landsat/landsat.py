@@ -62,21 +62,69 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
                 qatransform = landsat_qa_file.transform
             with rio.open(qar) as landsat_qar_file:
                 qar = landsat_qar_file.read(1)
-        #old qa images have different values
+        #collection 1 qa images have different values
         if old:
             if lsver in ['Landsat8_up_l1', 'Landsat8_up_l2']:
-                mask = np.where(qa == 2720, 0, 1)
+                clears = []
+                for v in np.unique(qa):
+                    val = format(v, 'b')[::-1]
+                    while not len(val) == 16:
+                        val = val + '0'
+                    if val[0] == '0' and val[1] == '0' and val[2:4] == '00' and val[4] == '0' and val[5:7] in ['00', '10'] and val[7:9] in ['00', '10'] and val[11:13] in ['00', '10']:
+                        clears.append(v)
+                mask = np.where(np.isin(qa, clears), 0, 1)
+                #mask = np.where(qa in [2720, 3744], 0, 1)
             elif lsver in ['Landsat7_up_l1', 'Landsat7_up_l2', 'Landsat5_up_l1', 'Landsat5_up_l2']:
-                mask = np.where(qa == 672, 0, 1)
+                clears = []
+                for v in np.unique(qa):
+                    val = format(v, 'b')[::-1]
+                    while not len(val) == 16:
+                        val = val + '0'
+                    if val[0] == '0' and val[1] == '0' and val[2:4] == '00' and val[4] == '0' and val[5:7] in ['00', '10'] and val[7:9] in ['00', '10']:
+                        clears.append(v)
+                mask = np.where(np.isin(qa, clears), 0, 1)
+                #mask = np.where(qa in [672, 1696], 0, 1)
             elif lsver in ['Landsat1_up_l1', 'Landsat1_up_l2']:
-                mask = np.where(qa == 256, 0, 1)
+                clears = []
+                for v in np.unique(qa):
+                    val = format(v, 'b')[::-1]
+                    while not len(val) == 16:
+                        val = val + '0'
+                    if val[0] == '0' and val[1] == '0' and val[2:4] == '00' and val[4] == '0' and val[5:7] in ['00', '10']:
+                        clears.append(v)
+                mask = np.where(np.isin(qa, clears), 0, 1)
+                #mask = np.where(qa in [32], 0, 1)
         else:
             if lsver in ['Landsat8_up_l1', 'Landsat8_up_l2']:
-                mask = np.where(qa == 21824, 0, 1)
+                clears = []
+                for v in np.unique(qa):
+                    val = format(v, 'b')[::-1]
+                    while not len(val) == 16:
+                        val = val + '0'
+                    if val[0] == '0' and val[1] == '0' and val[2] == '0' and val[3] == '0' and val[4] == '0' and val[6] == '1' and val[8:10] in ['00', '10'] and val[10:12] in ['00', '10'] and val[14:16] in ['00', '10']:
+                        clears.append(v)
+                mask = np.where(np.isin(qa, clears), 0, 1)
+                #mask = np.where(qa in [21824, 21952, 30048], 0, 1)
             elif lsver in ['Landsat7_up_l1', 'Landsat7_up_l2', 'Landsat5_up_l1', 'Landsat5_up_l2']:
-                mask = np.where(qa == 5440, 0, 1)
+                clears = []
+                for v in np.unique(qa):
+                    val = format(v, 'b')[::-1]
+                    while not len(val) == 16:
+                        val = val + '0'
+                    if val[0] == '0' and val[1] == '0' and val[3] == '0' and val[4] == '0' and val[8:10] in ['00', '10'] and val[10:12] in ['00', '10']:
+                        clears.append(v)
+                mask = np.where(np.isin(qa, clears), 0, 1)
+                #mask = np.where(qa in [5440, 5504, 13600], 0, 1)
             elif lsver in ['Landsat1_up_l1', 'Landsat1_up_l2']:
-                mask = np.where(qa == 256, 0, 1)
+                clears = []
+                for v in np.unique(qa):
+                    val = format(v, 'b')[::-1]
+                    while not len(val) == 16:
+                        val = val + '0'
+                    if val[0] == '0' and val[3] == '0' and val[8:10] in ['00', '10']:
+                        clears.append(v)
+                mask = np.where(np.isin(qa, clears), 0, 1)
+                #mask = np.where(qa == 256, 0, 1)
         if 'qar' in locals():
             mask = np.where(qar == 0, mask, 1)
         qa = None
