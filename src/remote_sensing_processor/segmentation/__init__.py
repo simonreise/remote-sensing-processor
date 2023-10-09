@@ -14,7 +14,7 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
     x : list of paths as strings
         Rasters to use as training data.
     y : path as a string
-        Raster to use as target values.
+        Raster to use as target values. Can be set to None if target value is not needed.
     tile_size : int (default = 128)
         Size of tiles to generate (tile_size x tile_size).
     classification : bool (default = True)
@@ -117,10 +117,13 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
         >>> print(y_nodata)
         0
     """
+    if isinstance(x, str):
+        x = [x]
+    if isinstance(x_outputs, str):
+        x_outputs = [x_outputs]
+    if isinstance(y_outputs, str):
+        y_outputs = [y_outputs]
     x, y, tiles, samples, classification, num_classes, classes, x_nodata, y_nodata = get_ss_tiles(x = x, y = y, tile_size = tile_size, classification = classification, shuffle = shuffle, samples_file = samples_file, split = split, x_outputs = x_outputs, y_outputs = y_outputs, x_dtype = x_dtype, y_dtype = y_dtype, x_nodata = x_nodata, y_nodata = y_nodata)
-    if len(split) == 1:
-        x = x[0]
-        y = y[0]
     return x, y, tiles, samples, classification, num_classes, classes, x_nodata, y_nodata
 
     

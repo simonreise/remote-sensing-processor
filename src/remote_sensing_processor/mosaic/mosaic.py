@@ -77,14 +77,16 @@ def check_crs(pathfile, crs, nodata):
         #reprojecting
         transform, width, height = calculate_default_transform(
             pathfile.crs, crs, orig_meta['width'], orig_meta['height'], *bounds)
-        img = np.zeros((orig.shape[0], height, width), orig.dtype)
+        img = np.full((orig.shape[0], height, width), nodata, orig.dtype)
         reproject(
             source=orig,
             destination=img,
             src_transform=orig_meta['transform'],
             src_crs=orig_meta['crs'],
+            src_nodata=nodata,
             dst_transform=transform,
             dst_crs=crs,
+            dst_nodata=nodata,
             resampling=Resampling.nearest)
         memfile = MemoryFile()
         rst = memfile.open(
