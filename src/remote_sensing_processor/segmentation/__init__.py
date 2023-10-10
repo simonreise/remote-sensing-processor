@@ -1,4 +1,6 @@
 import sys
+import os
+import numpy as np
 
 from remote_sensing_processor.segmentation.segmentation import segmentation_train, segmentation_test
 from remote_sensing_processor.segmentation.tiles import get_ss_tiles
@@ -23,7 +25,7 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
         Is random shuffling of samples needed.
     samples_file : path as a string (optional)
         Path where to save tiles, samples and classes data that are generated as output. File should have .pickle format. It can be needed later for mapping.
-    split : list of ints (optional)
+    split : list of ints or floats (optional)
         Splitting data in subsets. Is a list of integers defining proportions of every subset. [3, 1, 1] will generate 3 subsets in proportion 3 to 1 to 1.
     x_outputs : list of paths as strings (optional)
         List of paths to save generated output x data. Data is saved in .h5 format.
@@ -117,17 +119,75 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
         >>> print(y_nodata)
         0
     """
+    #type checking
     if isinstance(x, str):
         x = [x]
+    elif isinstance(x, list):
+        for i in x:
+            if not isinstance(i, str):
+                raise TypeError("x must be a string or a list of strings")
+    else:
+        raise TypeError("x must be a string or a list of strings")
+    for i in x:
+        if not os.path.exists(i):
+            raise OSError(i + " does not exist")
+    if not isinstance(y, str) and not isinstance(y, type(None)):
+        raise TypeError("y must be a string")
+    elif not os.path.exists(y):
+        raise OSError(y + " does not exist")
+    if not isinstance(tile_size, int):
+        if isinstance(tile_size, type(None)):
+            tile_size = 128
+        else:
+            raise TypeError("tile_size must be an integer")
+    if not isinstance(classification, bool):
+        if isinstance(classification, type(None)):
+            classification = True
+        else:
+            raise TypeError("classification must be boolean")
+    if not isinstance(shuffle, bool):
+        if isinstance(shuffle, type(None)):
+            shuffle = False
+        else:
+            raise TypeError("shuffle must be boolean")
+    if not isinstance(samples_file, type(None)) and not isinstance(samples_file, str):
+        raise TypeError("samples_file must be a string")
+    if isinstance(split, list):
+        for i in split:
+            if not isinstance(i, int) and not isinstance(i, float):
+                raise TypeError("split must be a list of ints or floats")
+    elif not isinstance(split, type(None)):
+        raise TypeError("split must be a list of ints or floats")
     if isinstance(x_outputs, str):
         x_outputs = [x_outputs]
+    elif isinstance(x_outputs, list):
+        for i in x_outputs:
+            if not isinstance(i, str):
+                raise TypeError("x_outputs must be a list of strings")
+    elif not isinstance(x_outputs, type(None)):
+        raise TypeError("x_outputs must be a list of strings")
     if isinstance(y_outputs, str):
         y_outputs = [y_outputs]
+    elif isinstance(y_outputs, list):
+        for i in y_outputs:
+            if not isinstance(i, str):
+                raise TypeError("y_outputs must be a list of strings")
+    elif not isinstance(y_outputs, type(None)):
+        raise TypeError("y_outputs must be a list of strings")
+    if not isinstance(x_dtype, type(None)):
+        np.dtype(x_dtype)
+    if not isinstance(y_dtype, type(None)):
+        np.dtype(y_dtype)
+    if not isinstance(x_nodata, int) and not isinstance(x_nodata, float) and not isinstance(x_nodata, type(None)):
+        raise TypeError("x_nodata must be integer or float")
+    if not isinstance(y_nodata, int) and not isinstance(y_nodata, float) and not isinstance(y_nodata, type(None)):
+        raise TypeError("y_nodata must be integer or float")
+    
     x, y, tiles, samples, classification, num_classes, classes, x_nodata, y_nodata = get_ss_tiles(x = x, y = y, tile_size = tile_size, classification = classification, shuffle = shuffle, samples_file = samples_file, split = split, x_outputs = x_outputs, y_outputs = y_outputs, x_dtype = x_dtype, y_dtype = y_dtype, x_nodata = x_nodata, y_nodata = y_nodata)
     return x, y, tiles, samples, classification, num_classes, classes, x_nodata, y_nodata
 
     
-def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, epochs = 5, checkpoint = None, weights = None, batch_size = 32, less_metrics = False, lr = 1e-3, multiprocessing = True, classification = None, num_classes = None, x_nodata = None, y_nodata = None):
+def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, checkpoint = None, weights = None, epochs = 5, batch_size = 32, less_metrics = False, lr = 1e-3, multiprocessing = True, classification = None, num_classes = None, x_nodata = None, y_nodata = None):
     """
     Trains segmentation model.
     
@@ -232,14 +292,81 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ep
         train_loss_epoch=0.349, train_acc_epoch=0.842, train_auroc_epoch=0.797, train_iou_epoch=0.648]
         `Trainer.fit` stopped: `max_epochs=10` reached.
     """
+    #type checking
     if not isinstance(x_train, list):
         x_train = [x_train]
+    for i in x_train:
+        if not isinstance(i, str) and not isinstance(i, np.ndarray):
+            raise TypeError("x_train must be a string or numpy array or a list of strings or arrays")
+        elif isinstance(i, str) and not os.path.exists(i):
+            raise OSError(i + " does not exist")
     if not isinstance(y_train, list):
         y_train = [y_train]
+    for i in y_train:
+        if not isinstance(i, str) and not isinstance(i, np.ndarray):
+            raise TypeError("y_train must be a string or numpy array or a list of strings or arrays")
+        elif isinstance(i, str) and not os.path.exists(i):
+            raise OSError(i + " does not exist")
     if not isinstance(x_val, list):
         x_val = [x_val]
+    for i in x_val:
+        if not isinstance(i, str) and not isinstance(i, np.ndarray) and not isinstance(i, type(None)):
+            raise TypeError("x_val must be a string or numpy array or a list of strings or arrays")
+        elif isinstance(i, str) and not os.path.exists(i):
+            raise OSError(i + " does not exist")
     if not isinstance(y_val, list):
         y_val = [y_val]
+    for i in y_val:
+        if not isinstance(i, str) and not isinstance(i, np.ndarray) and not isinstance(i, type(None)):
+            raise TypeError("y_val must be a string or numpy array or a list of strings or arrays")
+        elif isinstance(i, str) and not os.path.exists(i):
+            raise OSError(i + " does not exist")
+    if not isinstance(model_file, str):
+        raise TypeError("model_file must be a string")
+    if not isinstance(model, str):
+        raise TypeError("model must be a string")
+    if not isinstance(backbone, str) and not isinstance(backbone, type(None)):
+        raise TypeError("backbone must be a string")
+    if not isinstance(checkpoint, str) and not isinstance(checkpoint, type(None)):
+        raise TypeError("checkpoint must be a string")
+    elif isinstance(checkpoint, str) and not os.path.exists(checkpoint):
+        raise OSError(checkpoint + " does not exist")
+    if not isinstance(weights, str) and not isinstance(weights, type(None)):
+        raise TypeError("weights must be a string")
+    if not isinstance(epochs, int):
+        if isinstance(epochs, type(None)):
+            epochs = 5
+        else:
+            raise TypeError("epochs must be an integer")
+    if not isinstance(batch_size, int):
+        if isinstance(batch_size, type(None)):
+            batch_size = 32
+        else:
+            raise TypeError("batch_size must be an integer")
+    if not isinstance(less_metrics, bool):
+        if isinstance(less_metrics, type(None)):
+            less_metrics = False
+        else:
+            raise TypeError("less_metrics must be boolean")
+    if not isinstance(lr, float):
+        if isinstance(lr, type(None)):
+            lr = 1e-3
+        else:
+            raise TypeError("lr must be float")
+    if not isinstance(multiprocessing, bool):
+        if isinstance(multiprocessing, type(None)):
+            multiprocessing = True
+        else:
+            raise TypeError("multiprocessing must be boolean")
+    if not isinstance(classification, bool) and not isinstance(classification, type(None)):
+        raise TypeError("classification must be boolean or None")
+    if not isinstance(num_classes, int) and not isinstance(num_classes, type(None)):
+        raise TypeError("num_classes must be int or None")
+    if not isinstance(x_nodata, int) and not isinstance(x_nodata, float) and not isinstance(x_nodata, type(None)):
+        raise TypeError("x_nodata must be int or float or None")
+    if not isinstance(y_nodata, int) and not isinstance(y_nodata, float) and not isinstance(y_nodata, type(None)):
+        raise TypeError("y_nodata must be int or float or None")
+    
     model = segmentation_train(x_train = x_train, x_val = x_val, y_train = y_train, y_val = y_val, model = model, backbone = backbone, checkpoint = checkpoint, weights = weights, model_file = model_file, epochs = epochs, batch_size = batch_size, classification = classification, num_classes = num_classes, x_nodata = x_nodata, y_nodata = y_nodata, less_metrics = less_metrics, lr = lr, multiprocessing = multiprocessing)
     return model
     
@@ -283,10 +410,32 @@ def test(x_test, y_test, model, batch_size = 32, multiprocessing = True):
         │     test_recall_epoch     │    0.8231202960014343     │
         └───────────────────────────┴───────────────────────────┘
     """
+    #type checking
     if not isinstance(x_test, list):
         x_test = [x_test]
+    for i in x_test:
+        if not isinstance(i, str) and not isinstance(i, np.ndarray):
+            raise TypeError("x_test must be a string or numpy array or a list of strings or arrays")
+        elif isinstance(i, str) and not os.path.exists(i):
+            raise OSError(i + " does not exist")
     if not isinstance(y_test, list):
         y_test = [y_test]
+    for i in y_test:
+        if not isinstance(i, str) and not isinstance(i, np.ndarray):
+            raise TypeError("y_test must be a string or numpy array or a list of strings or arrays")
+        elif isinstance(i, str) and not os.path.exists(i):
+            raise OSError(i + " does not exist")
+    if not isinstance(batch_size, int):
+        if isinstance(batch_size, type(None)):
+            batch_size = 32
+        else:
+            raise TypeError("batch_size must be an integer")
+    if not isinstance(multiprocessing, bool):
+        if isinstance(multiprocessing, type(None)):
+            multiprocessing = True
+        else:
+            raise TypeError("multiprocessing must be boolean")
+    
     segmentation_test(x_test = x_test, y_test = y_test, model = model, batch_size = batch_size, multiprocessing = multiprocessing)
     
  
@@ -296,7 +445,7 @@ def generate_map(x, y_true, model, output, tiles = None, samples = None, classes
     
     Parameters
     ----------
-    x : numpy array with x data or path to .npy file with x data or list of arrays or paths 
+    x : numpy array with x data or path to .h5 file with x data or list of arrays or paths 
         X tiled data that will be used for predictions. Usually it is data generated in `generate_tiles` function.
     y : path as a string
         Raster with target values which will be used as a reference raster to get size, transform and crs for a map.
@@ -308,7 +457,7 @@ def generate_map(x, y_true, model, output, tiles = None, samples = None, classes
         List of tile coordinates. Usually is generated in `generate_tiles` function. You also can use `samples_file` instead.
     samples : list (optional) 
         List with order of samples. Usually is generated in `generate_tiles` function. You also can use `samples_file` instead.
-    classes : list
+    classes : list (optional)
         Sorted unique values from y dataset. Usually is generated in `generate_tiles` function. You also can use `samples_file` instead.
     samples_file : path as a string (optional)
         Path to a samples .pickle file generated by `generate_tiles` function. You can use `samples_file` instead of `tiles`, `samples` and `classes`.
@@ -345,10 +494,45 @@ def generate_map(x, y_true, model, output, tiles = None, samples = None, classes
         >>> rsp.segmentation.generate_map([x_train_file, x_val_file, x_test_file], y_reference, model, output_map, samples_file = s_file, nodata = -1)
         Predicting: 100% #################### 372/372 [32:16, 1.6s/it]
     """
+    #type checking
+    if not isinstance(x, list):
+        x = [x]
+    for i in x:
+        if not isinstance(i, str) and not isinstance(i, np.ndarray):
+            raise TypeError("x must be a string or numpy array or a list of strings or arrays")
+        elif isinstance(i, str) and not os.path.exists(i):
+            raise OSError(i + " does not exist")
+    if not isinstance(y_true, str):
+        raise TypeError("y must be a string")
+    elif not os.path.exists(y_true):
+        raise OSError(y_true + " does not exist")
+    if not isinstance(output, str):
+        raise TypeError("output must be a string")
+    if not isinstance(tiles, list) and not isinstance(tiles, type(None)):
+        raise TypeError("tiles must be a list")
+    if not isinstance(samples, list) and not isinstance(samples, type(None)):
+        raise TypeError("samples must be a list")
+    if not isinstance(classes, list) and not isinstance(classes, type(None)):
+        raise TypeError("classes must be a list")
+    if not isinstance(samples_file, str) and not isinstance(samples_file, type(None)):
+        raise TypeError("samples_file must be a string")
+    elif isinstance(samples_file, str) and not os.path.exists(samples_file):
+        raise OSError(samples_file + " does not exist")
+    if not isinstance(nodata, int) and not isinstance(nodata, float) and not isinstance(nodata, type(None)):
+        raise TypeError("nodata must be integer or float")
+    if not isinstance(batch_size, int):
+        if isinstance(batch_size, type(None)):
+            batch_size = 32
+        else:
+            raise TypeError("batch_size must be an integer")
+    if not isinstance(multiprocessing, bool):
+        if isinstance(multiprocessing, type(None)):
+            multiprocessing = True
+        else:
+            raise TypeError("multiprocessing must be boolean")
+    
     if (tiles != None and samples != None) or (samples_file != None):
-        if not isinstance(x, list):
-            x = [x]
         predict_map_from_tiles(x = x, y_true = y_true, model = model, tiles = tiles, samples = samples, classes = classes, samples_file = samples_file, output = output, nodata = nodata, batch_size = batch_size, multiprocessing = multiprocessing)
     else:
-        print('Tiles and samples must be specified')
+        raise ValueError('Tiles and samples must be specified')
 

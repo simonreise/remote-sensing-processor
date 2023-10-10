@@ -74,6 +74,8 @@ def predict_map_from_tiles(x, y_true, model, tiles, samples, classes, samples_fi
             prediction = prediction.reshape(size, size)
             #print(prediction.shape)
             predictions.append(prediction[np.newaxis, :])
+    else:
+        raise ValueError("Wrong model name. Check spelling or read a documentation and choose a supported model")
     predictions = np.concatenate(predictions, axis=0)
     #mapping
     for i in range(len(samples)):

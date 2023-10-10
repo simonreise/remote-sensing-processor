@@ -2,6 +2,7 @@ from glob import glob
 import shutil
 import os
 import sys
+import rasterio as rio
 
 from remote_sensing_processor.common.torch_test import cuda_test
 
@@ -27,7 +28,7 @@ __version__ = '0.2.1'
 
 cuda_test()
 
-def sentinel2(archives, sen2cor = True, superres = True, projection = None, cloud_mask = True, clipper = None):
+def sentinel2(archives, sen2cor = True, superres = True, crs = None, cloud_mask = True, clipper = None):
     """
     Preprocess Sentinel-2 imagery.
     
@@ -39,8 +40,8 @@ def sentinel2(archives, sen2cor = True, superres = True, projection = None, clou
         Is atmospheric correction using Sen2Cor needed. Set to False if you have troubles with Sen2Cor.
     superres : bool (default = True)
         Is upscaling 20- and 60-m bands to 10 m resolution needed. Set to False if you do not have GPU that supports CUDA.
-    projection : string (optional)
-        CRS in which output data should be.
+    crs : string (optional)
+        CRS in which output data should be or `same` to get CRS from the first archive.
     cloud_mask : bool (default = True)
         Is cloud masking needed.
     clipper : string (optional)
@@ -78,8 +79,41 @@ def sentinel2(archives, sen2cor = True, superres = True, projection = None, clou
          '/home/rsp_test/sentinels/L1C_T43VDL_A023312_20210823T063624/',
          '/home/rsp_test/sentinels/L1C_T43VDL_A031577_20210709T064041/']
     """
+    #type checking
     if isinstance(archives, str):
         archives = [archives]
+    elif isinstance(archives, list):
+        for i in archives:
+            if not isinstance(i, str):
+                raise TypeError("archives must be a string or a list of strings")
+    else:
+        raise TypeError("archives must be a string or a list of strings")
+    for archive in archives:
+        if not os.path.exists(archive):
+            raise OSError(archive + " does not exist")
+    if not isinstance(sen2cor, bool):
+        if isinstance(sen2cor, type(None)):
+            sen2cor = True
+        else:
+            raise TypeError("sen2cor must be boolean")
+    if not isinstance(superres, bool):
+        if isinstance(superres, type(None)):
+            superres = True
+        else:
+            raise TypeError("superres must be boolean")
+    if crs != None and not crs == 'same':
+        rio.crs.CRS.from_user_input(crs)
+    if not isinstance(cloud_mask, bool):
+        if isinstance(cloud_mask, type(None)):
+            cloud_mask = True
+        else:
+            raise TypeError("cloud_mask must be boolean")
+    if not isinstance(clipper, type(None)):
+        if not isinstance(clipper, str):
+            raise TypeError("clipper must be a string")
+        elif not os.path.exists(clipper):
+            raise OSError(clipper + " does not exist") 
+    
     paths = []
     for archive in archives:
         path = unzip_sentinel(archive)
@@ -90,21 +124,21 @@ def sentinel2(archives, sen2cor = True, superres = True, projection = None, clou
         if superres == True:
             Superresolution(input_dir = path1, output_dir = path1, copy_original_bands = True, clip_to_aoi = False, geometry = None, bounds = None).start()
             img = glob(path+'**/*_superresolution.tif')[0]
-            if projection == 'same':
-                projection = get_first_proj(img)
-            s2postprocess_superres(img = img, projection = projection, cloud_mask = cloud_mask, clipper = clipper, path = path, path1 = path1)
+            if crs == 'same':
+                crs = get_first_proj(img)
+            s2postprocess_superres(img = img, projection = crs, cloud_mask = cloud_mask, clipper = clipper, path = path, path1 = path1)
         else:
-            if projection == 'same':
+            if crs == 'same':
                 img = glob(path1 + '/**/*.jp2')[0]
-                projection = get_first_proj(img)
-            s2postprocess_no_superres(projection = projection, cloud_mask = cloud_mask, clipper = clipper, path = path, path1 = path1)
+                crs = get_first_proj(img)
+            s2postprocess_no_superres(projection = crs, cloud_mask = cloud_mask, clipper = clipper, path = path, path1 = path1)
         shutil.rmtree(path1)
         paths.append(path)
         print('Preprocessing of ' + archive + ' completed')
     return paths
     
 
-def landsat(archives, projection = None, cloud_mask = True, pansharpen = True, keep_pan_band = False, resample = 'bilinear', t = 'k', clipper = None):
+def landsat(archives, crs = None, cloud_mask = True, pansharpen = True, keep_pan_band = False, resample = 'bilinear', t = 'k', clipper = None):
     """
     Preprocess Landsat imagery.
     
@@ -112,8 +146,8 @@ def landsat(archives, projection = None, cloud_mask = True, pansharpen = True, k
     ----------
     archives : string or list of strings
         Path to archive or list of pathes to archives.
-    projection : string (optional)
-        CRS in which output data should be.
+    crs : string (optional)
+        CRS in which output data should be or `same` to get CRS from the first archive.
     cloud_mask : bool (default = True)
         Is cloud masking needed.
     pansharpen : bool (default = True)
@@ -156,12 +190,54 @@ def landsat(archives, projection = None, cloud_mask = True, pansharpen = True, k
          '/home/rsp_test/landsat/LT05_L1TP_162023_20110812_20200820_02_T1/',
          '/home/rsp_test/landsat/LM05_L1TP_161023_19930803_20211018_02_T2/']
     """
+    #type checking
     if isinstance(archives, str):
         archives = [archives]
+    elif isinstance(archives, list):
+        for i in archives:
+            if not isinstance(i, str):
+                raise TypeError("archives must be a string or a list of strings")
+    else:
+        raise TypeError("archives must be a string or a list of strings")
+    for archive in archives:
+        if not os.path.exists(archive):
+            raise OSError(archive + " does not exist")
+    if crs != None and not crs == 'same':
+        rio.crs.CRS.from_user_input(crs)
+    if not isinstance(cloud_mask, bool):
+        if isinstance(cloud_mask, type(None)):
+            cloud_mask = True
+        else:
+            raise TypeError("cloud_mask must be boolean")
+    if not isinstance(pansharpen, bool):
+        if isinstance(pansharpen, type(None)):
+            pansharpen = True
+        else:
+            raise TypeError("pansharpen must be boolean")
+    if not isinstance(keep_pan_band, bool):
+        if isinstance(keep_pan_band, type(None)):
+            keep_pan_band = False
+        else:
+            raise TypeError("keep_pan_band must be boolean")
+    if not isinstance(resample, str):
+        if isinstance(resample, type(None)):
+            resample = 'bilinear'
+        else:
+            raise TypeError("resample must be a string")
+    if t not in ['k', 'c']:
+        raise ValueError("t must be 'k' or 'c'")
+    if not isinstance(clipper, type(None)):
+        if not isinstance(clipper, str):
+            raise TypeError("clipper must be a string")
+        elif not os.path.exists(clipper):
+            raise OSError(clipper + " does not exist") 
+    
     paths = []
     for archive in archives:
         path = unzip_landsat(archive)
-        landsat_proc(path = path, projection = projection, cloud_mask = cloud_mask, pansharpen = pansharpen, keep_pan_band = keep_pan_band, resample = resample, t = t, clipper = clipper)
+        if crs == 'same':
+            crs = get_first_proj(glob(path + '/*.tif')[0])
+        landsat_proc(path = path, projection = crs, cloud_mask = cloud_mask, pansharpen = pansharpen, keep_pan_band = keep_pan_band, resample = resample, t = t, clipper = clipper)
         paths.append(path)
         print('Preprocessing of ' + archive + ' completed')
     return paths
@@ -211,7 +287,7 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper
         ...                    '/home/rsp_test/sentinels/L1C_T43VDL_A023312_20210823T063624/',
         ...                    '/home/rsp_test/sentinels/L1C_T43VDL_A031577_20210709T064041/']
         >>> border = '/home/rsp_test/border.gpkg'
-        >>> mosaic_sentinel = rsp.mosaic(input_sentinels, '/home/rsp_test/mosaics/sentinel/', clipper = border, projection = 'EPSG:4326', nodata_order = True)
+        >>> mosaic_sentinel = rsp.mosaic(input_sentinels, '/home/rsp_test/mosaics/sentinel/', clipper = border, crs = 'EPSG:4326', nodata_order = True)
         Processing completed
         >>> print(mosaic_sentinel)
         ['/home/rsp_test/mosaics/sentinel/B1.tif',
@@ -237,6 +313,58 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper
         >>> print(mosaic_landcover)
         ['/home/rsp_test/mosaics/landcover/ESA_WorldCover_10m_2020_v100_N60E075_Map_mosaic.tif']
     """
+    #type checking
+    if isinstance(inputs, list):
+        for i in inputs:
+            if not isinstance(i, str):
+                raise TypeError("inputs must be a list of strings")
+    else:
+        raise TypeError("inputs must be a list of strings")
+    for inp in inputs:
+        if not os.path.exists(inp):
+            raise OSError(inp + " does not exist")
+    if not isinstance(output_dir, str):
+        raise TypeError("output_dir must be a string")
+    if not isinstance(fill_nodata, bool):
+        if isinstance(fill_nodata, type(None)):
+            fill_nodata = False
+        else:
+            raise TypeError("fill_nodata must be boolean")
+    if not isinstance(fill_distance, int):
+        if isinstance(fill_distance, type(None)):
+            fill_nodata = 250
+        else:
+            raise TypeError("fill_distance must be an integer")
+    if not isinstance(clipper, type(None)):
+        if not isinstance(clipper, str):
+            raise TypeError("clipper must be a string")
+        elif not os.path.exists(clipper):
+            raise OSError(clipper + " does not exist")
+    if crs != None:
+        rio.crs.CRS.from_user_input(crs)
+    if not isinstance(nodata, int) and not isinstance(nodata, float) and not isinstance(nodata, type(None)):
+        raise TypeError("nodata must be integer or float")
+    if not isinstance(reference_raster, type(None)):
+        if not isinstance(reference_raster, str):
+            raise TypeError("reference_raster must be a string")
+        elif not os.path.exists(reference_raster):
+            raise OSError(reference_raster + " does not exist")
+    if not isinstance(resample, str):
+        if isinstance(resample, type(None)):
+            resample = 'average'
+        else:
+            raise TypeError("resample must be a string")
+    if not isinstance(nodata_order, bool):
+        if isinstance(nodata_order, type(None)):
+            nodata_order = False
+        else:
+            raise TypeError("nodata_order must be boolean")
+    if not isinstance(keep_all_channels, bool):
+        if isinstance(keep_all_channels, type(None)):
+            keep_all_channels = True
+        else:
+            raise TypeError("keep_all_channels must be boolean")
+    
     mb = ismultiband(inputs[0])
     if mb == True:
         for i in range(len(inputs)):
@@ -277,6 +405,25 @@ def calculate_index(name, folder = None, b1 = None, b2 = None):
         >>> print(ndvi)
         '/home/rsp_test/mosaics/sentinel/NDVI.tif'
     """
+    #type checking
+    if not isinstance(name, str):
+        raise TypeError("name must be a string")
+    if not isinstance(folder, type(None)):
+        if not isinstance(folder, str):
+            raise TypeError("folder must be a string")
+        elif not os.path.exists(folder):
+            raise OSError(folder + " does not exist")
+    if not isinstance(b1, type(None)):
+        if not isinstance(b1, str):
+            raise TypeError("b1 must be a string")
+        elif not os.path.exists(b1):
+            raise OSError(b1 + " does not exist")
+    if not isinstance(b2, type(None)):
+        if not isinstance(b2, str):
+            raise TypeError("b2 must be a string")
+        elif not os.path.exists(b2):
+            raise OSError(b2 + " does not exist")
+    
     if (folder != None) and ((b1 == None) or (b2 == None)):
         if not folder.endswith(r'/'):
             folder = folder + r'/'
@@ -301,13 +448,25 @@ def normalize(input_file, output_file, minimum = None, maximum = None):
         Path to input file.
     output_file : string
         Path to output file.
-    min: int or float (optional)
+    minimum: int or float (optional)
         Min value for normalization. If not defined then min and max of data type of `input_file` will be used.
-    max: int or float (optional)
+    maximum: int or float (optional)
         Max value for normalization. If not defined then min and max of data type of `input_file` will be used.
     
     Examples
     --------
         >>> rsp.normalize('/home/rsp_test/mosaics/sentinel/B1.tif', '/home/rsp_test/mosaics/sentinel/B1_norm.tif', 0, 10000)
     """
+    #type checking
+    if not isinstance(input_file, str):
+        raise TypeError("input_file must be a string")
+    elif not os.path.exists(input_file):
+        raise OSError(input_file + " does not exist")
+    if not isinstance(output_file, str):
+        raise TypeError("output_file must be a string")
+    if not isinstance(minimum, int) and not isinstance(minimum, float) and not isinstance(minimum, type(None)):
+        raise TypeError("minimum must be int or float")
+    if not isinstance(maximum, int) and not isinstance(maximum, float) and not isinstance(maximum, type(None)):
+        raise TypeError("maximum must be int or float")
+    
     normalize_file(input_file, output_file, minimum, maximum)

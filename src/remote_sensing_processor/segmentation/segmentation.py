@@ -119,7 +119,7 @@ def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoi
         try:
             joblib.dump(model, model_file, compress=9)
         except:
-            print('Error while saving model, check if enough free space is available.')
+            warnings.warn('Error while saving model, check if enough free space is available.')
     else:
         raise ValueError("Wrong model name. Check spelling or read a documentation and choose a supported model")
     return model
@@ -154,6 +154,8 @@ def segmentation_test(x_test, y_test, model, batch_size, multiprocessing):
         x_test = sklearn_load_dataset(x_test, classification)
         y_test = sklearn_load_dataset(y_test, classification)
         model.test(x_test, y_test)
+    else:
+        raise ValueError("Wrong model name. Check spelling or read a documentation and choose a supported model")
     
 
 class H5Dataset(torch.utils.data.Dataset):
