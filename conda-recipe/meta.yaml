@@ -13,6 +13,7 @@ requirements:
     - cython
     - numpy >=1.17
   host:
+    - albumentations
     - geopandas
     - h5py
     - lightning
@@ -29,6 +30,7 @@ requirements:
     - torchvision
     - transformers
   run:
+    - albumentations
     - geopandas
     - h5py
     - lightning

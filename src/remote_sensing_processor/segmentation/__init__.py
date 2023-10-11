@@ -187,7 +187,7 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
     return x, y, tiles, samples, classification, num_classes, classes, x_nodata, y_nodata
 
     
-def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, checkpoint = None, weights = None, epochs = 5, batch_size = 32, less_metrics = False, lr = 1e-3, multiprocessing = True, classification = None, num_classes = None, x_nodata = None, y_nodata = None):
+def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, checkpoint = None, weights = None, epochs = 5, batch_size = 32, enlarge = 1, augment = False, less_metrics = False, lr = 1e-3, multiprocessing = True, classification = None, num_classes = None, x_nodata = None, y_nodata = None):
     """
     Trains segmentation model.
     
@@ -215,6 +215,10 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ch
         Number of training epochs. Only works for neural networks and multilayer perceptron.
     batch_size : int (default = 32)
         Number of training samples used in one iteration. Only works for neural networks.
+    enlarge : int (default = 1)
+        Increase size of a dataset by using it n times.
+    augment : bool (default = False)
+        Apply augmentations to enlarged dataset.
     less_metrics : bool (default = False)
         Sometimes Torchmetrics can freeze while calculating precision, recall and IOU. If it happens, try restarting with `less_metrics = True`.
     lr : float (default = 1e-3)
@@ -343,6 +347,18 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ch
             batch_size = 32
         else:
             raise TypeError("batch_size must be an integer")
+    if not isinstance(enlarge, int):
+        if isinstance(enlarge, type(None)):
+            enlarge = 1
+        else:
+            raise TypeError("enlarge must be an integer")
+    else if enlarge < 1:
+        raise ValueError("enlarge must be >= 1")
+    if not isinstance(augment, bool):
+        if isinstance(augment, type(None)):
+            augment = False
+        else:
+            raise TypeError("augment must be boolean")
     if not isinstance(less_metrics, bool):
         if isinstance(less_metrics, type(None)):
             less_metrics = False
@@ -367,7 +383,7 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ch
     if not isinstance(y_nodata, int) and not isinstance(y_nodata, float) and not isinstance(y_nodata, type(None)):
         raise TypeError("y_nodata must be int or float or None")
     
-    model = segmentation_train(x_train = x_train, x_val = x_val, y_train = y_train, y_val = y_val, model = model, backbone = backbone, checkpoint = checkpoint, weights = weights, model_file = model_file, epochs = epochs, batch_size = batch_size, classification = classification, num_classes = num_classes, x_nodata = x_nodata, y_nodata = y_nodata, less_metrics = less_metrics, lr = lr, multiprocessing = multiprocessing)
+    model = segmentation_train(x_train = x_train, x_val = x_val, y_train = y_train, y_val = y_val, model = model, backbone = backbone, checkpoint = checkpoint, weights = weights, model_file = model_file, epochs = epochs, batch_size = batch_size, augment = augment, enlarge = enlarge, classification = classification, num_classes = num_classes, x_nodata = x_nodata, y_nodata = y_nodata, less_metrics = less_metrics, lr = lr, multiprocessing = multiprocessing)
     return model
     
 def test(x_test, y_test, model, batch_size = 32, multiprocessing = True):

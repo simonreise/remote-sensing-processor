@@ -8,9 +8,11 @@ import warnings
 import sklearn.metrics
 
 import torch
+import torchvision
 import torchmetrics
 import transformers
 import lightning as l
+import albumentations as A
 
 from remote_sensing_processor.segmentation.models import load_model, load_sklearn_model
 
@@ -20,7 +22,7 @@ warnings.filterwarnings("ignore", message="exists and is not empty")
 warnings.filterwarnings("ignore", message="could not find the monitored key in the returned metrics")
 warnings.filterwarnings("ignore", message="Skipping val loop")
 
-def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoint, weights, model_file, epochs, batch_size, classification, num_classes, x_nodata, y_nodata, less_metrics, lr, multiprocessing):
+def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoint, weights, model_file, epochs, batch_size, augment, enlarge, classification, num_classes, x_nodata, y_nodata, less_metrics, lr, multiprocessing):
     #checking if x and y have same number of datasets
     if not len(x_train) == len(y_train) or not len(x_val) == len(y_val):
         raise ValueError("Every x dataset must have a corresponding y dataset")
@@ -64,15 +66,27 @@ def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoi
             model = Model.load_from_checkpoint(checkpoint, input_shape = input_shape, input_dims = input_dims, num_classes = num_classes, classification = classification, y_nodata = y_nodata, lr = lr)
         else:
             model = Model(model, backbone, weights, input_shape, input_dims, num_classes, classification, y_nodata, less_metrics, lr)
+        #setting up transform
+        if augment == True:
+            transform = A.Compose([
+                A.RandomResizedCrop(input_shape, input_shape),
+                A.HorizontalFlip(p=0.5),
+                A.Rotate(),
+                A.ElasticTransform(),
+                ])
+        else:
+            transform = None
         #setting up data sets generators
         datasets = []
         for i in range(len(x_train)):
-            datasets.append(H5Dataset(x_train[i], y_train[i]))
+            datasets.append(H5Dataset(x_train[i], y_train[i], transform = None))
+            for j in range(enlarge - 1):
+                datasets.append(H5Dataset(x_train[i], y_train[i], transform = transform))
         ds_train = torch.utils.data.ConcatDataset(datasets)
         if x_val != [None] and y_val != [None]:
             datasets = []
             for i in range(len(x_val)):
-                datasets.append(H5Dataset(x_val[i], y_val[i]))
+                datasets.append(H5Dataset(x_val[i], y_val[i], transform = None))
             ds_val = torch.utils.data.ConcatDataset(datasets)
         if multiprocessing:
             cpus = torch.multiprocessing.cpu_count()
@@ -112,7 +126,7 @@ def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoi
             if model.model_name in ["Random Forest", "Gradient Boosting"]:
                 model.model.n_estimators += 50
         else:
-            model = SklearnModel(model, backbone, classification, epochs)
+            model = SklearnModel(model, backbone, classification, epochs, y_nodata)
         model.fit(x_train, y_train)
         if not isinstance(x_val, list) and not isinstance(y_val, list):
             model.test(x_val, y_val)
@@ -138,7 +152,7 @@ def segmentation_test(x_test, y_test, model, batch_size, multiprocessing):
         #neural networks
         datasets = []
         for i in range(len(x_test)):
-            datasets.append(H5Dataset(x_test[i], y_test[i]))
+            datasets.append(H5Dataset(x_test[i], y_test[i], transform = None))
         ds_test = torch.utils.data.ConcatDataset(datasets)
         if multiprocessing:
             cpus = torch.multiprocessing.cpu_count()
@@ -159,7 +173,7 @@ def segmentation_test(x_test, y_test, model, batch_size, multiprocessing):
     
 
 class H5Dataset(torch.utils.data.Dataset):
-    def __init__(self, x, y):
+    def __init__(self, x, y, transform):
         #self.classification = classification
         #self.x_nodata = x_nodata
         #self.y_nodata = y_nodata
@@ -184,6 +198,7 @@ class H5Dataset(torch.utils.data.Dataset):
                     #self.nfn = file["data"].attrs['nfn']
         elif isinstance(y, np.ndarray):
             self.y_dataset = y
+        self.transform = transform
         #if self.categorical and self.y_nodata != None:
             #self.y_nodata = int(self.y_nodata)
 
@@ -196,6 +211,10 @@ class H5Dataset(torch.utils.data.Dataset):
         #x = (x / 15000)
         y = self.y_dataset[index]
         #y = (y + 1)/(1+1)
+        if self.transform != None:
+            transformed = transform(image=x, mask=y)
+            x = transformed['image']
+            y = transformed['mask']
         """if self.nfn and self.x_nodata != None and self.y_nodata != None:
             if self.categorical == True:
                 x = np.where(np.broadcast_to(y[self.y_nodata], x.shape) == 1, self.x_nodata, x)  
@@ -462,26 +481,28 @@ class Model(l.LightningModule):
         return optimizer
         
 class SklearnModel:
-    def __init__(self, model, backbone, classification, epochs):
+    def __init__(self, model, backbone, classification, epochs, y_nodata):
         self.classification = classification
         self.model_name = model
         self.model = load_sklearn_model(model, backbone, classification, epochs)
+        self.y_nodata = y_nodata
     
     def fit(self, x, y):
         self.model.fit(x, y)
     
     def test(self, x, y):
         pred = self.predict(x)
+        drops = np.where(np.any(y.flatten() == self.y_nodata))
         #print(np.unique(pred))
         if self.classification:
-            print('Accuracy: ', sklearn.metrics.accuracy_score(y.flatten(), pred.flatten()))
-            print('Precision: ', sklearn.metrics.precision_score(y.flatten(), pred.flatten(), average = 'macro', zero_division = 1))
-            print('Recall: ', sklearn.metrics.recall_score(y.flatten(), pred.flatten(), average = 'macro', zero_division = 1))
+            print('Accuracy: ', sklearn.metrics.accuracy_score(np.delete(y.flatten(), drops), np.delete(pred.flatten(), drops)))
+            print('Precision: ', sklearn.metrics.precision_score(np.delete(y.flatten(), drops), np.delete(pred.flatten(), drops), average = 'macro', zero_division = 1))
+            print('Recall: ', sklearn.metrics.recall_score(np.delete(y.flatten(), drops), np.delete(pred.flatten(), drops), average = 'macro', zero_division = 1))
             #print('ROC_AUC: ', sklearn.metrics.roc_auc_score(y.flatten(), pred.flatten(), average = 'micro', multi_class = 'ovr'))
-            print('IOU: ', sklearn.metrics.jaccard_score(y.flatten(), pred.flatten(), average = 'micro', zero_division = 1))
+            print('IOU: ', sklearn.metrics.jaccard_score(np.delete(y.flatten(), drops), np.delete(pred.flatten(), drops), average = 'micro', zero_division = 1))
         else:
-            print('R2: ', sklearn.metrics.r2_score(y, pred))
-            print('MSE: ', sklearn.metrics.mean_squared_error(y, pred))
+            print('R2: ', sklearn.metrics.r2_score(np.delete(y.flatten(), drops), np.delete(pred.flatten(), drops)))
+            print('MSE: ', sklearn.metrics.mean_squared_error(np.delete(y.flatten(), drops), np.delete(pred.flatten(), drops)))
     
     def predict(self, x):
         pred = self.model.predict(x)
