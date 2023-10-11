@@ -352,7 +352,7 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ch
             enlarge = 1
         else:
             raise TypeError("enlarge must be an integer")
-    else if enlarge < 1:
+    elif enlarge < 1:
         raise ValueError("enlarge must be >= 1")
     if not isinstance(augment, bool):
         if isinstance(augment, type(None)):

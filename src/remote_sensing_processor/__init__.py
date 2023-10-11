@@ -21,6 +21,10 @@ from remote_sensing_processor.imagery_types.types import get_type, get_index
 
 from remote_sensing_processor.common.normalize import normalize_file
 
+from remote_sensing_processor.common.replace import replace_val
+
+from remote_sensing_processor.common.rasterize import rasterize_vector
+
 from remote_sensing_processor import segmentation
 
 
@@ -470,3 +474,114 @@ def normalize(input_file, output_file, minimum = None, maximum = None):
         raise TypeError("maximum must be int or float")
     
     normalize_file(input_file, output_file, minimum, maximum)
+    
+    
+def replace_value(input_file, output_file, old, new):
+    """
+    Replaces a specific value in a raster.
+    
+    Parameters
+    ----------
+    input_file : string
+        Path to input file.
+    output_file : string
+        Path to output file.
+    old: int or float
+        An old value to replace.
+    new: int or float
+        A new value to insert.
+    
+    Examples
+    --------
+        >>> rsp.replace_value('/home/rsp_test/mosaics/sentinel/B1.tif', '/home/rsp_test/mosaics/sentinel/B1_new.tif', 0, -9999)
+    """
+    #type checking
+    if not isinstance(input_file, str):
+        raise TypeError("input_file must be a string")
+    elif not os.path.exists(input_file):
+        raise OSError(input_file + " does not exist")
+    if not isinstance(output_file, str):
+        raise TypeError("output_file must be a string")
+    if not isinstance(old, int) and not isinstance(old, float):
+        raise TypeError("old must be int or float")
+    if not isinstance(new, int) and not isinstance(new, float):
+        raise TypeError("new must be int or float")
+    
+    replace_val(input_file, output_file, new, old, nodata = False)
+    
+    
+def replace_nodata(input_file, output_file, new, old = None):
+    """
+    Replaces a nodata value in a raster.
+    
+    Parameters
+    ----------
+    input_file : string
+        Path to input file.
+    output_file : string
+        Path to output file.
+    new: int or float
+        A new nodata value to insert.
+    old: int or float (optional)
+        An old nodata value to replace. If not stated then is read from input file.
+    
+    Examples
+    --------
+        >>> rsp.replace_nodata('/home/rsp_test/mosaics/landcover/landcover.tif', '/home/rsp_test/mosaics/landcover/landcover_new.tif', 0)
+    """
+    #type checking
+    if not isinstance(input_file, str):
+        raise TypeError("input_file must be a string")
+    elif not os.path.exists(input_file):
+        raise OSError(input_file + " does not exist")
+    if not isinstance(output_file, str):
+        raise TypeError("output_file must be a string")
+    if not isinstance(old, int) and not isinstance(old, float) and not isinstance(old, type(None)):
+        raise TypeError("old must be int or float")
+    if not isinstance(new, int) and not isinstance(new, float):
+        raise TypeError("new must be int or float")
+    
+    replace_val(input_file, output_file, new, old, nodata = True)
+    
+    
+def rasterize(vector, reference_raster, value, output_file, nodata = 0):
+    """
+    Rasterizes a vector file.
+    
+    Parameters
+    ----------
+    vector : string
+        Path to vector file that needs to be rasterized.
+    reference_raster : path to reference raster as a string
+        Path to a raster file to get shape, resolution and projection from.
+    value : int or float
+        A field to use for a burn-in value.
+    output_file : string
+        Path to output file.
+    nodata: int or float (default = 0)
+        A value that will be used as nodata.
+    
+    Examples
+    --------
+        >>> rsp.rasterize('/home/rsp_test/mosaics/treecover/treecover.shp', '/home/rsp_test/mosaics/sentinel/B1.tif', 'tree_species', '/home/rsp_test/mosaics/treecover/treecover.tif', nodata = 0)
+    """
+    #type checking
+    if not isinstance(vector, str):
+        raise TypeError("vector must be a string")
+    elif not os.path.exists(vector):
+        raise OSError(vector + " does not exist")
+    if not isinstance(reference_raster, str):
+        raise TypeError("reference_raster must be a string")
+    elif not os.path.exists(reference_raster):
+        raise OSError(reference_raster + " does not exist")
+    if not isinstance(value, str):
+        raise TypeError("value must be a string")
+    if not isinstance(output_file, str):
+        raise TypeError("output_file must be a string")
+    if not isinstance(nodata, int) and not isinstance(nodata, float):
+        if isinstance(nodata, type(None)):
+            nodata = 0
+        else:
+            raise TypeError("new must be int or float")
+    
+    rasterize_vector(vector, reference_raster, value, output_file, nodata)
