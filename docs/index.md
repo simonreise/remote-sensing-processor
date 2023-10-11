@@ -21,7 +21,7 @@ output_sentinels = rsp.sentinel2(sentinel2_imgs)
 # in order from images with most nodata values on bottom to images with less nodata on top,
 # clipping it to the area of interest and reprojecting to the proj we need
 border = '/home/rsp_test/border.gpkg'
-mosaic_sentinel = rsp.mosaic(output_sentinels, '/home/rsp_test/mosaics/sentinel/', clipper = border, projection = 'EPSG:4326', nodata_order = True)
+mosaic_sentinel = rsp.mosaic(output_sentinels, '/home/rsp_test/mosaics/sentinel/', clipper = border, crs = 'EPSG:4326', nodata_order = True)
 
 # applying min/max normalization to sentinel-2 mosaics (sentinel-2 reflectance values are from 0 to 10 000)
 for band in mosaic_sentinel:

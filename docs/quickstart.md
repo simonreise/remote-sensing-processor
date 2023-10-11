@@ -72,10 +72,10 @@ Preprocessing of /home/rsp_test/sentinels/L1C_T43VDL_A031577_20210709T064041.zip
 Function returns list of folders with preprocessed images.
 
 ## Merging Sentinel-2 images
-In this stage preprocessed Sentinel-2 images are being merged into one mosaic. This function can merge not only single-band images, but also multi-band imagery like Sentinel-2.  `clipper` argument is a path to a file with a border of our region of interest which is used to clip mask, `projection` is a CRS we need, and `nodata_order` is to merge images in order from images with most nodata values on bottom (they usually are most distorted and cloudy) to images with less nodata on top (they are usually clear).
+In this stage preprocessed Sentinel-2 images are being merged into one mosaic. This function can merge not only single-band images, but also multi-band imagery like Sentinel-2.  `clipper` argument is a path to a file with a border of our region of interest which is used to clip mask, `crs` is a CRS we need, and `nodata_order` is to merge images in order from images with most nodata values on bottom (they usually are most distorted and cloudy) to images with less nodata on top (they are usually clear).
 ```
 >>> border = '/home/rsp_test/border.gpkg'
->>> mosaic_sentinel = rsp.mosaic(output_sentinels, '/home/rsp_test/mosaics/sentinel/', clipper = border, projection = 'EPSG:4326', nodata_order = True)
+>>> mosaic_sentinel = rsp.mosaic(output_sentinels, '/home/rsp_test/mosaics/sentinel/', clipper = border, crs = 'EPSG:4326', nodata_order = True)
 Processing completed
 >>> print(mosaic_sentinel)
 ['/home/rsp_test/mosaics/sentinel/B1.tif',
