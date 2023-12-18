@@ -42,7 +42,7 @@ def predict_map_from_tiles(x, y_true, model, tiles, samples, classes, samples_fi
             cpus = torch.multiprocessing.cpu_count()
         else:
             cpus = 0
-        loader = torch.utils.data.DataLoader(ds, batch_size=batch_size, pin_memory=True, num_workers = cpus)
+        loader = torch.utils.data.DataLoader(ds, batch_size=batch_size, pin_memory=True, num_workers = cpus, persistent_workers=True)
         #prediction    
         trainer = l.Trainer()
         predictions = trainer.predict(model, dataloaders=loader)

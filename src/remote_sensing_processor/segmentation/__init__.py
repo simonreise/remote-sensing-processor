@@ -133,7 +133,7 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
             raise OSError(i + " does not exist")
     if not isinstance(y, str) and not isinstance(y, type(None)):
         raise TypeError("y must be a string")
-    elif not os.path.exists(y):
+    elif isinstance(y, str) and not os.path.exists(y):
         raise OSError(y + " does not exist")
     if not isinstance(tile_size, int):
         if isinstance(tile_size, type(None)):

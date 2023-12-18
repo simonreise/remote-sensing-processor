@@ -4,6 +4,8 @@ import os
 import warnings
 import re
 
+from skimage.exposure import match_histograms
+
 import geopandas as gpd
 import shapely
 from shapely.geometry import Polygon, MultiPolygon, shape, Point
@@ -20,7 +22,7 @@ from remote_sensing_processor.common.common_functions import convert_3D_2D, get_
 from remote_sensing_processor.imagery_types.types import get_type
 
 
-def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clipper, crs, nodata, reference_raster, resample, mb, keep_all_channels):
+def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clipper, crs, nodata, reference_raster, resample, match_hist, mb, keep_all_channels):
     paths = []
     resample = get_resampling(resample)
     if reference_raster != None:
@@ -34,6 +36,14 @@ def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clipper, crs, no
             #opening files
             band = b['name']
             files = []
+            #getting histogram of last file (the top one)
+            if match_hist:
+                with rio.open(b['bands'][-1]) as f:
+                    ref_hist = f.read()
+                    #replacing nodata with mean
+                    ref_hist = np.where(ref_hist == f.nodata, np.mean(ref_hist[ref_hist != f.nodata]), ref_hist)
+            else:
+                ref_hist = None
             for path in b['bands']:
                 pathfile = rio.open(path)
                 if nodata == None:
@@ -41,7 +51,10 @@ def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clipper, crs, no
                         nodata = 0
                     else:
                         nodata = pathfile.nodata
-                pathfile, crs = check_crs(pathfile = pathfile, crs = crs, nodata = nodata)
+                if path == b['bands'][-1]:
+                    pathfile, crs = check_crs(pathfile = pathfile, crs = crs, nodata = nodata, match_hist = False, ref_hist = ref_hist)
+                else:
+                    pathfile, crs = check_crs(pathfile = pathfile, crs = crs, nodata = nodata, match_hist = match_hist, ref_hist = ref_hist)
                 files.append(pathfile)
             path = mosaic_process(files = files, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster, resample = resample, band = band)
             paths.append(path)
@@ -49,6 +62,14 @@ def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clipper, crs, no
             print('Processing band ' + band + ' is completed')
     else:
         files = []
+        #getting histogram of last file (the top one)
+        if match_hist:
+            with rio.open(inputs[-1]) as f:
+                ref_hist = f.read()
+                #replacing nodata with mean
+                ref_hist = np.where(ref_hist == f.nodata, np.mean(ref_hist[ref_hist != f.nodata]), ref_hist)
+        else:
+            ref_hist = None
         for inp in inputs:
             pathfile = rio.open(inp)
             if nodata == None:
@@ -56,20 +77,22 @@ def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clipper, crs, no
                     nodata = 0
                 else:
                     nodata = pathfile.nodata
-            pathfile, crs = check_crs(pathfile = pathfile, crs = crs,  nodata = nodata)
+            if inp == inputs[-1]:
+                pathfile, crs = check_crs(pathfile = pathfile, crs = crs, nodata = nodata, match_hist = False, ref_hist = ref_hist)
+            else:
+                pathfile, crs = check_crs(pathfile = pathfile, crs = crs, nodata = nodata, match_hist = match_hist, ref_hist = ref_hist)
             files.append(pathfile)
         band = os.path.basename(inputs[0])[:-4]+'_mosaic'
-        path = mosaic_process(files = files, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster,  resample = resample, band = band)
+        path = mosaic_process(files = files, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster, resample = resample, band = band)
         paths.append(path)
         print('Processing completed')
     return paths
 
 
-def check_crs(pathfile, crs, nodata):
+def check_crs(pathfile, crs, nodata, match_hist, ref_hist):
     if crs == None:
         crs = pathfile.crs
-        return pathfile, crs
-    elif pathfile.crs != crs:
+    if pathfile.crs != crs:
         #warnings.warn('File ' + pathfile.files[0] + ' have CRS ' + str(pathfile.crs) + ' which is different from ' + str(crs) + '. Reprojecting can be memory consuming. It is recommended to reproject all files to the same CRS before mosaicing.')
         orig = pathfile.read()
         orig_meta = pathfile.profile
@@ -77,6 +100,7 @@ def check_crs(pathfile, crs, nodata):
         #reprojecting
         transform, width, height = calculate_default_transform(
             pathfile.crs, crs, orig_meta['width'], orig_meta['height'], *bounds)
+        pathfile.close()
         img = np.full((orig.shape[0], height, width), nodata, orig.dtype)
         reproject(
             source=orig,
@@ -88,6 +112,10 @@ def check_crs(pathfile, crs, nodata):
             dst_crs=crs,
             dst_nodata=nodata,
             resampling=Resampling.nearest)
+        if match_hist:
+            filled = np.where(img == nodata, np.mean(img[img != nodata]), img)
+            matched = match_histograms(filled, ref_hist)
+            img = np.where(img == nodata, nodata, matched)
         memfile = MemoryFile()
         rst = memfile.open(
             driver='GTiff',
@@ -101,14 +129,42 @@ def check_crs(pathfile, crs, nodata):
             nodata = nodata,
             BIGTIFF='YES')
         rst.write(img)
-        return rst, crs
-    else:
-        return pathfile, crs
+        pathfile = rst
+    elif match_hist:
+        orig = pathfile.read()
+        orig_meta = pathfile.profile
+        transform=pathfile.transform
+        pathfile.close()
+        filled = np.where(orig == nodata, np.mean(orig[orig != nodata]), orig)
+        matched = match_histograms(filled, ref_hist)
+        matched = np.where(orig == nodata, nodata, matched)
+        memfile = MemoryFile()
+        rst = memfile.open(
+            driver='GTiff',
+            height=matched.shape[1],
+            width=matched.shape[2],
+            count=matched.shape[0],
+            dtype=matched.dtype,
+            compress = 'lzw',
+            crs=crs,
+            transform=transform,
+            nodata = nodata,
+            BIGTIFF='YES')
+        rst.write(matched)
+        pathfile = rst
+    return pathfile, crs
 
 
 def mosaic_process(files, output_dir, fill_nodata, fill_distance, clipper, crs, nodata, reference_raster, resample, band):
     #merging files
     final, final_trans = rio.merge.merge(files, method = 'last', nodata = nodata)
+    #closing files
+    for file in files:
+        file.close()
+    try:
+        memfile.close()
+    except:
+        pass
     #filling nodata
     if fill_nodata == True:
         mask = np.where(final == nodata, 0, 1)

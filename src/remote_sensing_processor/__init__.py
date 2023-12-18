@@ -247,7 +247,7 @@ def landsat(archives, crs = None, cloud_mask = True, pansharpen = True, keep_pan
     return paths
 
 
-def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper = None, crs = None, nodata = None, reference_raster = None, resample = 'average', nodata_order = False, keep_all_channels = True):
+def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper = None, crs = None, nodata = None, reference_raster = None, resample = 'average', nodata_order = False, match_hist = False, keep_all_channels = True):
     """
     Creates mosaic from several rasters.
     
@@ -273,6 +273,8 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper
         Resampling method that will be used to reshape to a reference raster shape. You can read more about resampling methods `here <https://rasterio.readthedocs.io/en/latest/topics/resampling.html>`_. Use 'nearest' if you want to keep only class values.
     nodata_order : bool (default = False)
         Is needed to merge images in order from images with most nodata values on bottom (they usually are most distorted and cloudy) to images with less nodata on top (they are usually clear).
+    match_hist : bool (default = False)
+        Is needed to match histograms of merged images. Improve mosaic uniformity, but change original data.
     keep_all_channels : bool (default = True)
         Is needed only when you are merging Landsat images from different generations. If True, all bands are processed, if False, only bands that are present in all input images are processed and others are omited.
     
@@ -363,6 +365,11 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper
             nodata_order = False
         else:
             raise TypeError("nodata_order must be boolean")
+    if not isinstance(match_hist, bool):
+        if isinstance(match_hist, type(None)):
+            match_hist = False
+        else:
+            raise TypeError("match_hist must be boolean")
     if not isinstance(keep_all_channels, bool):
         if isinstance(keep_all_channels, type(None)):
             keep_all_channels = True
@@ -378,7 +385,7 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clipper
         output_dir = output_dir + r'/'
     if nodata_order == True:
         inputs = order(inputs)
-    paths = mosaic_main(inputs = inputs, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster, resample = resample, mb = mb, keep_all_channels = keep_all_channels)
+    paths = mosaic_main(inputs = inputs, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster, resample = resample, match_hist = match_hist, mb = mb, keep_all_channels = keep_all_channels)
     return paths
 
 def calculate_index(name, folder = None, b1 = None, b2 = None):

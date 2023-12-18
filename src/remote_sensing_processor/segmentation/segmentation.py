@@ -92,9 +92,9 @@ def segmentation_train(x_train, x_val, y_train, y_val, model, backbone, checkpoi
             cpus = torch.multiprocessing.cpu_count()
         else:
             cpus = 0
-        train_dataloader = torch.utils.data.DataLoader(ds_train, batch_size=batch_size, pin_memory=True, num_workers = cpus)
+        train_dataloader = torch.utils.data.DataLoader(ds_train, batch_size=batch_size, shuffle = True, pin_memory=True, num_workers = cpus, persistent_workers=True)
         if x_val != [None] and y_val != [None]:
-            val_dataloader = torch.utils.data.DataLoader(ds_val, batch_size=batch_size, pin_memory=True, num_workers = cpus)
+            val_dataloader = torch.utils.data.DataLoader(ds_val, batch_size=batch_size, pin_memory=True, num_workers = cpus, persistent_workers=True)
         #training
         checkpoint_callback = l.pytorch.callbacks.ModelCheckpoint(
             save_top_k=1,
@@ -158,7 +158,7 @@ def segmentation_test(x_test, y_test, model, batch_size, multiprocessing):
             cpus = torch.multiprocessing.cpu_count()
         else:
             cpus = 0
-        test_dataloader = torch.utils.data.DataLoader(ds_test, batch_size=batch_size, pin_memory=True, num_workers = cpus)
+        test_dataloader = torch.utils.data.DataLoader(ds_test, batch_size=batch_size, pin_memory=True, num_workers = cpus, persistent_workers=True)
         trainer = l.Trainer()
         trainer.test(model, dataloaders=test_dataloader)
     elif model.model_name in ["Nearest Neighbors", "Logistic Regression", "SVM", "Gaussian Process", "Decision Tree", "Random Forest", "Gradient Boosting", "Multilayer Perceptron", "AdaBoost", "Naive Bayes", "QDA", "Ridge", "Lasso", "ElasticNet"]:
@@ -212,8 +212,8 @@ class H5Dataset(torch.utils.data.Dataset):
         y = self.y_dataset[index]
         #y = (y + 1)/(1+1)
         if self.transform != None:
-            transformed = transform(image=x, mask=y)
-            x = transformed['image']
+            transformed = self.transform(image=np.moveaxis(x, 0, -1), mask=y)
+            x = np.moveaxis(transformed['image'], -1, 0)
             y = transformed['mask']
         """if self.nfn and self.x_nodata != None and self.y_nodata != None:
             if self.categorical == True:
@@ -314,17 +314,17 @@ class Model(l.LightningModule):
         if self.classification:
             #commented metrics somehow make detr freeze after first steps, hope this is temporary fix
             if self.less_metrics:
-                self.log('train_acc', torchmetrics.functional.classification.accuracy(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
-                #self.log('train_precision', torchmetrics.functional.precision(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True)
-                #self.log('train_recall', torchmetrics.functional.recall(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True)
-                self.log('train_auroc', torchmetrics.functional.auroc(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
-                #self.log('train_iou', torchmetrics.functional.jaccard_index(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
+                self.log('train_acc', torchmetrics.functional.classification.accuracy(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
+                #self.log('train_precision', torchmetrics.functional.precision(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True)
+                #self.log('train_recall', torchmetrics.functional.recall(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True)
+                self.log('train_auroc', torchmetrics.functional.auroc(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
+                #self.log('train_iou', torchmetrics.functional.jaccard_index(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
             else:
-                self.log('train_acc', torchmetrics.functional.classification.accuracy(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
-                self.log('train_precision', torchmetrics.functional.precision(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True)
-                self.log('train_recall', torchmetrics.functional.recall(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True)
-                self.log('train_auroc', torchmetrics.functional.auroc(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
-                self.log('train_iou', torchmetrics.functional.jaccard_index(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
+                self.log('train_acc', torchmetrics.functional.classification.accuracy(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
+                self.log('train_precision', torchmetrics.functional.precision(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True)
+                self.log('train_recall', torchmetrics.functional.recall(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True)
+                self.log('train_auroc', torchmetrics.functional.auroc(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
+                self.log('train_iou', torchmetrics.functional.jaccard_index(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
         else:
             self.log('train_r2', torchmetrics.functional.r2_score(torch.reshape(torch.squeeze(pred), (pred.shape[0], -1)), torch.reshape(y, (y.shape[0], -1))), on_step=True, on_epoch=True, prog_bar = True)
             self.log('train_kendall', torchmetrics.functional.kendall_rank_corrcoef(torch.reshape(torch.squeeze(pred), (pred.shape[0], -1)), torch.reshape(y, (y.shape[0], -1))).mean(), on_step=True, on_epoch=True, prog_bar = True)
@@ -342,17 +342,17 @@ class Model(l.LightningModule):
         self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar = True)
         if self.classification:
             if self.less_metrics:
-                self.log('val_acc', torchmetrics.functional.classification.accuracy(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
-                #self.log('val_precision', torchmetrics.functional.precision(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True)
-                #self.log('val_recall', torchmetrics.functional.recall(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True)
-                self.log('val_auroc', torchmetrics.functional.auroc(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
-                #self.log('val_iou', torchmetrics.functional.jaccard_index(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
+                self.log('val_acc', torchmetrics.functional.classification.accuracy(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
+                #self.log('val_precision', torchmetrics.functional.precision(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True)
+                #self.log('val_recall', torchmetrics.functional.recall(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True)
+                self.log('val_auroc', torchmetrics.functional.auroc(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
+                #self.log('val_iou', torchmetrics.functional.jaccard_index(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
             else:
-                self.log('val_acc', torchmetrics.functional.classification.accuracy(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
-                self.log('val_precision', torchmetrics.functional.precision(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True)
-                self.log('val_recall', torchmetrics.functional.recall(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True)
-                self.log('val_auroc', torchmetrics.functional.auroc(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
-                self.log('val_iou', torchmetrics.functional.jaccard_index(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
+                self.log('val_acc', torchmetrics.functional.classification.accuracy(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
+                self.log('val_precision', torchmetrics.functional.precision(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True)
+                self.log('val_recall', torchmetrics.functional.recall(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True)
+                self.log('val_auroc', torchmetrics.functional.auroc(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
+                self.log('val_iou', torchmetrics.functional.jaccard_index(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
         else:
             self.log('val_r2', torchmetrics.functional.r2_score(torch.reshape(torch.squeeze(pred), (pred.shape[0], -1)), torch.reshape(y, (y.shape[0], -1))), on_step=True, on_epoch=True, prog_bar = True)
             self.log('val_kendall', torchmetrics.functional.kendall_rank_corrcoef(torch.reshape(torch.squeeze(pred), (pred.shape[0], -1)), torch.reshape(y, (y.shape[0], -1))).mean(), on_step=True, on_epoch=True, prog_bar = True)
@@ -370,17 +370,17 @@ class Model(l.LightningModule):
         if self.classification:
             # commented metrics somehow make detr freeze after first steps, hope this is temporary fix
             if self.less_metrics:
-                self.log('test_acc', torchmetrics.functional.classification.accuracy(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
-                #self.log('test_precision', torchmetrics.functional.precision(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True)
-                #self.log('test_recall', torchmetrics.functional.recall(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True)
-                self.log('test_auroc', torchmetrics.functional.auroc(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
-                #self.log('test_iou', torchmetrics.functional.jaccard_index(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
+                self.log('test_acc', torchmetrics.functional.classification.accuracy(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
+                #self.log('test_precision', torchmetrics.functional.precision(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True)
+                #self.log('test_recall', torchmetrics.functional.recall(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True)
+                self.log('test_auroc', torchmetrics.functional.auroc(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
+                #self.log('test_iou', torchmetrics.functional.jaccard_index(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
             else:
-                self.log('test_acc', torchmetrics.functional.classification.accuracy(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
-                self.log('test_precision', torchmetrics.functional.precision(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True)
-                self.log('test_recall', torchmetrics.functional.recall(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True)
-                self.log('test_auroc', torchmetrics.functional.auroc(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
-                self.log('test_iou', torchmetrics.functional.jaccard_index(pred, y, 'multiclass', num_classes = self.num_classes), on_step=True, on_epoch=True, prog_bar = True)
+                self.log('test_acc', torchmetrics.functional.classification.accuracy(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
+                self.log('test_precision', torchmetrics.functional.precision(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True)
+                self.log('test_recall', torchmetrics.functional.recall(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True)
+                self.log('test_auroc', torchmetrics.functional.auroc(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
+                self.log('test_iou', torchmetrics.functional.jaccard_index(pred, y, 'multiclass', num_classes = self.num_classes, ignore_index = int(self.y_nodata)), on_step=True, on_epoch=True, prog_bar = True)
         else:
             self.log('test_r2', torchmetrics.functional.r2_score(torch.reshape(torch.squeeze(pred), (pred.shape[0], -1)), torch.reshape(y, (y.shape[0], -1))), on_step=True, on_epoch=True, prog_bar = True)
             self.log('test_kendall', torchmetrics.functional.kendall_rank_corrcoef(torch.reshape(torch.squeeze(pred), (pred.shape[0], -1)), torch.reshape(y, (y.shape[0], -1))).mean(), on_step=True, on_epoch=True, prog_bar = True)
@@ -489,6 +489,7 @@ class SklearnModel:
     
     def fit(self, x, y):
         self.model.fit(x, y)
+        self.test(x, y)
     
     def test(self, x, y):
         pred = self.predict(x)
@@ -498,8 +499,8 @@ class SklearnModel:
             print('Accuracy: ', sklearn.metrics.accuracy_score(np.delete(y.flatten(), drops), np.delete(pred.flatten(), drops)))
             print('Precision: ', sklearn.metrics.precision_score(np.delete(y.flatten(), drops), np.delete(pred.flatten(), drops), average = 'macro', zero_division = 1))
             print('Recall: ', sklearn.metrics.recall_score(np.delete(y.flatten(), drops), np.delete(pred.flatten(), drops), average = 'macro', zero_division = 1))
-            #print('ROC_AUC: ', sklearn.metrics.roc_auc_score(y.flatten(), pred.flatten(), average = 'micro', multi_class = 'ovr'))
-            print('IOU: ', sklearn.metrics.jaccard_score(np.delete(y.flatten(), drops), np.delete(pred.flatten(), drops), average = 'micro', zero_division = 1))
+            #print('ROC_AUC: ', sklearn.metrics.roc_auc_score(y.flatten(), pred.flatten(), average = 'macro', multi_class = 'ovr'))
+            print('IOU: ', sklearn.metrics.jaccard_score(np.delete(y.flatten(), drops), np.delete(pred.flatten(), drops), average = 'macro', zero_division = 1))
         else:
             print('R2: ', sklearn.metrics.r2_score(np.delete(y.flatten(), drops), np.delete(pred.flatten(), drops)))
             print('MSE: ', sklearn.metrics.mean_squared_error(np.delete(y.flatten(), drops), np.delete(pred.flatten(), drops)))
