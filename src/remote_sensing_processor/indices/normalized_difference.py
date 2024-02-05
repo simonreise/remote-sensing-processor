@@ -1,9 +1,10 @@
-import numpy as np
 import os
 import sys
 import warnings
 
-import rasterio as rio
+import numpy as np
+
+import rioxarray
 
 
 warnings.filterwarnings("ignore", message = "divide by zero")
@@ -20,13 +21,13 @@ def nd(name, b1, b2, folder = None):
                 else:
                     with np.errstate(divide='ignore', invalid = 'ignore'):
                         final = (band1.astype('float64') - band2.astype('float64')) / (band1.astype('float64') + band2.astype('float64'))
-                    final = final.fillna(-1)
+                    final = final.fillna(0)
                     if folder == None:
                         savefolder = os.path.dirname(b1)
                     else:
                         savefolder = folder
                 #write
-                final.rio.write_nodata(-1, inplace=True)
+                final.rio.write_nodata(0, inplace = True)
                 final.rio.to_raster(savefolder + '/' + name + '.tif', compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF='IF_SAFER', tiled = True, windowed = True, lock = True)
             except RuntimeError as e:
                 print(e)
