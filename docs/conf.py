@@ -20,7 +20,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "Remote Sensing Processor"
-copyright = "2022, Mikhail Moskovchenko"
+copyright = "2022-2024, Mikhail Moskovchenko"
 author = "Mikhail Moskovchenko"
 
 # The short X.Y version
