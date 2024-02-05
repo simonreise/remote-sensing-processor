@@ -1,22 +1,14 @@
-#from __future__ import division
-
 import os
-#import gc
+import gc
 import pathlib
-#import tensorflow as tf
-import numpy as np
-#import urllib.request
-#from tqdm import tqdm
-#from tensorflow import keras
-import torch
-from torch.utils.data import TensorDataset, DataLoader
-#from blockutils.logging import get_logger
 
-#from remote_sensing_processor.sentinel2.superres.DSen2Net import s2model
-from remote_sensing_processor.sentinel2.superres.DSen2Net import DSen2Net
+import numpy as np
+
+import torch
+from torch.utils.data import Dataset, DataLoader
+
 from remote_sensing_processor.sentinel2.superres.patches import get_test_patches, get_test_patches60, recompose_images
 
-#LOGGER = get_logger(__name__)
 # This code is adapted from this repository
 # https://github.com/lanha/DSen2 and is distributed under the same
 # license.
@@ -46,30 +38,18 @@ if not os.path.exists(L2A_MDL_PATH_60M_DSEN2):
     urllib.request.urlretrieve('https://github.com/up42/s2-superresolution/raw/master/weights/l2a_dsen2_60m_s2_038_lr_1e-04.hdf5', L2A_MDL_PATH_60M_DSEN2)
 '''    
 
-"""gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-    try:
-        # Currently, memory growth needs to be the same across GPUs
-        for gpu in gpus:
-              tf.config.experimental.set_memory_growth(gpu, True)
-        logical_gpus = tf.config.list_logical_devices('GPU')
-        #print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-    except RuntimeError as e:
-        # Memory growth must be set before GPUs have been initialized
-        print(e)"""
 
-#STRATEGY = tf.distribute.MirroredStrategy()
-
-def dsen2_20(d10, d20, image_level):
+def dsen2_20(d10, d20, image_level, pm):
     # Input to the funcion must be of shape:
     #     d10: [x,y,4]      (B2, B3, B4, B8)
     #     d20: [x/2,y/4,6]  (B5, B6, B7, B8a, B11, B12)
     #     deep: specifies whether to use VDSen2 (True), or DSen2 (False)
 
     border = 8
-    p10, p20 = get_test_patches(d10, d20, patch_size=128, border=border)
+    p10, p20, pm = get_test_patches(d10, d20, patch_size=128, border=border, pm = pm)
     p10 /= SCALE
     p20 /= SCALE
+    p10, p20 = pm.persist(p10, p20)
     test = [p10, p20]
     if image_level == "MSIL1C":
         model_filename = L1C_MDL_PATH_20M_DSEN2
@@ -78,12 +58,14 @@ def dsen2_20(d10, d20, image_level):
     input_shape = ((4, None, None), (6, None, None))
     prediction = _predict(test, model_filename, input_shape)
     del test, p10, p20
-    images = recompose_images(prediction, border=border, size=d10.shape)
+    images = recompose_images(prediction, border=border, ref=d10)
+    images = pm.persist(images)
     images *= SCALE
-    return images
+    images = pm.persist(images)
+    return images, pm
 
 
-def dsen2_60(d10, d20, d60, image_level):
+def dsen2_60(d10, d20, d60, image_level, pm):
     # Input to the funcion must be of shape:
     #     d10: [x,y,4]      (B2, B3, B4, B8)
     #     d20: [x/2,y/4,6]  (B5, B6, B7, B8a, B11, B12)
@@ -91,10 +73,11 @@ def dsen2_60(d10, d20, d60, image_level):
     #     deep: specifies whether to use VDSen2 (True), or DSen2 (False)
 
     border = 12
-    p10, p20, p60 = get_test_patches60(d10, d20, d60, patch_size=192, border=border)
+    p10, p20, p60, pm = get_test_patches60(d10, d20, d60, patch_size=192, border=border, pm = pm)
     p10 /= SCALE
     p20 /= SCALE
     p60 /= SCALE
+    p10, p20, p60 = pm.persist(p10, p20, p60)
 
     test = [p10, p20, p60]
     if image_level == "MSIL1C":
@@ -104,40 +87,14 @@ def dsen2_60(d10, d20, d60, image_level):
     input_shape = ((4, None, None), (6, None, None), (2, None, None))
     prediction = _predict(test, model_filename, input_shape)
     del test, p10, p20, p60
-    images = recompose_images(prediction, border=border, size=d10.shape)
+    images = recompose_images(prediction, border=border, ref=d10)
+    images = pm.persist(images)
     images *= SCALE
-    return images
-
-
-"""class BatchGenerator:
-    def __init__(self, dataset_list, batch_size=32):
-        self.batch_size = batch_size
-        self.n_batches = dataset_list[0].shape[0] // batch_size
-        if not self.n_batches:
-            self.n_batches = 1
-        #print(f"Dividing into {self.n_batches} batches.")
-        self.data_list_splitted = [
-            np.array_split(d, self.n_batches, axis=0) for d in dataset_list
-        ]
-        self.len = len(self.data_list_splitted[0])
-        #print(f"Each batch has {self.data_list_splitted[0][0].shape[0]} patches.")
-        self.iter = iter(zip(*self.data_list_splitted))
-
-    def __len__(self):
-        return self.len
-
-    def __next__(self):
-        return next(self.iter)
-
-    def __iter__(self):
-        return self"""
+    images = pm.persist(images)
+    return images, pm
 
 
 def _predict(test, model_filename, input_shape):
-    #with STRATEGY.scope():
-        #model = s2model(input_shape, num_layers=6, feature_size=128)
-        #model.load_weights(model_filename)
-        #model = keras.models.load_model(model_filename)
     device = (
         "cuda"
         if torch.cuda.is_available()
@@ -145,45 +102,38 @@ def _predict(test, model_filename, input_shape):
         if torch.backends.mps.is_available()
         else "cpu"
     )
-    model = DSen2Net(input_shape, num_layers=6, feature_size=128)
-    model.load_state_dict(torch.load(model_filename))
-    model.eval()
-    model.to(device)
-    #print("Symbolic Model Created.")
-    #print(f"Predicting using file: {model_filename}")
-    first = True
-    #for a_slice in tqdm(BatchGenerator(test)):
-    for i in range(len(test)):
-        test[i] = torch.Tensor(test[i])
-    ds = TensorDataset(*test)
-    loader = DataLoader(ds, batch_size=32, num_workers=8, pin_memory=True)
+    model = torch.jit.load(model_filename, map_location = device)
+    dataset = S2Dataset(test)
+    # TODO: predict does not work faster with num_workers, and also have pickling errors
+    num_workers = 0
+    if num_workers == 'auto':
+        cpus = torch.multiprocessing.cpu_count()
+        gpus = max(torch.cuda.device_count(), 1)
+        num_workers = max(1 , cpus // gpus - 1)
+    loader = DataLoader(dataset, batch_size = 32, num_workers = num_workers, pin_memory = True)
+    predictions = []
     with torch.inference_mode():
         for data in loader:
-            data = list(data)
-            for i in range(len(data)):
-                data[i] = data[i].to(device)
-            if first:
-                first = False
-                prediction = model(data).cpu().numpy()
-            else:
-                prediction = np.append(prediction, model(data).cpu().numpy(), axis=0)
-        
-    """ #old bad realisation of predict loop
-    for a_slice in BatchGenerator(test):
-        a_slice = list(a_slice)
-        for i in range(len(a_slice)):
-            a_slice[i] = torch.Tensor(a_slice[i]).to(device)
-        if first:
-            first = False
-            #prediction = model.predict(a_slice, verbose=0)
-            with torch.inference_mode():
-                prediction = model(a_slice).cpu().numpy()
-        else:
-            #prediction = np.append(prediction, model.predict(a_slice, verbose=0), axis=0)
-            with torch.inference_mode():
-                prediction = np.append(prediction, model(a_slice).cpu().numpy(), axis=0)"""
-
-    #print("Predicted...")
+            predictions.append(model(*[d.to(device) for d in data]).cpu().numpy())
+    predictions = np.concatenate(predictions, axis = 0)
     del model
-    #print("This is for releasing memory: %s", gc.collect())
-    return prediction
+    del dataset
+    del loader
+    torch.cuda.empty_cache()
+    gc.collect()
+    return predictions
+
+        
+class S2Dataset(Dataset):
+    def __init__(self, dataset):
+        self.dataset = dataset
+        self.dataset_len = dataset[0].shape[0]
+
+    def __getitem__(self, index):
+        chip = []
+        for i in range(len(self.dataset)):
+            chip.append(torch.Tensor(self.dataset[i][index].data.compute()))
+        return chip
+
+    def __len__(self):
+        return self.dataset_len

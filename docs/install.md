@@ -5,14 +5,18 @@ RSP needs python >= 3.8 to run and depends on several python libraries.
 These libraries are:
 - Python >= 3.8
 - Numpy
+- Xarray
+- Dask
+- Zarr
 - GDAL
 - Rasterio
+- Rioxarray
 - Pyproj
-- Shapely
-- Fiona
 - Geopandas
 - Scikit-learn
-- Pytorch >= 1.10
+- Scikit-image
+- XGBoost
+- Pytorch >= 2.0
 - Torchvision >= 0.10
 - Lightning
 - Transformers
@@ -38,9 +42,9 @@ If you run into problems when PIP is trying to install GDAL, Rasterio or Fiona, 
 
 Then install downloaded wheels.
 ```
-pip install GDAL-3.6.4-cp39-cp39-win_amd64.whl
-pip install rasterio-1.3.6-cp39-cp39-win_amd64.whl
-pip install Fiona-1.9.3-cp39-cp39-win_amd64.whl
+pip install GDAL-3.8.2-cp311-cp311-win_amd64.whl
+pip install rasterio-1.3.9-cp311-cp311-win_amd64.whl
+pip install Fiona-1.9.5-cp311-cp311-win_amd64.whl
 ```
 Now you can install RSP.
 

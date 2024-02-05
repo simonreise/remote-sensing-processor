@@ -1,8 +1,7 @@
-import numpy as np
+import warnings
 
-import geopandas as gpd
-import shapely
-from shapely.geometry import Polygon, MultiPolygon, shape, Point
+import rasterio as rio
+from shapely.geometry import Polygon, MultiPolygon
 from rasterio.enums import Resampling
 
 
@@ -31,7 +30,8 @@ def convert_3D_2D(df):
             new_geo.append(p)
     
     return new_geo
-    
+
+ 
 def get_resampling(resample):
     if resample == 'bilinear':
         resample = Resampling.bilinear
@@ -64,3 +64,37 @@ def get_resampling(resample):
     else:
         resample = Resampling.nearest
     return resample
+
+
+def get_first_proj(img):
+    with rio.open(img) as im:
+        projection = im.crs
+    return projection
+    
+    
+class PersistManager:
+    """
+    This class is a simple dask persist manager.
+    It tries to persist array if it is not too big to fit in memory.
+    """
+    def __init__(self):
+        self.enough_memory = True
+    
+    def persist(self, *inputs):
+        results = []
+        # Trying to persist dataset in memory (it makes processing much faster)
+        if self.enough_memory == True:
+            try:
+                for i in inputs:
+                    results.append(i.persist())
+            except:
+                warnings.warn("Dataset does not fit in memory. Processing can be much slower.")
+                self.enough_memory == False
+                results = inputs
+        else:
+            results = inputs
+        # Return array instead of tuple if it consists of one element
+        results = tuple(results)
+        if len(results) == 1:
+            results = results[0]
+        return results

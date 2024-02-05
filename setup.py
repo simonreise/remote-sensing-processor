@@ -36,7 +36,7 @@ setuptools.setup(
 	package_dir = {"": "src"},
     packages = setuptools.find_packages(where="src"),
     setup_requires = ['cython', 'numpy>=1.17'],
-    install_requires = ['numpy>=1.17', 'h5py', 'torch>=1.10', 'torchvision>=0.10', 'lightning', 'tensorboard', 'transformers', 'timm', 'scikit-learn', 'scikit-image', 'rasterio', 'pyproj', 'geopandas', 'albumentations'],
+    install_requires = ['numpy>=1.17', 'dask', 'torch>=2.0', 'torchvision>=0.10', 'lightning', 'tensorboard', 'transformers', 'timm', 'scikit-learn', 'scikit-image', 'rasterio', 'rioxarray', 'pyproj', 'geopandas', 'zarr', 'xgboost'],
     python_requires = ">=3.8",
     include_package_data = True
 )

@@ -13,38 +13,42 @@ requirements:
     - cython
     - numpy >=1.17
   host:
-    - albumentations
+    - dask
     - geopandas
-    - h5py
     - lightning
     - numpy >=1.17
     - pip
     - pyproj
     - python >=3.8
-    - pytorch >=1.10
+    - pytorch >=2.0
     - rasterio
+    - rioxarray
     - scikit-image
     - scikit-learn
     - tensorboard
     - timm
     - torchvision
     - transformers
+    - xgboost
+    - zarr
   run:
-    - albumentations
+    - dask
     - geopandas
-    - h5py
     - lightning
     - numpy >=1.17
     - pyproj
     - python >=3.8
-    - pytorch >=1.10
+    - pytorch >=2.0
     - rasterio
+    - rioxarray
     - scikit-image
     - scikit-learn
     - tensorboard
     - timm
     - torchvision
     - transformers
+    - xgboost
+    - zarr
     
 build:
     noarch: python

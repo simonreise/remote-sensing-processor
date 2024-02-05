@@ -2,12 +2,16 @@ import sys
 import os
 import numpy as np
 
+import xarray
+
+from remote_sensing_processor.common.torch_test import cuda_test
+
 from remote_sensing_processor.segmentation.segmentation import segmentation_train, segmentation_test
 from remote_sensing_processor.segmentation.tiles import get_ss_tiles
 from remote_sensing_processor.segmentation.mapping import predict_map_from_tiles
 
 
-def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False, samples_file = None, split = [1], x_outputs = None, y_outputs = None, x_dtype = None, y_dtype = None, x_nodata = None, y_nodata = None):
+def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False, split = [1], split_names = ['train'], x_output = None, y_output = None, x_dtype = None, y_dtype = None, x_nodata = None, y_nodata = None):
     """
     Cut rasters into tiles.
     
@@ -15,22 +19,22 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
     ----------
     x : list of paths as strings
         Rasters to use as training data.
-    y : path as a string
-        Raster to use as target values. Can be set to None if target value is not needed.
+    y : path as a string or list of paths as strings
+        Raster or multiple rasters to use as target variable. Can be set to None if target value is not needed.
     tile_size : int (default = 128)
         Size of tiles to generate (tile_size x tile_size).
     classification : bool (default = True)
         If True then tiles will be prepared for classification (e.g. semantic segmentation) task, else will be prepared for regression task.
     shuffle : bool (default = False)
         Is random shuffling of samples needed.
-    samples_file : path as a string (optional)
-        Path where to save tiles, samples and classes data that are generated as output. File should have .pickle format. It can be needed later for mapping.
     split : list of ints or floats (optional)
         Splitting data in subsets. Is a list of integers defining proportions of every subset. [3, 1, 1] will generate 3 subsets in proportion 3 to 1 to 1.
-    x_outputs : list of paths as strings (optional)
-        List of paths to save generated output x data. Data is saved in .h5 format.
-    y_outputs : list of paths as strings (optional)
-        List of paths to save generated output y data. Data is saved in .h5 format.
+    split_names : list of strings
+        Names of split subsets.
+    x_output : path as a string (optional)
+        Path to save generated output x data. Data is saved in .zarr format.
+    y_output : path as a string or list of paths as strings (optional)
+        Path or list of paths to save generated output y data. Data is saved in .zarr format.
     x_dtype : dtype definition as a string (optional)
         If you run out of memory, you can try to convert your data to less memory consuming format.
     y_dtype : dtype definition as a string (optional)
@@ -44,24 +48,10 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
     ----------
     tuple:
     
-        list of numpy arrays
-            List of numpy arrays with generated x data - an array for each split.
-        list of numpy arrays
-            List of numpy arrays with generated y data - an array for each split.
-        tiles : list of tuples
-            List of tile coordinates.
-        samples : list
-            List with order of samples.
-        classification : bool
-            If True then tiles are prepared for classification (e.g. semantic segmentation) task, else are prepared for regression task.
-        num_classes : int
-            Number of classes for classification task.
-        classes : list
-            Sorted unique values from y dataset.
-        x_nodata : int or float 
-            Nodata value for x tiles. If was not set as patameter then is obtained from x metadata.
-        y_nodata : int or float 
-            Nodata value for y tiles or nodata class index if y if task is classification. If was not set as patameter then is obtained from y metadata.
+        xarray.Dataarray
+            Array with generated x data.
+        xarray.Dataarray or list of xarray.Dataarray or None
+            List of arrays with generated y data - one array for each y raster.
             
     Examples
     --------
@@ -77,49 +67,22 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
         ... '/home/rsp_test/mosaics/sentinel/B9.tif',
         ... '/home/rsp_test/mosaics/sentinel/B11.tif',
         ... '/home/rsp_test/mosaics/sentinel/B12.tif']
-        >>> y = '/home/rsp_test/mosaics/landcover.tif'
-        >>> s_file = '/home/rsp_test/model/samples.pickle'
-        >>> x_train_file = '/home/rsp_test/model/x_train.h5'
-        >>> x_val_file = '/home/rsp_test/model/x_val.h5'
-        >>> x_test_file = '/home/rsp_test/model/x_test.h5'
-        >>> y_train_file = '/home/rsp_test/model/y_train.h5'
-        >>> y_val_file = '/home/rsp_test/model/y_val.h5'
-        >>> y_test_file = '/home/rsp_test/model/y_test.h5'
-        >>> x_i, y_i, tiles, samples, classification, num_classes, classes, x_nodata, y_nodata = rsp.segmentation.generate_tiles(x, y, tile_size = 256, shuffle = True, samples_file = s_file, split = [3, 1, 1], x_outputs = [x_train_file, x_val_file, x_test_file], y_outputs = [y_train_file, y_val_file, y_test_file], x_nodata = 0, y_nodata = 0)
-        >>> x_train = x_i[0]
-        >>> print(x_train.shape)
-        (3000, 256, 256, 12)
-        >>> x_val = x_i[1]
-        >>> print(x_val.shape)
-        (1000, 256, 256, 12)
-        >>> x_test = x_i[2]
-        >>> print(x_test.shape)
-        (1000, 256, 256, 12)
-        >>> y_train = y_i[0]
-        >>> print(y_train.shape)
-        (3000, 256, 256, 11)
-        >>> y_val = y_i[1]
-        >>> print(y_val.shape)
-        (1000, 256, 256, 11)
-        >>> y_test = y_i[2]
-        >>> print(y_test.shape)
-        (1000, 256, 256, 11)
-        >>> print(len(tiles))
-        5000
-        >>> print(samples[:5])
-        [1876, 684, 25, 7916, 1347]
-        >>> print(classification)
-        True
-        >>> print(num_classes)
-        11
-        >>> print(classes)
-        [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-        >>> print(x_nodata)
-        0
-        >>> print(y_nodata)
-        0
+        >>> y = ['/home/rsp_test/mosaics/landcover.tif', 
+        ... '/home/rsp_test/mosaics/forest_types.tif']
+        >>> x_file = '/home/rsp_test/model/x.zarr'
+        >>> y_files = ['/home/rsp_test/model/y_landcover.zarr', 
+        ... '/home/rsp_test/model/y_forest_types.zarr']
+        >>> x_out, y_out = rsp.segmentation.generate_tiles(x, y, tile_size = 256, shuffle = True, split = [3, 1, 1], split_names = ['train', 'val', 'test'], x_output = x_file, y_output = y_files, x_nodata = 0, y_nodata = 0)
+        >>> print(x_out.shape)
+        (12, 8704, 6912)
+        >>> y_landcover = y_out[0]
+        >>> print(y_landcover.shape)
+        (8704, 6912)
+        >>> y_forest_types = y_out[1]
+        >>> print(y_forest_types.shape)
+        (8704, 6912)
     """
-    #type checking
+    # Type checking
     if isinstance(x, str):
         x = [x]
     elif isinstance(x, list):
@@ -131,15 +94,26 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
     for i in x:
         if not os.path.exists(i):
             raise OSError(i + " does not exist")
-    if not isinstance(y, str) and not isinstance(y, type(None)):
-        raise TypeError("y must be a string")
-    elif isinstance(y, str) and not os.path.exists(y):
-        raise OSError(y + " does not exist")
+    if isinstance(y, str):
+        y = [y]
+    elif isinstance(y, list):
+        for i in y:
+            if not isinstance(i, str):
+                raise TypeError("y must be a string or a list of strings")
+    elif not isinstance(y, type(None)):
+        raise TypeError("y must be a string or a list of strings")
+    if isinstance(y, list):
+        for i in y:
+            if not os.path.exists(i):
+                raise OSError(i + " does not exist")
     if not isinstance(tile_size, int):
         if isinstance(tile_size, type(None)):
             tile_size = 128
         else:
             raise TypeError("tile_size must be an integer")
+    else:
+        if tile_size <= 8:
+            raise ValueError("tile_size must be > 8")
     if not isinstance(classification, bool):
         if isinstance(classification, type(None)):
             classification = True
@@ -150,30 +124,34 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
             shuffle = False
         else:
             raise TypeError("shuffle must be boolean")
-    if not isinstance(samples_file, type(None)) and not isinstance(samples_file, str):
-        raise TypeError("samples_file must be a string")
     if isinstance(split, list):
         for i in split:
             if not isinstance(i, int) and not isinstance(i, float):
                 raise TypeError("split must be a list of ints or floats")
-    elif not isinstance(split, type(None)):
+    elif isinstance(split, type(None)):
+        split = [1]
+    else:
         raise TypeError("split must be a list of ints or floats")
-    if isinstance(x_outputs, str):
-        x_outputs = [x_outputs]
-    elif isinstance(x_outputs, list):
-        for i in x_outputs:
+    if isinstance(split_names, list):
+        for i in split_names:
             if not isinstance(i, str):
-                raise TypeError("x_outputs must be a list of strings")
-    elif not isinstance(x_outputs, type(None)):
-        raise TypeError("x_outputs must be a list of strings")
-    if isinstance(y_outputs, str):
-        y_outputs = [y_outputs]
-    elif isinstance(y_outputs, list):
-        for i in y_outputs:
+                raise TypeError("split_names must be a list of strings")
+    elif isinstance(split_names, type(None)):
+        split_names = ['train']
+    else:
+        raise TypeError("split_names must be a list of strings")
+    assert len(split) == len(split_names)
+    if not isinstance(x_output, str) and not isinstance(x_output, type(None)):
+        raise TypeError("x_outputs must be a string")
+    if isinstance(y_output, str):
+        y_output = [y_output]
+    if isinstance(y_output, list):
+        assert len(y_output) == len(y)
+        for i in y_output:
             if not isinstance(i, str):
-                raise TypeError("y_outputs must be a list of strings")
-    elif not isinstance(y_outputs, type(None)):
-        raise TypeError("y_outputs must be a list of strings")
+                raise TypeError("y_output must be a string or a list of strings")
+    elif not isinstance(y_output, type(None)):
+        raise TypeError("y_output must be a list of strings")
     if not isinstance(x_dtype, type(None)):
         np.dtype(x_dtype)
     if not isinstance(y_dtype, type(None)):
@@ -183,24 +161,20 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
     if not isinstance(y_nodata, int) and not isinstance(y_nodata, float) and not isinstance(y_nodata, type(None)):
         raise TypeError("y_nodata must be integer or float")
     
-    x, y, tiles, samples, classification, num_classes, classes, x_nodata, y_nodata = get_ss_tiles(x = x, y = y, tile_size = tile_size, classification = classification, shuffle = shuffle, samples_file = samples_file, split = split, x_outputs = x_outputs, y_outputs = y_outputs, x_dtype = x_dtype, y_dtype = y_dtype, x_nodata = x_nodata, y_nodata = y_nodata)
-    return x, y, tiles, samples, classification, num_classes, classes, x_nodata, y_nodata
+    x, y = get_ss_tiles(x = x, y = y, tile_size = tile_size, classification = classification, shuffle = shuffle, split = split, split_names = split_names, x_output = x_output, y_output = y_output, x_dtype = x_dtype, y_dtype = y_dtype, x_nodata = x_nodata, y_nodata = y_nodata)
+    return x, y
 
     
-def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, checkpoint = None, weights = None, epochs = 5, batch_size = 32, enlarge = 1, augment = False, less_metrics = False, lr = 1e-3, multiprocessing = True, classification = None, num_classes = None, x_nodata = None, y_nodata = None):
+def train(train_datasets, val_datasets, model_file, model, backbone = None, checkpoint = None, weights = None, epochs = 5, batch_size = 32, repeat = 1, augment = False, less_metrics = False, lr = 1e-3, num_workers = 0, classification = None, num_classes = None, y_nodata = None):
     """
     Trains segmentation model.
     
     Parameters
     ----------
-    x_train : path as a string or numpy array or list of arrays or paths
-        Training tiles generated by generate_tiles() function.
-    y_train : path as a string or numpy array or list of arrays or paths
-        Training tiles generated by generate_tiles() function.
-    x_val : path as a string or numpy array or list of arrays or paths
-        Validation tiles generated by generate_tiles() function. Can be set to None if no validation needed.
-    y_val : path as a string or numpy array or list of arrays or paths
-        Validation tiles generated by generate_tiles() function. Can be set to None if no validation needed.
+    train_datasets : list or list of lists
+        Training data generated by generate_tiles() function. Each dataset is a list of 3 elements: training data (x): file path or xarray.DataArray, target variable (y): file path or xarray.DataArray, split_names: string or list of strings or 'all' if you need to use the whole dataset. You can provide a list of datasets to train model on multiple datasets.
+    val_datasets : list or list of lists or None
+        Validation data generated by generate_tiles() function. Each dataset is a list of 3 elements: training data (x): file path or xarray.DataArray, target variable (y): file path or xarray.DataArray, split_names: string or list of strings or 'all' if you need to use the whole dataset. You can provide a list of datasets to validate model on multiple datasets. Can be set to None if no validation needed.
     model_file : path as a string
         Checkpoint file where model will be saved after training. File extension must be *.ckpt for neural networks and *.joblib for scikit-learn models.
     model : str
@@ -215,24 +189,22 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ch
         Number of training epochs. Only works for neural networks and multilayer perceptron.
     batch_size : int (default = 32)
         Number of training samples used in one iteration. Only works for neural networks.
-    enlarge : int (default = 1)
-        Increase size of a dataset by using it n times.
+    repeat : int (default = 1)
+        Increase size of a dataset by repeating it n times.
     augment : bool (default = False)
-        Apply augmentations to enlarged dataset.
+        Apply augmentations to dataset.
     less_metrics : bool (default = False)
         Sometimes Torchmetrics can freeze while calculating precision, recall and IOU. If it happens, try restarting with `less_metrics = True`.
     lr : float (default = 1e-3)
         Learning rate of a model. Lower value results usually in better model convergence, but much slower training.
-    multiprocessing: bool (default = True)
-        Multiprocessing can significantly improve performance but also cause errors in some environments.
+    num_workers: int or 'auto' (default = 0)
+        Number of parallel workers that will load the data. Set 'auto' to let RSP choose the optimal number of workers, set 0 to disable multiprocessing. Can increase training speed, but can also cause errors (e.g. pickling errors).
     classification : bool (default = None)
-        If True then tiles are prepared for classification (e.g. semantic segmentation) task, else are prepared for regression task. If not defined then is read from y_train h5 file or set to True if y_train is np.array.
+        If True then perform classification (e.g. semantic segmentation) task, else perform regression task. If not defined then is read from from train dataset.
     num_classes: int (optional)
-        Number of classes for classification task. If not defined then is read from y_train h5 file or is set to np.max + 1.
-    x_nodata : int or float (optional)
-        You can define which value in x raster corresponds to nodata and areas that contain nodata in x raster will be ignored while training and testing. If not defined then is read from x_train h5 file.
+        Number of classes for classification task. If not defined then is read from train dataset.
     y_nodata : int or float (optional)
-        You can define which value in y raster corresponds to nodata and areas that contain nodata in y raster will be ignored while training and testing. If not defined then is read from y_train h5 file.
+        You can define which value in y raster corresponds to nodata and areas that contain nodata in y raster will be ignored while training and testing. If not defined then is read from train dataset.
     
     Returns
     ----------
@@ -241,14 +213,10 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ch
             
     Examples
     --------
-        >>> x_i, y_i, tiles, samples, classification, num_classes, classes, x_nodata, y_nodata = rsp.segmentation.generate_tiles(x, y, tile_size = 256, shuffle = True, split = [3, 1, 1])
-        >>> x_train = x_i[0]
-        >>> x_val = x_i[1]
-        >>> x_test = x_i[2]
-        >>> y_train = x_i[0]
-        >>> y_val = x_i[1]
-        >>> y_test = x_i[2]
-        >>> model = rsp.segmentation.train(x_train, y_train, x_val, y_val, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 10, batch_size = 32, classification = classification, num_classes = num_classes, x_nodata = x_nodata, y_nodata = y_nodata)
+        >>> x_out, y_out = rsp.segmentation.generate_tiles(x, y, tile_size = 256, shuffle = True, split = [3, 1, 1], split_names = ['train', 'val', 'test'])
+        >>> train_ds = [x_out, y_out[0], 'train']
+        >>> val_ds = [x_out, y_out[0], 'val']
+        >>> model = rsp.segmentation.train(train_ds, val_ds, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 100, batch_size = 32)
         GPU available: True (cuda), used: True
         TPU available: False, using: 0 TPU cores
         IPU available: False, using: 0 IPUs
@@ -270,11 +238,13 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ch
         train_loss_epoch=0.349, train_acc_epoch=0.842, train_auroc_epoch=0.797, train_iou_epoch=0.648]
         `Trainer.fit` stopped: `max_epochs=10` reached.
         
-        >>> x_train = '/home/rsp_test/model/x_train.h5'
-        >>> x_val = '/home/rsp_test/model/x_val.h5'
-        >>> y_train = '/home/rsp_test/model/y_train.h5'
-        >>> y_val = '/home/rsp_test/model/y_val.h5'
-        >>> model = rsp.segmentation.train(x_train, y_train, x_val, y_val, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 10, batch_size = 32)
+        >>> x_mo = '/home/rsp_test/model/x_montana.zarr'
+        >>> y_mo = '/home/rsp_test/model/y_montana.zarr'
+        >>> x_id = '/home/rsp_test/model/x_idaho.zarr'
+        >>> y_id = '/home/rsp_test/model/y_idaho.zarr'
+        >>> train_datasets = [[x_mo, y_mo, ['area_1', 'area_2']], [x_id, y_id, ['area_3', 'area_6', 'area8']]]
+        >>> val_datasets = [[x_mo, y_mo, ['area_3', 'area_4']], [x_id, y_id, ['area_1']]]
+        >>> model = rsp.segmentation.train(train_datasets, val_datasets, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 100, batch_size = 32)
         GPU available: True (cuda), used: True
         TPU available: False, using: 0 TPU cores
         IPU available: False, using: 0 IPUs
@@ -289,42 +259,48 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ch
         0         Non-trainable params
         59.8 M    Total params
         239.395   Total estimated model params size (MB)
-        Epoch 9: 100% #############################################
+        Epoch 99: 100% #############################################
         223/223 [1:56:20<00:00, 31.30s/it, v_num=54, train_loss_step=0.326, train_acc_step=0.871, train_auroc_step=0.796, train_iou_step=0.655,
         val_loss_step=0.324, val_acc_step=0.869, val_auroc_step=0.620, val_iou_step=0.678,
         val_loss_epoch=0.334, val_acc_epoch=0.807, val_auroc_epoch=0.795, val_iou_epoch=0.688,
         train_loss_epoch=0.349, train_acc_epoch=0.842, train_auroc_epoch=0.797, train_iou_epoch=0.648]
-        `Trainer.fit` stopped: `max_epochs=10` reached.
+        `Trainer.fit` stopped: `max_epochs=100` reached.
     """
-    #type checking
-    if not isinstance(x_train, list):
-        x_train = [x_train]
-    for i in x_train:
-        if not isinstance(i, str) and not isinstance(i, np.ndarray):
-            raise TypeError("x_train must be a string or numpy array or a list of strings or arrays")
-        elif isinstance(i, str) and not os.path.exists(i):
-            raise OSError(i + " does not exist")
-    if not isinstance(y_train, list):
-        y_train = [y_train]
-    for i in y_train:
-        if not isinstance(i, str) and not isinstance(i, np.ndarray):
-            raise TypeError("y_train must be a string or numpy array or a list of strings or arrays")
-        elif isinstance(i, str) and not os.path.exists(i):
-            raise OSError(i + " does not exist")
-    if not isinstance(x_val, list):
-        x_val = [x_val]
-    for i in x_val:
-        if not isinstance(i, str) and not isinstance(i, np.ndarray) and not isinstance(i, type(None)):
-            raise TypeError("x_val must be a string or numpy array or a list of strings or arrays")
-        elif isinstance(i, str) and not os.path.exists(i):
-            raise OSError(i + " does not exist")
-    if not isinstance(y_val, list):
-        y_val = [y_val]
-    for i in y_val:
-        if not isinstance(i, str) and not isinstance(i, np.ndarray) and not isinstance(i, type(None)):
-            raise TypeError("y_val must be a string or numpy array or a list of strings or arrays")
-        elif isinstance(i, str) and not os.path.exists(i):
-            raise OSError(i + " does not exist")
+    # Type checking
+    if not isinstance(train_datasets[0], list):
+        train_datasets = [train_datasets]
+    for i in range(len(train_datasets)):
+        if len(train_datasets[i]) != 3:
+            raise ValueError("Every dataset must consist of x, y and names")
+        if not isinstance(train_datasets[i][0], str) and not isinstance(train_datasets[i][0], xarray.DataArray):
+            raise TypeError("x in dataset must be a string or xarray.DataArray")
+        elif isinstance(train_datasets[i][0], str) and not os.path.exists(train_datasets[i][0]):
+            raise OSError(train_datasets[i] + " does not exist")
+        if not isinstance(train_datasets[i][1], str) and not isinstance(train_datasets[i][1], xarray.DataArray):
+            raise TypeError("y in dataset must be a string or xarray.DataArray")
+        elif isinstance(train_datasets[i][1], str) and not os.path.exists(train_datasets[i][1]):
+            raise OSError(train_datasets[i] + " does not exist")
+        if not isinstance(train_datasets[i][2], str) and not isinstance(train_datasets[i][2], list):
+            raise TypeError("name in dataset must be a string or a list")
+        else:
+            if train_datasets[i][2] != 'all' and isinstance(train_datasets[i][2], str):
+                train_datasets[i][2] = [train_datasets[i][2]]
+    if val_datasets != None:
+        if not isinstance(val_datasets[0], list):
+            val_datasets = [val_datasets]
+        for i in val_datasets:
+            if len(i) != 3:
+                raise ValueError("Every dataset must consist of x, y and names")
+            if not isinstance(i[0], str) and not isinstance(i[0], xarray.DataArray):
+                raise TypeError("x in dataset must be a string or xarray.DataArray")
+            elif isinstance(i[0], str) and not os.path.exists(i[0]):
+                raise OSError(i + " does not exist")
+            if not isinstance(i[1], str) and not isinstance(i[1], xarray.DataArray):
+                raise TypeError("y in dataset must be a string or xarray.DataArray")
+            elif isinstance(i[1], str) and not os.path.exists(i[1]):
+                raise OSError(i + " does not exist")
+            if not isinstance(i[2], str) and not isinstance(i[2], list):
+                raise TypeError("name in dataset must be a string or a list")
     if not isinstance(model_file, str):
         raise TypeError("model_file must be a string")
     if not isinstance(model, str):
@@ -347,13 +323,13 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ch
             batch_size = 32
         else:
             raise TypeError("batch_size must be an integer")
-    if not isinstance(enlarge, int):
-        if isinstance(enlarge, type(None)):
-            enlarge = 1
+    if not isinstance(repeat, int):
+        if isinstance(repeat, type(None)):
+            repeat = 1
         else:
-            raise TypeError("enlarge must be an integer")
-    elif enlarge < 1:
-        raise ValueError("enlarge must be >= 1")
+            raise TypeError("repeat must be an integer")
+    elif repeat < 1:
+        raise ValueError("repeat must be >= 1")
     if not isinstance(augment, bool):
         if isinstance(augment, type(None)):
             augment = False
@@ -369,52 +345,49 @@ def train(x_train, y_train, x_val, y_val, model_file, model, backbone = None, ch
             lr = 1e-3
         else:
             raise TypeError("lr must be float")
-    if not isinstance(multiprocessing, bool):
-        if isinstance(multiprocessing, type(None)):
-            multiprocessing = True
+    if (not isinstance(num_workers, int) and num_workers != 'auto') or (isinstance(num_workers, int) and num_workers < 0):
+        if isinstance(num_workers, type(None)):
+            num_workers = 'auto'
         else:
-            raise TypeError("multiprocessing must be boolean")
+            raise TypeError("num_workers must be non-negative integer or 'auto'")
     if not isinstance(classification, bool) and not isinstance(classification, type(None)):
         raise TypeError("classification must be boolean or None")
     if not isinstance(num_classes, int) and not isinstance(num_classes, type(None)):
         raise TypeError("num_classes must be int or None")
-    if not isinstance(x_nodata, int) and not isinstance(x_nodata, float) and not isinstance(x_nodata, type(None)):
-        raise TypeError("x_nodata must be int or float or None")
     if not isinstance(y_nodata, int) and not isinstance(y_nodata, float) and not isinstance(y_nodata, type(None)):
         raise TypeError("y_nodata must be int or float or None")
     
-    model = segmentation_train(x_train = x_train, x_val = x_val, y_train = y_train, y_val = y_val, model = model, backbone = backbone, checkpoint = checkpoint, weights = weights, model_file = model_file, epochs = epochs, batch_size = batch_size, augment = augment, enlarge = enlarge, classification = classification, num_classes = num_classes, x_nodata = x_nodata, y_nodata = y_nodata, less_metrics = less_metrics, lr = lr, multiprocessing = multiprocessing)
+    cuda = cuda_test()
+    if cuda == False:
+        warnings.warn('CUDA or MPS is not available. Training on CPU could be very slow.')
+    
+    model = segmentation_train(train_datasets = train_datasets, val_datasets = val_datasets, model = model, backbone = backbone, checkpoint = checkpoint, weights = weights, model_file = model_file, epochs = epochs, batch_size = batch_size, augment = augment, repeat = repeat, classification = classification, num_classes = num_classes, y_nodata = y_nodata, less_metrics = less_metrics, lr = lr, num_workers = num_workers)
     return model
     
-def test(x_test, y_test, model, batch_size = 32, multiprocessing = True):
+def test(test_datasets, model, batch_size = 32, num_workers = 0):
     """
     Tests segmentation model.
     
     Parameters
     ----------
-    x_test : path as a string or numpy array or list of arrays or paths
-        Test tiles generated by generate_tiles() function.
-    y_test : path as a string or numpy array or list of arrays or paths
-        Test tiles generated by generate_tiles() function.
+    test_datasets : list or list of lists
+        Test data generated by generate_tiles() function. Each dataset is a list of 3 elements: training data (x): file path or xarray.DataArray, target variable (y): file path or xarray.DataArray, split_names: string or list of strings or 'all' if you need to use the whole dataset. You can provide a list of datasets to test model on multiple datasets.
     model : torch.nn model or SklearnModel or path to a model file
         Model to test. You can pass the model object returned by `train()` function or file (*.ckpt or *.joblib) where model is stored.
     batch_size : int (default = 32)
         Number of samples used in one iteration.
-    multiprocessing: bool (default = True)
-        Multiprocessing can significantly improve performance but also cause errors in some environments.
+    num_workers: int or 'auto' (default = 0)
+        Number of parallel workers that will load the data. Set 'auto' to let RSP choose the optimal number of workers, set 0 to disable multiprocessing. Can increase training speed, but can also cause errors (e.g. pickling errors).
             
     Examples
     --------
-        >>> x_i, y_i, tiles, samples, classification, num_classes, classes, x_nodata, y_nodata = rsp.segmentation.generate_tiles(x, y, tile_size = 256, shuffle = True, split = [3, 1, 1])
-        >>> x_train = x_i[0]
-        >>> x_val = x_i[1]
-        >>> x_test = x_i[2]
-        >>> y_train = x_i[0]
-        >>> y_val = x_i[1]
-        >>> y_test = x_i[2]
-        >>> model = rsp.segmentation.train(x_train, y_train, x_val, y_val, model = 'UperNet', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 10, batch_size = 32, classification = classification, num_classes = num_classes, x_nodata = x_nodata, y_nodata = y_nodata)
+        >>> x_out, y_out = rsp.segmentation.generate_tiles(x, y, tile_size = 256, shuffle = True, split = [3, 1, 1], split_names = ['train', 'val', 'test'])
+        >>> train_ds = [x_out, y_out[0], 'train']
+        >>> val_ds = [x_out, y_out[0], 'val']
+        >>> test_ds = [x_out, y_out[0], 'test']
+        >>> model = rsp.segmentation.train(train_ds, val_ds, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 10, batch_size = 32)
         ...
-        >>> rsp.segmentation.test(x_test, y_test, model = model, batch_size = 32)
+        >>> rsp.segmentation.test(test_ds, model = model, batch_size = 32)
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃        Test metric        ┃       DataLoader 0        ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -426,129 +399,130 @@ def test(x_test, y_test, model, batch_size = 32, multiprocessing = True):
         │     test_recall_epoch     │    0.8231202960014343     │
         └───────────────────────────┴───────────────────────────┘
     """
-    #type checking
-    if not isinstance(x_test, list):
-        x_test = [x_test]
-    for i in x_test:
-        if not isinstance(i, str) and not isinstance(i, np.ndarray):
-            raise TypeError("x_test must be a string or numpy array or a list of strings or arrays")
-        elif isinstance(i, str) and not os.path.exists(i):
+    # Type checking
+    if not isinstance(test_datasets[0], list):
+        test_datasets = [test_datasets]
+    for i in test_datasets:
+        if len(i) != 3:
+            raise ValueError("Every dataset must consist of x, y and names")
+        if not isinstance(i[0], str) and not isinstance(i[0], xarray.DataArray):
+            raise TypeError("x in dataset must be a string or xarray.DataArray")
+        elif isinstance(i[0], str) and not os.path.exists(i[0]):
             raise OSError(i + " does not exist")
-    if not isinstance(y_test, list):
-        y_test = [y_test]
-    for i in y_test:
-        if not isinstance(i, str) and not isinstance(i, np.ndarray):
-            raise TypeError("y_test must be a string or numpy array or a list of strings or arrays")
-        elif isinstance(i, str) and not os.path.exists(i):
+        if not isinstance(i[1], str) and not isinstance(i[1], xarray.DataArray):
+            raise TypeError("y in dataset must be a string or xarray.DataArray")
+        elif isinstance(i[1], str) and not os.path.exists(i[1]):
             raise OSError(i + " does not exist")
+        if not isinstance(i[2], str) and not isinstance(i[2], list):
+            raise TypeError("name in dataset must be a string or a list")
     if not isinstance(batch_size, int):
         if isinstance(batch_size, type(None)):
             batch_size = 32
         else:
             raise TypeError("batch_size must be an integer")
-    if not isinstance(multiprocessing, bool):
-        if isinstance(multiprocessing, type(None)):
-            multiprocessing = True
+    if (not isinstance(num_workers, int) and num_workers != 'auto') or (isinstance(num_workers, int) and num_workers < 0):
+        if isinstance(num_workers, type(None)):
+            num_workers = 'auto'
         else:
-            raise TypeError("multiprocessing must be boolean")
+            raise TypeError("num_workers must be non-negative integer or 'auto'")
     
-    segmentation_test(x_test = x_test, y_test = y_test, model = model, batch_size = batch_size, multiprocessing = multiprocessing)
+    cuda = cuda_test()
+    if cuda == False:
+        warnings.warn('CUDA or MPS is not available. Testing on CPU could be very slow.')
+    
+    segmentation_test(test_datasets = test_datasets, model = model, batch_size = batch_size, num_workers = num_workers)
     
  
-def generate_map(x, y_true, model, output, tiles = None, samples = None, classes = None, samples_file = None, nodata = None, batch_size = 32, multiprocessing = True):
+def generate_map(x, y, reference, model, output, batch_size = 32, num_workers = 0, nodata = None,):
     """
     Create map using pre-trained model.
     
     Parameters
     ----------
-    x : numpy array with x data or path to .h5 file with x data or list of arrays or paths 
-        X tiled data that will be used for predictions. Usually it is data generated in `generate_tiles` function.
-    y : path as a string
-        Raster with target values which will be used as a reference raster to get size, transform and crs for a map.
+    x : path as a string or xarray.DataArray
+        Training data (x) generated by generate_tiles() function that will be used for prediction.
+    y : path as a string or xarray.DataArray
+        Target variable data (y) generated by generate_tiles() function that was used to train the model.
+    reference : path as a string
+        Raster that will be used as a reference raster to get size, transform and crs for a map. Use one of the rasters that were used for tile generation.
     model : torch.nn model or SklearnModel or path to a model file
         Pre-trained model to predict target values.  You can pass the model object returned by `train()` function or file (*.ckpt or *.joblib) where model is stored.
     output : path as a string
-        Path where to write output map
-    tiles : list (optional)
-        List of tile coordinates. Usually is generated in `generate_tiles` function. You also can use `samples_file` instead.
-    samples : list (optional) 
-        List with order of samples. Usually is generated in `generate_tiles` function. You also can use `samples_file` instead.
-    classes : list (optional)
-        Sorted unique values from y dataset. Usually is generated in `generate_tiles` function. You also can use `samples_file` instead.
-    samples_file : path as a string (optional)
-        Path to a samples .pickle file generated by `generate_tiles` function. You can use `samples_file` instead of `tiles`, `samples` and `classes`.
-    nodata : int or float (optional)
-        Nodata value. If not defined then nodata value of y raster will be used.
+        Path where to write output map.
     batch_size : int (default = 32)
         Number of samples used in one iteration.
-    multiprocessing: bool (default = True)
-        Multiprocessing can significantly improve performance but also cause errors in some environments.
+    num_workers: int or 'auto' (default = 0)
+        Number of parallel workers that will load the data. Set 'auto' to let RSP choose the optimal number of workers, set 0 to disable multiprocessing. Can increase training speed, but can also cause errors (e.g. pickling errors).
+    nodata : int or float (optional)
+        Nodata value. If not defined then nodata value of y dataset will be used.
     
     Examples
     --------
-        >>> x_i, y_i, tiles, samples, classification, num_classes, classes, x_nodata, y_nodata = rsp.segmentation.generate_tiles(x, y, tile_size = 256, shuffle = True, split = [3, 1, 1])
-        >>> x_train = x_i[0]
-        >>> x_val = x_i[1]
-        >>> x_test = x_i[2]
-        >>> y_train = x_i[0]
-        >>> y_val = x_i[1]
-        >>> y_test = x_i[2]
-        >>> model = rsp.segmentation.train(x_train, y_train, x_val, y_val, model = 'UperNet', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 10, batch_size = 32, classification = classification, num_classes = num_classes, x_nodata = x_nodata, y_nodata = y_nodata)
+        >>> x_out, y_out = rsp.segmentation.generate_tiles(x, y, tile_size = 256, shuffle = True, split = [3, 1, 1], split_names = ['train', 'val', 'test'])
+        >>> train_ds = [x_out, y_out[0], 'train']
+        >>> val_ds = [x_out, y_out[0], 'val']
+        >>> model = rsp.segmentation.train(train_ds, val_ds, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 10, batch_size = 32)
         ...
-        >>> y_reference = '/home/rsp_test/mosaics/landcover.tif'
+        >>> reference = '/home/rsp_test/mosaics/landcover.tif'
         >>> output_map = '/home/rsp_test/prediction.tif'
-        >>> rsp.segmentation.generate_map([x_train, x_val, x_test], y_reference, model, output_map, tiles = tiles, samples = samples, classes = classes, nodata = y_nodata)
+        >>> rsp.segmentation.generate_map(x_out, y_out[0], reference, model, output_map)
         Predicting: 100% #################### 372/372 [32:16, 1.6s/it]
         
-        >>> x_train_file = '/home/rsp_test/model/x_train.h5'
-        >>> x_val_file = '/home/rsp_test/model/x_val.h5'
-        >>> x_test_file = '/home/rsp_test/model/x_test.h5'
-        >>> s_file = '/home/rsp_test/model/samples.pickle'
+        >>> x_file = '/home/rsp_test/model/x.zarr'
+        >>> y_file = '/home/rsp_test/model/y.zarr'
         >>> model = '/home/rsp_test/model/upernet.ckpt'
-        >>> y_reference = '/home/rsp_test/mosaics/landcover.tif'
+        >>> reference = '/home/rsp_test/mosaics/landcover.tif'
         >>> output_map = '/home/rsp_test/prediction.tif'
-        >>> rsp.segmentation.generate_map([x_train_file, x_val_file, x_test_file], y_reference, model, output_map, samples_file = s_file, nodata = -1)
+        >>> rsp.segmentation.generate_map(x_file, y_file, reference, model, output_map)
+        Predicting: 100% #################### 372/372 [32:16, 1.6s/it]
+        
+        >>> # Train model on data from Montana
+        >>> x_montana_files = glob('/home/rsp_test/mosaics/landsat_montana/*')
+        >>> y_montana_files = '/home/rsp_test/mosaics/landcover_montana/landcover.tif'
+        >>> x_montana, y_montana = rsp.segmentation.generate_tiles(x_montana_files, y_montana_files, tile_size = 256, shuffle = True, split = [3, 1, 1], split_names = ['train', 'val', 'test'])
+        >>> train_ds = [x_montana, y_montana[0], 'train']
+        >>> val_ds = [x_montana, y_montana[0], 'val']
+        >>> model_montana = rsp.segmentation.train(train_ds, val_ds, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 10, batch_size = 32)
+        ...
+        >>> # Use model to map landcover of Idaho
+        >>> x_idaho_files = glob('/home/rsp_test/mosaics/landsat_idaho/*')
+        >>> x_idaho, _ = rsp.segmentation.generate_tiles(x_idaho_files, None, tile_size = 256)
+        >>> reference = x_idaho_files[0]
+        >>> output_map = '/home/rsp_test/prediction_idaho.tif'
+        >>> rsp.segmentation.generate_map(x_idaho, y_montana, reference, model_montana, output_map)
         Predicting: 100% #################### 372/372 [32:16, 1.6s/it]
     """
-    #type checking
-    if not isinstance(x, list):
-        x = [x]
-    for i in x:
-        if not isinstance(i, str) and not isinstance(i, np.ndarray):
-            raise TypeError("x must be a string or numpy array or a list of strings or arrays")
-        elif isinstance(i, str) and not os.path.exists(i):
-            raise OSError(i + " does not exist")
-    if not isinstance(y_true, str):
-        raise TypeError("y must be a string")
-    elif not os.path.exists(y_true):
-        raise OSError(y_true + " does not exist")
+    # Type checking
+    if not isinstance(x, str) and not isinstance(x, xarray.DataArray):
+        raise TypeError("x must be a string or xarray.DataArray")
+    elif isinstance(x, str) and not os.path.exists(x):
+        raise OSError(x + " does not exist")
+    if not isinstance(y, str) and not isinstance(y, xarray.DataArray):
+        raise TypeError("y must be a string or xarray.DataArray")
+    elif isinstance(y, str) and not os.path.exists(y):
+        raise OSError(x + " does not exist")
+    if not isinstance(reference, str):
+        raise TypeError("reference must be a string")
+    elif not os.path.exists(reference):
+        raise OSError(reference + " does not exist")
     if not isinstance(output, str):
         raise TypeError("output must be a string")
-    if not isinstance(tiles, list) and not isinstance(tiles, type(None)):
-        raise TypeError("tiles must be a list")
-    if not isinstance(samples, list) and not isinstance(samples, type(None)):
-        raise TypeError("samples must be a list")
-    if not isinstance(classes, list) and not isinstance(classes, type(None)):
-        raise TypeError("classes must be a list")
-    if not isinstance(samples_file, str) and not isinstance(samples_file, type(None)):
-        raise TypeError("samples_file must be a string")
-    elif isinstance(samples_file, str) and not os.path.exists(samples_file):
-        raise OSError(samples_file + " does not exist")
-    if not isinstance(nodata, int) and not isinstance(nodata, float) and not isinstance(nodata, type(None)):
-        raise TypeError("nodata must be integer or float")
     if not isinstance(batch_size, int):
         if isinstance(batch_size, type(None)):
             batch_size = 32
         else:
             raise TypeError("batch_size must be an integer")
-    if not isinstance(multiprocessing, bool):
-        if isinstance(multiprocessing, type(None)):
-            multiprocessing = True
+    if (not isinstance(num_workers, int) and num_workers != 'auto') or (isinstance(num_workers, int) and num_workers < 0):
+        if isinstance(num_workers, type(None)):
+            num_workers = 'auto'
         else:
-            raise TypeError("multiprocessing must be boolean")
+            raise TypeError("num_workers must be non-negative integer or 'auto'")
+    if not isinstance(nodata, int) and not isinstance(nodata, float) and not isinstance(nodata, type(None)):
+        raise TypeError("nodata must be integer or float")
     
-    if (tiles != None and samples != None) or (samples_file != None):
-        predict_map_from_tiles(x = x, y_true = y_true, model = model, tiles = tiles, samples = samples, classes = classes, samples_file = samples_file, output = output, nodata = nodata, batch_size = batch_size, multiprocessing = multiprocessing)
-    else:
-        raise ValueError('Tiles and samples must be specified')
+    cuda = cuda_test()
+    if cuda == False and superres == True:
+        warnings.warn('CUDA or MPS is not available. Prediction on CPU could be very slow.')
+    
+    predict_map_from_tiles(x = x, y = y, reference = reference, model = model, output = output, nodata = nodata, batch_size = batch_size, num_workers = num_workers)
 

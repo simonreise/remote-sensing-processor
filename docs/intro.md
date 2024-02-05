@@ -2,28 +2,36 @@
 
 ## Why RSP
 
-Usually preprocessing remote sensing data in Python is complicated and need lots of code, because standard GIS libraries like GDAL and Rasterio provide only low-level functions like reading, writing, reprojecting and clipping rasters. To preprocess Landsat of Sentinel image with Rasterio you need to define all the stages of preprocessing: reading data, atmospheric correction, pansharpening, cloud masking, reprojecting and writing result to a file manually with lots of coding.
+Usually processing remote sensing data in Python is complicated and need lots of code, because standard GIS libraries like GDAL or Rasterio and machine learning libraries like Scikit-learn or Pytorch provide only low-level functions like reading, writing, reprojecting and clipping rasters. To preprocess Landsat of Sentinel image with Rasterio you need to define all the stages of preprocessing: reading data, atmospheric correction, pansharpening, cloud masking, reprojecting and writing result to a file manually with lots of code.
 
-RSP provides high-level functions that automate routine processing operations like remote sensing data preprocessing, merging and calculating vegetation indices. For example, you can preprocess Sentinel-2 image from L1 zip archive with operations of atmospheric correction, 20- and 60-m bands superresolution, cloud masking and reprojecting to needed projection with one line of code.
+RSP provides high-level functions that automate routine processing operations like remote sensing data preprocessing, merging, calculating vegetation indices, training and testing models. For example, you can preprocess Sentinel-2 image from L1 zip archive with operations of atmospheric correction, 20- and 60-m bands superresolution, cloud masking and reprojecting to needed projection with one line of code.
 
 Another key idea of RSP is easy pipeline construction, where outputs from one function can be used as inputs to other functions. For example, you can preprocess several Sentinel-2 images with ```sentinel2``` function, then megre preprocessed images with ```mosaic``` function, and then cut merged band rasters into tiles with ```generate_tiles``` function.
 ```
 output_sentinels = rsp.sentinel2(sentinel2_imgs)
 x = rsp.mosaic(output_sentinels, '/home/rsp_test/mosaics/sentinel/')
-x_i, y_i, tiles, samples, classification, num_classes, classes, x_nodata, y_nodata = rsp.segmentation.generate_tiles(x, y)
+x_tiles, y_tiles = rsp.segmentation.generate_tiles(x, y)
 ```
 
 ## FAQ
 
 ### What exactly does RSP do?
 
-With `sentinel2` you can preprocess Sentinel-2 imagery. Preprocessing include upgrading L1 product to L2 (mostly atmospheric correction), upscaling 20- and 60-m bands to 10-m resolution, cloud masking, reprojection and clipping.
+With `sentinel2` you can preprocess Sentinel-2 imagery. Preprocessing include upgrading L1 product to L2 (mostly atmospheric correction), upscaling 20- and 60-m bands to 10-m resolution, cloud masking, reprojection, clipping and normalization.
 
 With `landsat` you can preprocess Landsat imagery. Preprocessing include DOS-1 atmospheric correction, cloud masking, pansharpening for Landsat 7 and 8, calculating temperature from thermal band, reprojection and clipping.
 
 With `mosaic` you can merge several rasters (or Sentinel-2 or Landsat products) into mosaic, fill the gaps in it and clip it to ROI.
 
 With `calculate_index` you can calculate normalized difference indexes like NDVI.
+
+With `normalize` you can apply a min-max normalization to data.
+
+With `replace_value` you can replace specific value in a raster.
+
+With `replace_nodata` you can replace nodata value in a raster.
+
+With `rasterize` you can rasterize a vector file (shapefile, geopackage, geojson etc.)
 
 With `segmentation` module you can train segmentation model and use it for predictions.
 
@@ -45,11 +53,11 @@ Looks like you did not install Sen2Cor. RSP uses Sen2Cor which is installed via 
 
 ### I got a pytorch-related error.
 
-You need to have Nvidia GPU in your PC to run pytorch models. Actually, it must run even on CPU, but the processing can be very slow.
+You need to have Nvidia GPU in your PC to run pytorch models. Actually, it must also run on CPU, but the processing can be very slow.
 
 If you have GPU and recieved this error, try to re-install `pytorch` using [official guide](https://pytorch.org/get-started/locally/). Or try another pytorch version.
 
-If you are get such error while Sentinel-2 processing, try to run `sentinel2` with `superres = False` flag.
+If you are get such error while Sentinel-2 processing, try to run `sentinel2` with `upscale = 'resample'` or `upscale = None`.
 
 ### I want to report an error / suggest adding a new feature
 

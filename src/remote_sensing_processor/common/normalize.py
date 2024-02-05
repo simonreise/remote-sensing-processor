@@ -1,38 +1,21 @@
 import numpy as np
 
-import rasterio as rio
+import rioxarray
 
 
 def normalize_file(input_file, output_file, minimum, maximum):
-    #read
-    with rio.open(input_file) as b:
-        img = b.read()
-        meta = b.profile
-        transform = b.transform
-        nodata = b.nodata
-        crs = b.crs
-    #setting min and max to min and max of dtype
-    if minimum == None or maximum == None:
-        minimum = np.iinfo(img.dtype).min
-        maximum = np.iinfo(img.dtype).max
-    #normalization
-    img = (img - minimum) / (maximum - minimum)
-    #write
-    with rio.open(
-        output_file,
-        'w',
-        driver='GTiff',
-        height=img.shape[1],
-        width=img.shape[2],
-        count=img.shape[0],
-        dtype=img.dtype,
-        compress = 'deflate',
-        PREDICTOR = 1,
-        ZLEVEL=9,
-        crs=crs,
-        transform=transform,
-        nodata = nodata
-    ) as outfile:
-        outfile.write(img)
+    # Read
+    with rioxarray.open_rasterio(input_file, chunks = True, lock = True) as img:
+        nodata = img.rio.nodata
+        # Setting min and max to min and max of dtype
+        if minimum == None or maximum == None:
+            minimum = np.iinfo(img.dtype).min
+            maximum = np.iinfo(img.dtype).max
+        # Normalization
+        img = (img - minimum) / (maximum - minimum)
+        nodata = (nodata - minimum) / (maximum - minimum)
+        img.rio.write_nodata(nodata, inplace = True)
+        # Write
+        img.rio.to_raster(output_file, compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, windowed = True, lock = True)
     
         

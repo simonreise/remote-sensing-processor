@@ -14,6 +14,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier, RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor
 from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+import xgboost as xgb
 #import skimage
 
 
@@ -22,7 +23,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes):
         if weights != None:
             model = transformers.BeitForSemanticSegmentation.from_pretrained(weights, ignore_mismatched_sizes=True, image_size = input_shape, num_channels = input_dims, num_labels = num_classes)
         else:
-            config = transformers.BeitConfig(image_size = input_shape, num_channels = input_dims, num_labels = num_classes)
+            config = transformers.BeitConfig(image_size = input_shape, num_channels = input_dims, num_labels = num_classes, out_indices = [3, 5, 7, 11])
             model = transformers.BeitForSemanticSegmentation(config)
     elif model == 'ConditionalDETR':
         if weights != None:
@@ -34,7 +35,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes):
         if weights != None:
             model = transformers.Data2VecVisionForSemanticSegmentation.from_pretrained(weights, ignore_mismatched_sizes=True, image_size = input_shape, num_channels = input_dims, num_labels = num_classes)
         else:
-            config = transformers.Data2VecVisionConfig(image_size = input_shape, num_channels = input_dims, num_labels = num_classes)
+            config = transformers.Data2VecVisionConfig(image_size = input_shape, num_channels = input_dims, num_labels = num_classes, out_indices = [3, 5, 7, 11])
             model =  transformers.Data2VecVisionForSemanticSegmentation(config)
     elif model == 'DETR':
         if weights != None:
@@ -229,7 +230,7 @@ def load_sklearn_model(model, bb, classification, epochs):
         elif model == "Random Forest":
             clf = RandomForestClassifier(max_depth=2, n_jobs = -1, warm_start=True, verbose = 1)
         elif model == "Gradient Boosting":
-            clf = HistGradientBoostingClassifier(warm_start=True, n_iter_no_change=10, verbose = 1000)
+            clf = HistGradientBoostingClassifier(warm_start=True, verbose = 1000)
         elif model == "Multilayer Perceptron":
             clf = MLPClassifier(alpha=1, max_iter=epochs, warm_start=True, verbose = True)
         elif model == "AdaBoost":
@@ -238,6 +239,10 @@ def load_sklearn_model(model, bb, classification, epochs):
             clf = GaussianNB()
         elif model == "QDA":
             clf = QuadraticDiscriminantAnalysis()
+        elif model == 'XGBoost':
+            clf = xgb.XGBClassifier(tree_method="hist", verbosity = 3, n_jobs = -1)
+        elif model == 'XGB Random Forest':
+            clf = xgb.XGBRFClassifier(tree_method="hist", verbosity = 3, n_jobs = -1)
     else:
         if model == "Nearest Neighbors":
             clf = KNeighborsRegressor(n_jobs = -1)
@@ -268,6 +273,10 @@ def load_sklearn_model(model, bb, classification, epochs):
             clf = MLPRegressor(alpha=1, max_iter=epochs, warm_start=True, verbose = True)
         elif model == "AdaBoost":
             clf = AdaBoostRegressor()
+        elif model == 'XGBoost':
+            clf = xgb.XGBRegressor(tree_method="hist", verbosity = 3, n_jobs = -1)
+        elif model == 'XGB Random Forest':
+            clf = xgb.XGBRFRegressor(tree_method="hist", verbosity = 3, n_jobs = -1)
     model = clf
     #ff = partial(skimage.feature.multiscale_basic_features, channel_axis = 0)
     #model = skimage.future.TrainableSegmenter(clf = clf, features_func = ff)

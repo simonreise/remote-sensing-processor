@@ -1,233 +1,130 @@
-import numpy as np
 from glob import glob
 import os
 import warnings
-import re
 
+import numpy as np
 from skimage.exposure import match_histograms
+import dask
+import xarray
 
 import geopandas as gpd
-import shapely
-from shapely.geometry import Polygon, MultiPolygon, shape, Point
 import rasterio as rio
-from rasterio.warp import calculate_default_transform, reproject, Resampling
-import rasterio.merge
 import rasterio.fill
-import rasterio.mask
-from rasterio.io import MemoryFile
-from rasterio.enums import Resampling
+import rioxarray
+from rioxarray.merge import merge_arrays
 
-from remote_sensing_processor.common.common_functions import convert_3D_2D, get_resampling
+from remote_sensing_processor.common.common_functions import convert_3D_2D, get_resampling, PersistManager
 
 from remote_sensing_processor.imagery_types.types import get_type
 
 
-def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clipper, crs, nodata, reference_raster, resample, match_hist, mb, keep_all_channels):
+def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clip, crs, nodata, reference_raster, resample, match_hist, mb, keep_all_channels):
     paths = []
+    pm = PersistManager()
     resample = get_resampling(resample)
     if reference_raster != None:
         with rio.open(reference_raster) as r:
             crs = r.crs
     if mb == True:
         bands = get_bands(inputs, keep_all_channels)
-        orig_nodata = nodata
-        #print(bands)
         for b in bands:
-            #opening files
+            # Opening files
             band = b['name']
-            files = []
-            #getting histogram of last file (the top one)
-            if match_hist:
-                with rio.open(b['bands'][-1]) as f:
-                    ref_hist = f.read()
-                    #replacing nodata with mean
-                    ref_hist = np.where(ref_hist == f.nodata, np.mean(ref_hist[ref_hist != f.nodata]), ref_hist)
-            else:
-                ref_hist = None
-            for path in b['bands']:
-                pathfile = rio.open(path)
-                if nodata == None:
-                    if pathfile.nodata == None:
-                        nodata = 0
-                    else:
-                        nodata = pathfile.nodata
-                if path == b['bands'][-1]:
-                    pathfile, crs = check_crs(pathfile = pathfile, crs = crs, nodata = nodata, match_hist = False, ref_hist = ref_hist)
-                else:
-                    pathfile, crs = check_crs(pathfile = pathfile, crs = crs, nodata = nodata, match_hist = match_hist, ref_hist = ref_hist)
-                files.append(pathfile)
-            path = mosaic_process(files = files, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster, resample = resample, band = band)
+            path = proc_files(inputs = b['bands'], output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clip = clip, crs = crs, nodata = nodata, reference_raster = reference_raster, resample = resample, band = band, match_hist = match_hist, pm = pm)
             paths.append(path)
-            nodata = orig_nodata
             print('Processing band ' + band + ' is completed')
     else:
-        files = []
-        #getting histogram of last file (the top one)
-        if match_hist:
-            with rio.open(inputs[-1]) as f:
-                ref_hist = f.read()
-                #replacing nodata with mean
-                ref_hist = np.where(ref_hist == f.nodata, np.mean(ref_hist[ref_hist != f.nodata]), ref_hist)
-        else:
-            ref_hist = None
-        for inp in inputs:
-            pathfile = rio.open(inp)
-            if nodata == None:
-                if pathfile.nodata == None:
-                    nodata = 0
-                else:
-                    nodata = pathfile.nodata
-            if inp == inputs[-1]:
-                pathfile, crs = check_crs(pathfile = pathfile, crs = crs, nodata = nodata, match_hist = False, ref_hist = ref_hist)
-            else:
-                pathfile, crs = check_crs(pathfile = pathfile, crs = crs, nodata = nodata, match_hist = match_hist, ref_hist = ref_hist)
-            files.append(pathfile)
         band = os.path.basename(inputs[0])[:-4]+'_mosaic'
-        path = mosaic_process(files = files, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clipper = clipper, crs = crs, nodata = nodata, reference_raster = reference_raster, resample = resample, band = band)
+        path = proc_files(inputs = inputs, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clip = clip, crs = crs, nodata = nodata, reference_raster = reference_raster, resample = resample, band = band, match_hist = match_hist, pm = pm)
         paths.append(path)
         print('Processing completed')
     return paths
+    
+    
+def proc_files(inputs, output_dir, fill_nodata, fill_distance, clip, crs, nodata, reference_raster, resample, band, match_hist, pm):
+    files = []
+    ref_hist = None
+    futures = []
+    for inp in inputs:
+        # If histogram matching is needed then we need the histogram of the first file to process other files, so we cannot do it in parallel
+        if match_hist and isinstance(ref_hist, type(None)):
+            first, ref_hist = prepare_file(inp = inp, crs = crs, nodata = nodata, clip = clip, match_hist = match_hist, ref_hist = ref_hist)
+        else:
+            futures.append(dask.delayed(prepare_file)(inp = inp, crs = crs, nodata = nodata, clip = clip, match_hist = match_hist, ref_hist = ref_hist))
+    files = dask.compute(*futures)
+    files = list(files)
+    # Adding first file
+    if match_hist:
+        files.insert(0, first)
+    path, pm = mosaic_process(files = files, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clip = clip, crs = crs, nodata = nodata, reference_raster = reference_raster, resample = resample, band = band, pm = pm)
+    return path
 
 
-def check_crs(pathfile, crs, nodata, match_hist, ref_hist):
+def prepare_file(inp, crs, nodata, clip, match_hist, ref_hist):
+    with rioxarray.open_rasterio(inp, chunks = True, lock = True) as tif:
+        pathfile = tif.load()
+    # If nodata not defined then read nodata from first file or set to 0
+    if nodata == None:
+        if pathfile.rio.nodata == None:
+            nodata = 0
+        else:
+            nodata = pathfile.rio.nodata
+    pathfile.rio.write_nodata(nodata, inplace = True)
     if crs == None:
-        crs = pathfile.crs
-    if pathfile.crs != crs:
-        #warnings.warn('File ' + pathfile.files[0] + ' have CRS ' + str(pathfile.crs) + ' which is different from ' + str(crs) + '. Reprojecting can be memory consuming. It is recommended to reproject all files to the same CRS before mosaicing.')
-        orig = pathfile.read()
-        orig_meta = pathfile.profile
-        bounds = pathfile.bounds
-        #reprojecting
-        transform, width, height = calculate_default_transform(
-            pathfile.crs, crs, orig_meta['width'], orig_meta['height'], *bounds)
-        pathfile.close()
-        img = np.full((orig.shape[0], height, width), nodata, orig.dtype)
-        reproject(
-            source=orig,
-            destination=img,
-            src_transform=orig_meta['transform'],
-            src_crs=orig_meta['crs'],
-            src_nodata=nodata,
-            dst_transform=transform,
-            dst_crs=crs,
-            dst_nodata=nodata,
-            resampling=Resampling.nearest)
-        if match_hist:
-            filled = np.where(img == nodata, np.mean(img[img != nodata]), img)
-            matched = match_histograms(filled, ref_hist)
-            img = np.where(img == nodata, nodata, matched)
-        memfile = MemoryFile()
-        rst = memfile.open(
-            driver='GTiff',
-            height=img.shape[1],
-            width=img.shape[2],
-            count=img.shape[0],
-            dtype=img.dtype,
-            compress = 'lzw',
-            crs=crs,
-            transform=transform,
-            nodata = nodata,
-            BIGTIFF='YES')
-        rst.write(img)
-        pathfile = rst
-    elif match_hist:
-        orig = pathfile.read()
-        orig_meta = pathfile.profile
-        transform=pathfile.transform
-        pathfile.close()
-        filled = np.where(orig == nodata, np.mean(orig[orig != nodata]), orig)
-        matched = match_histograms(filled, ref_hist)
-        matched = np.where(orig == nodata, nodata, matched)
-        memfile = MemoryFile()
-        rst = memfile.open(
-            driver='GTiff',
-            height=matched.shape[1],
-            width=matched.shape[2],
-            count=matched.shape[0],
-            dtype=matched.dtype,
-            compress = 'lzw',
-            crs=crs,
-            transform=transform,
-            nodata = nodata,
-            BIGTIFF='YES')
-        rst.write(matched)
-        pathfile = rst
-    return pathfile, crs
-
-
-def mosaic_process(files, output_dir, fill_nodata, fill_distance, clipper, crs, nodata, reference_raster, resample, band):
-    #merging files
-    final, final_trans = rio.merge.merge(files, method = 'last', nodata = nodata)
-    #closing files
-    for file in files:
-        file.close()
-    try:
-        memfile.close()
-    except:
-        pass
-    #filling nodata
-    if fill_nodata == True:
-        mask = np.where(final == nodata, 0, 1)
-        final = rio.fill.fillnodata(final, mask, max_search_distance=fill_distance)
-    files = None
-    memfile = None
-    temp = None
-    #clipping mosaic with vector mask
-    if clipper != None:
-        shape = gpd.read_file(clipper).to_crs(crs)
+        crs = pathfile.rio.crs
+    if pathfile.rio.crs != crs:
+        #warnings.warn('File ' + pathfile.files[0] + ' have CRS ' + str(pathfile.crs) + ' which is different from ' + str(crs) + '. Reproject can be memory consuming. It is recommended to reproject all files to the same CRS before mosaicing.')
+        pathfile = pathfile.rio.reproject(crs)
+    if clip != None:
+        shape = gpd.read_file(clip).to_crs(crs)
         shape = convert_3D_2D(shape)
-        with MemoryFile() as memfile:
-            with memfile.open(
-                driver='GTiff',
-                height=final.shape[1],
-                width=final.shape[2],
-                count=final.shape[0],
-                dtype=final.dtype,
-                compress = 'lzw',
-                crs=crs,
-                transform=final_trans,
-                BIGTIFF='YES',
-                nodata = nodata
-            ) as temp:
-                temp.write(final)
-                final, final_trans = rio.mask.mask(temp, shape, crop=True, filled=True)
-    #resampling to the same shape and resolution as another raster
+        pathfile = pathfile.rio.clip(shape)
+    # Reading histogram if it is the first file
+    if match_hist and isinstance(ref_hist, type(None)):
+        mean = pathfile.where(pathfile != nodata).mean().item()
+        ref_hist = pathfile.where(pathfile != nodata, mean)
+        pathfile = pathfile.chunk('auto')
+        return pathfile, ref_hist
+    # Histogram matching
+    elif match_hist:
+        mean = pathfile.where(pathfile != nodata).mean().item()
+        filled = pathfile.where(pathfile != nodata, mean)
+        matched = match_histograms(filled.data, ref_hist.data)
+        pathfile = pathfile.where(pathfile == nodata, matched)
+    pathfile = pathfile.chunk('auto')
+    return pathfile
+
+
+def mosaic_process(files, output_dir, fill_nodata, fill_distance, clip, crs, nodata, reference_raster, resample, band, pm):
+    # Nodata check
+    if nodata == None:
+        nodata = files[0].rio.nodata
+    for file in files:
+        assert file.rio.nodata == nodata
+    # Merging files
+    final = merge_arrays(files, method = 'first', nodata = nodata)
+    final = pm.persist(final)
+    # Filling nodata
+    if fill_nodata == True:
+        final = xarray.apply_ufunc(rio.fill.fillnodata, final, xarray.where(final == nodata, 0, 1), dask = 'parallelized', keep_attrs = 'override', kwargs = {'max_search_distance': fill_distance})
+        final = pm.persist(final)
+    files = None
+    # Clipping mosaic with vector mask
+    if clip != None:
+        if crs == None:
+            crs = final.rio.crs
+        shape = gpd.read_file(clip).to_crs(crs)
+        shape = convert_3D_2D(shape)
+        final = final.rio.clip(shape)
+        final = pm.persist(final)
+    # Resampling to the same shape and resolution as another raster
     if reference_raster != None:
-        ref = rio.open(reference_raster)
-        f1 = np.zeros((ref.shape), final.dtype)
-        reproject(
-            source = final,
-            destination = f1,
-            src_transform = final_trans,
-            src_crs=crs,
-            src_nodata = nodata,
-            dst_transform = ref.transform,
-            dst_resolution = ref.res,
-            dst_crs=ref.crs,
-            dst_nodata = nodata,
-            num_threads = 4,
-            resampling=resample)
-        final = f1
-        final_trans = ref.transform
-        crs = ref.crs
-    if final.ndim == 2:
-        final = final[np.newaxis,:,:]
-    with rio.open(
-        output_dir + band + '.tif',
-        'w',
-        driver='GTiff',
-        height=final.shape[1],
-        width=final.shape[2],
-        count=1,
-        dtype=final.dtype,
-        compress = 'lzw',
-        crs=crs,
-        transform=final_trans,
-        BIGTIFF='YES',
-        nodata = nodata
-    ) as outfile:
-        outfile.write(final)
-    return output_dir + band + '.tif'
+        with rioxarray.open_rasterio(reference_raster, chunks = True, lock = True) as tif:
+            ref = tif.load()
+        final = final.rio.reproject_match(ref)
+        final = pm.persist(final)
+    final.rio.to_raster(os.path.join(output_dir, band + '.tif'), compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, windowed = True, lock = True)
+    return output_dir + band + '.tif', pm
 
 
 def get_bands(paths, keep_all_channels):
@@ -245,7 +142,7 @@ def get_bands(paths, keep_all_channels):
         else:
             bands = glob(path + '*.*[!(zip|tar|tar.gz|aux.xml)*]')
         sets.append([bands, im_type])
-    # getting imagery type and bands list
+    # Getting imagery type and bands list
     unique_types = set(x[1] for x in sets)
     if (unique_types.issubset(['Landsat8_up_l1', 'Landsat7_up_l1', 'Landsat5_up_l1', 'Landsat1_up_l1'])) or (unique_types.issubset(['Landsat8_up_l2', 'Landsat7_up_l2', 'Landsat5_up_l2', 'Landsat1_up_l2'])) or (unique_types.issubset(['Landsat8_p', 'Landsat7_p', 'Landsat5_p', 'Landsat1_p'])):
         b1 = {'name': 'B1', 'bands': []} #coastal/aerosol
@@ -420,7 +317,7 @@ def order(dirs):
         except:
             zeros.append(0)
     zerosdict = dict(zip(dirs, zeros))
-    sortedzeros = dict(sorted(zerosdict.items(), key=lambda item: item[1], reverse = True))
+    sortedzeros = dict(sorted(zerosdict.items(), key=lambda item: item[1], reverse = False))
     order = list(sortedzeros.keys())
     return order
     
