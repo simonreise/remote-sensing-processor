@@ -136,6 +136,7 @@ for:
   install: 
     - sh: sudo apt-get update
     - sh: sudo apt-get upgrade -y
+    - sh: sudo apt install -y gdal-bin python3-gdal
     - sh: python3 -m pip install tox
   test_script:
     - sh: python3 -m tox
@@ -149,6 +150,7 @@ for:
   install: 
     - sh: sudo apt-get update
     - sh: sudo apt-get upgrade -y
+    - sh: sudo apt install -y gdal-bin python3-gdal
     - sh: python3 -m pip install tox
   test_script:
     - sh: python3 -m tox
@@ -162,6 +164,7 @@ for:
   install:
     - sh: sudo apt-get update
     - sh: sudo apt-get upgrade -y
+    - sh: sudo apt install -y gdal-bin python3-gdal
     - sh: python3 -m pip install tox
   test_script:
     - sh: python3 -m tox
@@ -175,6 +178,7 @@ for:
   install:
     - sh: sudo apt-get update
     - sh: sudo apt-get upgrade -y
+    - sh: sudo apt install -y gdal-bin python3-gdal
     - sh: python3 -m pip install tox
   test_script:
     - sh: python3 -m tox
@@ -187,7 +191,8 @@ for:
         TOXENV: python3.12
   install:
     - sh: sudo apt-get update
-    - sh: sudo apt-get upgrade -y 
+    - sh: sudo apt-get upgrade -y
+    - sh: sudo apt install -y gdal-bin python3-gdal
     - sh: python3 -m pip install tox
   test_script:
     - sh: python3 -m tox
