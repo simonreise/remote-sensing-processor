@@ -3,6 +3,21 @@
 
 environment:
   matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+      PYTHON: "3.8"
+      TOXENV: python3.8
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+      PYTHON: "3.9"
+      TOXENV: python3.9
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+      PYTHON: "3.10"
+      TOXENV: python3.10
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+      PYTHON: "3.11"
+      TOXENV: python3.11
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+      PYTHON: "3.12"
+      TOXENV: python3.12
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       PYTHON: "3.8"
       PYTHONPATH: "C:\\Python38-x64"
@@ -23,81 +38,11 @@ environment:
       PYTHON: "3.12"
       PYTHONPATH: "C:\\Python312-x64"
       TOXENV: python3.12
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-      PYTHON: "3.8"
-      TOXENV: python3.8
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-      PYTHON: "3.9"
-      TOXENV: python3.9
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-      PYTHON: "3.10"
-      TOXENV: python3.10
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-      PYTHON: "3.11"
-      TOXENV: python3.11
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-      PYTHON: "3.12"
-      TOXENV: python3.12
 stack: python %PYTHON%
 
 build: false
 
 for:
--
-  matrix:
-    only:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-        PYTHON: "3.8"
-        TOXENV: python3.8
-  install: 
-    - sh: python3 -m pip install tox
-  test_script:
-    - sh: python3 -m tox
-
--
-  matrix:
-    only:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-        PYTHON: "3.9"
-        TOXENV: python3.9
-  install: 
-    - sh: python3 -m pip install tox
-  test_script:
-    - sh: python3 -m tox
-
--
-  matrix:
-    only:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-        PYTHON: "3.10"
-        TOXENV: python3.10
-  install:
-    - sh: python3 -m pip install tox
-  test_script:
-    - sh: python3 -m tox
-
--
-  matrix:
-    only:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-        PYTHON: "3.11"
-        TOXENV: python3.11
-  install:
-    - sh: python3 -m pip install tox
-  test_script:
-    - sh: python3 -m tox
-
--
-  matrix:
-    only:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-        PYTHON: "3.12"
-        TOXENV: python3.12
-  install:
-    - sh: python3 -m pip install tox
-  test_script:
-    - sh: python3 -m tox
-
 -
   matrix:
     only:
@@ -181,3 +126,68 @@ for:
     - "%PYTHONPATH%\\python.exe -m pip install tox"
   test_script:
     - "%PYTHONPATH%\\python.exe -m tox"
+
+-
+  matrix:
+    only:
+      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+        PYTHON: "3.8"
+        TOXENV: python3.8
+  install: 
+    - sh: sudo apt-get update
+    - sh: sudo apt-get upgrade
+    - sh: python3 -m pip install tox
+  test_script:
+    - sh: python3 -m tox
+
+-
+  matrix:
+    only:
+      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+        PYTHON: "3.9"
+        TOXENV: python3.9
+  install: 
+    - sh: sudo apt-get update
+    - sh: sudo apt-get -y upgrade
+    - sh: python3 -m pip install tox
+  test_script:
+    - sh: python3 -m tox
+
+-
+  matrix:
+    only:
+      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+        PYTHON: "3.10"
+        TOXENV: python3.10
+  install:
+    - sh: sudo apt-get update
+    - sh: sudo apt-get -y upgrade
+    - sh: python3 -m pip install tox
+  test_script:
+    - sh: python3 -m tox
+
+-
+  matrix:
+    only:
+      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+        PYTHON: "3.11"
+        TOXENV: python3.11
+  install:
+    - sh: sudo apt-get update
+    - sh: sudo apt-get -y upgrade
+    - sh: python3 -m pip install tox
+  test_script:
+    - sh: python3 -m tox
+
+-
+  matrix:
+    only:
+      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+        PYTHON: "3.12"
+        TOXENV: python3.12
+  install:
+    - sh: sudo apt-get update
+    - sh: sudo apt-get -y upgrade    
+    - sh: python3 -m pip install tox
+  test_script:
+    - sh: python3 -m tox
