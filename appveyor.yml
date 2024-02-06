@@ -46,6 +46,61 @@ for:
 -
   matrix:
     only:
+      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+        PYTHON: "3.8"
+        TOXENV: python3.8
+  install: 
+    - sh: python3 -m pip install tox
+  test_script:
+    - sh: python3 -m tox
+
+-
+  matrix:
+    only:
+      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+        PYTHON: "3.9"
+        TOXENV: python3.9
+  install: 
+    - sh: python3 -m pip install tox
+  test_script:
+    - sh: python3 -m tox
+
+-
+  matrix:
+    only:
+      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+        PYTHON: "3.10"
+        TOXENV: python3.10
+  install:
+    - sh: python3 -m pip install tox
+  test_script:
+    - sh: python3 -m tox
+
+-
+  matrix:
+    only:
+      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+        PYTHON: "3.11"
+        TOXENV: python3.11
+  install:
+    - sh: python3 -m pip install tox
+  test_script:
+    - sh: python3 -m tox
+
+-
+  matrix:
+    only:
+      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+        PYTHON: "3.12"
+        TOXENV: python3.12
+  install:
+    - sh: python3 -m pip install tox
+  test_script:
+    - sh: python3 -m tox
+
+-
+  matrix:
+    only:
       - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
         PYTHON: "3.8"
         PYTHONPATH: "C:\\Python38-x64"
@@ -126,78 +181,3 @@ for:
     - "%PYTHONPATH%\\python.exe -m pip install tox"
   test_script:
     - "%PYTHONPATH%\\python.exe -m tox"
-
--
-  matrix:
-    only:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-        PYTHON: "3.8"
-        TOXENV: python3.8
-  install: 
-    - sh: sudo add-apt-repository ppa:ubuntugis/ppa
-    - sh: sudo apt-get update
-    - sh: sudo apt-get -y install python3-numpy gdal-bin libgdal-dev
-    - sh: sudo apt-get -y install python3-pip
-    - pip3 install tox
-  test_script:
-    - sh: python3 -m tox
-
--
-  matrix:
-    only:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-        PYTHON: "3.9"
-        TOXENV: python3.9
-  install: 
-    - sh: sudo add-apt-repository ppa:ubuntugis/ppa
-    - sh: sudo apt-get update
-    - sh: sudo apt-get -y install python3-numpy gdal-bin libgdal-dev
-    - sh: sudo apt-get -y install python3-pip
-    - pip3 install tox
-  test_script:
-    - sh: python3 -m tox
-
--
-  matrix:
-    only:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-        PYTHON: "3.10"
-        TOXENV: python3.10
-  install:
-    - sh: sudo add-apt-repository ppa:ubuntugis/ppa
-    - sh: sudo apt-get update
-    - sh: sudo apt-get -y install python3-numpy gdal-bin libgdal-dev
-    - sh: sudo apt-get -y install python3-pip
-    - pip3 install tox
-  test_script:
-    - sh: python3 -m tox
-
--
-  matrix:
-    only:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-        PYTHON: "3.11"
-        TOXENV: python3.11
-  install:
-    - sh: sudo add-apt-repository ppa:ubuntugis/ppa
-    - sh: sudo apt-get update
-    - sh: sudo apt-get -y install python3-numpy gdal-bin libgdal-dev
-    - sh: sudo apt-get -y install python3-pip
-    - pip3 install tox
-  test_script:
-    - sh: python3 -m tox
-
--
-  matrix:
-    only:
-      - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-        PYTHON: "3.12"
-        TOXENV: python3.12
-  install:
-    - sh: sudo add-apt-repository ppa:ubuntugis/ppa
-    - sh: sudo apt-get update
-    - sh: sudo apt-get -y install python3-numpy gdal-bin libgdal-dev
-    - sh: sudo apt-get -y install python3-pip
-    - pip3 install tox
-  test_script:
-    - sh: python3 -m tox
