@@ -148,7 +148,7 @@ for:
         TOXENV: python3.9
   install: 
     - sh: sudo apt-get update
-    - sh: sudo apt-get -y upgrade
+    - sh: sudo apt-get upgrade -y
     - sh: python3 -m pip install tox
   test_script:
     - sh: python3 -m tox
@@ -161,7 +161,7 @@ for:
         TOXENV: python3.10
   install:
     - sh: sudo apt-get update
-    - sh: sudo apt-get -y upgrade
+    - sh: sudo apt-get upgrade -y
     - sh: python3 -m pip install tox
   test_script:
     - sh: python3 -m tox
@@ -174,7 +174,7 @@ for:
         TOXENV: python3.11
   install:
     - sh: sudo apt-get update
-    - sh: sudo apt-get -y upgrade
+    - sh: sudo apt-get upgrade -y
     - sh: python3 -m pip install tox
   test_script:
     - sh: python3 -m tox
@@ -187,7 +187,7 @@ for:
         TOXENV: python3.12
   install:
     - sh: sudo apt-get update
-    - sh: sudo apt-get -y upgrade    
+    - sh: sudo apt-get upgrade -y 
     - sh: python3 -m pip install tox
   test_script:
     - sh: python3 -m tox
