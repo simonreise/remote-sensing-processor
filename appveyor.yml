@@ -135,7 +135,7 @@ for:
         TOXENV: python3.8
   install: 
     - sh: sudo apt-get update
-    - sh: sudo apt-get upgrade
+    - sh: sudo apt-get upgrade -y
     - sh: python3 -m pip install tox
   test_script:
     - sh: python3 -m tox
