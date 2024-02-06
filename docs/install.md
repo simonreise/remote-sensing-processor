@@ -54,7 +54,7 @@ In Linux you may need to install GDAL from apt manually.
 ```
 sudo add-apt-repository ppa:ubuntugis/ppa
 sudo apt-get update
-sudo apt-get install python-numpy gdal-bin libgdal-dev
+sudo apt-get install python3-numpy gdal-bin libgdal-dev
 ```
 Now you can install RSP.
 
