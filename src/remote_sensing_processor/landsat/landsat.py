@@ -204,6 +204,10 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
             pan = pan.rio.clip(shape)
             pan = persist(pan)
         img = persist(img)
+    # Because predictor = 2 works with float64 only when libtiff > 3.2.0 is installed and default libtiff in ubuntu is 3.2.0
+    if img.dtype == 'float64':
+        img = img.astype('float32')
+        img = persist(img)
     # Save
     outfiles = []
     results = []
@@ -356,9 +360,6 @@ def calc(img, tbands, lsver, mtl, t, normalize_t, nodata, path):
         # Normalize temperature in range 175 k - 375 k 
         if normalize_t:
             img = img.where(img == nodata, (img - (175 - deg)) / ((375 - deg) - (175 - deg)))
-        # Because predictor = 2 works with float64 only when libtiff > 3.2.0 is installed and default libtiff in ubuntu is 3.2.0
-        if img.dtype == 'float64':
-            img = img.astype('float32')
         return img
             
 
