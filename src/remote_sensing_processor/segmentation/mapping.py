@@ -8,7 +8,7 @@ import rioxarray
 import torch
 import lightning as l
 
-from remote_sensing_processor.common.common_functions import PersistManager
+from remote_sensing_processor.common.common_functions import persist
 
 from remote_sensing_processor.segmentation.segmentation import Model, SegDataModule
 
@@ -32,7 +32,6 @@ def predict_map_from_tiles(x, y, reference, model, output, nodata, batch_size, n
     classes = y_dataset.classes
     # Creating empty array
     y = xarray.full_like(reference[0], nodata)
-    pm = PersistManager()
     # Neural networks
     if model.model_name in ['BEiT', 'ConditionalDETR', 'Data2Vec', 'DETR', 'DPT', 'Mask2Former', 'MaskFormer', 'MobileNetV2', 'MobileViT', 'MobileViTV2', 'OneFormer', 'SegFormer', 'UperNet', 'DeepLabV3', 'FCN', 'LRASPP']:
         # Setting datamodule
@@ -50,7 +49,7 @@ def predict_map_from_tiles(x, y, reference, model, output, nodata, batch_size, n
             x_dataset = xarray.open_dataarray(x, engine = 'zarr', chunks = 'auto', mask_and_scale = False)
         else:
             x_dataset = x
-        x_dataset = pm.persist(x_dataset)
+        x_dataset = persist(x_dataset)
         tiles = x_dataset.tiles
         border = x_dataset.border
         samples = [x for xs in x_dataset.samples for x in xs]
@@ -85,6 +84,10 @@ def predict_map_from_tiles(x, y, reference, model, output, nodata, batch_size, n
             y = xr.where(y == k, v + 100000, y)
         for _, v in enumerate(classes).items():
             y = xr.where(y == v + 100000, y - 100000, y)
-    y = pm.persist(y)
+    y = persist(y)
+    # Because predictor = 2 works with float64 only when libtiff > 3.2.0 is installed and default libtiff in ubuntu is 3.2.0
+    if y.dtype == 'float64':
+        y = y.astype('float32')
+        y = persist(y)
     # Writing to file
-    y.rio.to_raster(output, compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, windowed = True, lock = True)
+    y.rio.to_raster(output, compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, NUM_THREADS = 'NUM_CPUS', lock = True)

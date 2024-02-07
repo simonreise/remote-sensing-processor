@@ -1,7 +1,6 @@
 from glob import glob
 import shutil
 import os
-import sys
 import warnings
 import rasterio as rio
 
@@ -27,6 +26,9 @@ from remote_sensing_processor.common.replace import replace_val
 from remote_sensing_processor.common.rasterize import rasterize_vector
 
 from remote_sensing_processor.common.common_functions import get_first_proj
+# A function that get dask client from a cluster, or creates local cluster. Will be useful if functions will support computation on dask clusters.
+# TODO : make everything support computation on dask clusters
+#from remote_sensing_processor.common.dask import get_client
 
 from remote_sensing_processor import segmentation
 

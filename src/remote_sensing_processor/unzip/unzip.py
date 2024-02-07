@@ -1,6 +1,7 @@
 import os
 import shutil
 
+
 def unzip_sentinel(archive):
     if os.path.isfile(archive) and '.zip' in archive:
         path = archive.replace('.zip', '/')

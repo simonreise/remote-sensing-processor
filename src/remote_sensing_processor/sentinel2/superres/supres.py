@@ -7,6 +7,8 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 
+from remote_sensing_processor.common.common_functions import persist
+
 from remote_sensing_processor.sentinel2.superres.patches import get_test_patches, get_test_patches60, recompose_images
 
 # This code is adapted from this repository
@@ -39,17 +41,17 @@ if not os.path.exists(L2A_MDL_PATH_60M_DSEN2):
 '''    
 
 
-def dsen2_20(d10, d20, image_level, pm):
+def dsen2_20(d10, d20, image_level):
     # Input to the funcion must be of shape:
     #     d10: [x,y,4]      (B2, B3, B4, B8)
     #     d20: [x/2,y/4,6]  (B5, B6, B7, B8a, B11, B12)
     #     deep: specifies whether to use VDSen2 (True), or DSen2 (False)
 
     border = 8
-    p10, p20, pm = get_test_patches(d10, d20, patch_size=128, border=border, pm = pm)
+    p10, p20 = get_test_patches(d10, d20, patch_size=128, border=border)
     p10 /= SCALE
     p20 /= SCALE
-    p10, p20 = pm.persist(p10, p20)
+    p10, p20 = persist(p10, p20)
     test = [p10, p20]
     if image_level == "MSIL1C":
         model_filename = L1C_MDL_PATH_20M_DSEN2
@@ -59,13 +61,13 @@ def dsen2_20(d10, d20, image_level, pm):
     prediction = _predict(test, model_filename, input_shape)
     del test, p10, p20
     images = recompose_images(prediction, border=border, ref=d10)
-    images = pm.persist(images)
+    images = persist(images)
     images *= SCALE
-    images = pm.persist(images)
-    return images, pm
+    images = persist(images)
+    return images
 
 
-def dsen2_60(d10, d20, d60, image_level, pm):
+def dsen2_60(d10, d20, d60, image_level):
     # Input to the funcion must be of shape:
     #     d10: [x,y,4]      (B2, B3, B4, B8)
     #     d20: [x/2,y/4,6]  (B5, B6, B7, B8a, B11, B12)
@@ -73,11 +75,11 @@ def dsen2_60(d10, d20, d60, image_level, pm):
     #     deep: specifies whether to use VDSen2 (True), or DSen2 (False)
 
     border = 12
-    p10, p20, p60, pm = get_test_patches60(d10, d20, d60, patch_size=192, border=border, pm = pm)
+    p10, p20, p60 = get_test_patches60(d10, d20, d60, patch_size=192, border=border)
     p10 /= SCALE
     p20 /= SCALE
     p60 /= SCALE
-    p10, p20, p60 = pm.persist(p10, p20, p60)
+    p10, p20, p60 = persist(p10, p20, p60)
 
     test = [p10, p20, p60]
     if image_level == "MSIL1C":
@@ -88,10 +90,10 @@ def dsen2_60(d10, d20, d60, image_level, pm):
     prediction = _predict(test, model_filename, input_shape)
     del test, p10, p20, p60
     images = recompose_images(prediction, border=border, ref=d10)
-    images = pm.persist(images)
+    images = persist(images)
     images *= SCALE
-    images = pm.persist(images)
-    return images, pm
+    images = persist(images)
+    return images
 
 
 def _predict(test, model_filename, input_shape):

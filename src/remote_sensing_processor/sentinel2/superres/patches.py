@@ -6,6 +6,8 @@ import dask
 import xarray
 from skimage.transform import rescale
 
+from remote_sensing_processor.common.common_functions import persist
+
 
 def interp_patch(patch, scale):
     return xarray.apply_ufunc(rescale, 
@@ -66,8 +68,7 @@ def get_test_patches(
     dset_20,
     patch_size = 128,
     border = 4,
-    interp = True,
-    pm = None
+    interp = True
 ):
     """Used for inference. Creates patches of specific size in the whole image (10m and 20m)"""
 
@@ -77,7 +78,7 @@ def get_test_patches(
     # Mirror the data at the borders to have the same dimensions as the input
     dset_10 = dset_10.pad({'x': border, 'y': border}, mode = "symmetric")
     dset_20 = dset_20.pad({'x': border_20, 'y': border_20}, mode = "symmetric")
-    dset_10, dset_20 = pm.persist(dset_10, dset_20)
+    dset_10, dset_20 = persist(dset_10, dset_20)
 
     patches_along_i = (dset_20.shape[1] - 2 * border_20) // (patch_size_20 - 2 * border_20)
     patches_along_j = (dset_20.shape[2] - 2 * border_20) // (patch_size_20 - 2 * border_20)
@@ -85,16 +86,16 @@ def get_test_patches(
     image_10 = dask.delayed(get_patches)(dset_10, patch_size, border, patches_along_i, patches_along_j)
     image_20 = dask.delayed(get_patches)(dset_20, patch_size_20, border_20, patches_along_i, patches_along_j)
     image_10, image_20 = dask.compute(image_10, image_20)
-    image_10, image_20 = pm.persist(image_10, image_20)
+    image_10, image_20 = persist(image_10, image_20)
 
     if interp:
         coef20 = int(image_10.shape[2] / image_20.shape[2]) 
         rescale_p = partial(interp_patch, scale = coef20)
-        data20_interp = image_20.groupby('chips').map(rescale_p)
+        data20_interp = image_20.groupby('chips', squeeze = False).map(rescale_p)
     else:
         data20_interp = image_20
-    image_10, data20_interp = pm.persist(image_10, data20_interp)
-    return image_10, data20_interp, pm
+    image_10, data20_interp = persist(image_10, data20_interp)
+    return image_10, data20_interp
 
 
 def get_test_patches60(
@@ -103,8 +104,7 @@ def get_test_patches60(
     dset_60,
     patch_size = 192,
     border = 12,
-    interp = True,
-    pm = None
+    interp = True
 ):
     """Used for inference. Creates patches of specific size in the whole image (10m, 20m and 60m)"""
 
@@ -117,7 +117,7 @@ def get_test_patches60(
     dset_10 = dset_10.pad({'x': border, 'y': border}, mode = "symmetric")
     dset_20 = dset_20.pad({'x': border_20, 'y': border_20}, mode = "symmetric")
     dset_60 = dset_60.pad({'x': border_60, 'y': border_60}, mode = "symmetric")
-    dset_10, dset_20, dset_60 = pm.persist(dset_10, dset_20, dset_60)
+    dset_10, dset_20, dset_60 = persist(dset_10, dset_20, dset_60)
 
     patches_along_i = (dset_60.shape[1] - 2 * border_60) // (patch_size_60 - 2 * border_60)
     patches_along_j = (dset_60.shape[2] - 2 * border_60) // (patch_size_60 - 2 * border_60)
@@ -126,23 +126,23 @@ def get_test_patches60(
     image_20 = dask.delayed(get_patches)(dset_20, patch_size_20, border_20, patches_along_i, patches_along_j)
     image_60 = dask.delayed(get_patches)(dset_60, patch_size_60, border_60, patches_along_i, patches_along_j)
     image_10, image_20, image_60 = dask.compute(image_10, image_20, image_60)
-    image_10, image_20, image_60 = pm.persist(image_10, image_20, image_60)
+    image_10, image_20, image_60 = persist(image_10, image_20, image_60)
 
     if interp:
         coef20 = int(image_10.shape[2] / image_20.shape[2]) 
         rescale_p = partial(interp_patch, scale = coef20)
-        data20_interp = image_20.groupby('chips').map(rescale_p)
+        data20_interp = image_20.groupby('chips', squeeze = False).map(rescale_p)
         coef60 = int(image_10.shape[2] / image_60.shape[2]) 
         rescale_p = partial(interp_patch, scale = coef60)
-        data60_interp = image_60.groupby('chips').map(rescale_p)
+        data60_interp = image_60.groupby('chips', squeeze = False).map(rescale_p)
 
     else:
         data20_interp = image_20
         data60_interp = image_60
 
-    image_10, data20_interp, data60_interp = pm.persist(image_10, data20_interp, data60_interp)
+    image_10, data20_interp, data60_interp = persist(image_10, data20_interp, data60_interp)
 
-    return image_10, data20_interp, data60_interp, pm
+    return image_10, data20_interp, data60_interp
 
 
 def get_crop_window(

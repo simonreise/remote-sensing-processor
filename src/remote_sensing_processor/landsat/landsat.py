@@ -2,34 +2,26 @@ import os
 import pathlib
 from glob import glob
 import xml.etree.ElementTree as ET
-#import multiprocessing
-#import threading
 from functools import partial
 import warnings
 
 import numpy as np
 import xarray
 import dask
-#from dask.distributed import Client, LocalCluster, Lock
+#from dask.distributed import Lock
 
 import geopandas as gpd
 from rasterio.enums import Resampling
 import rioxarray
 
 from remote_sensing_processor.imagery_types.types import get_type
-from remote_sensing_processor.common.common_functions import get_resampling, convert_3D_2D, PersistManager
+from remote_sensing_processor.common.common_functions import get_resampling, convert_3D_2D, persist
 
 
 warnings.filterwarnings("ignore", message = "divide by zero")
 warnings.filterwarnings("ignore", message = "invalid value encountered")
 
-
 def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resample, t, clip, normalize_t):
-    # Now not use cluster due to memory and worker errors
-    #with LocalCluster(memory_limit = None) as cluster:
-        #cluster.adapt(minimum = 1, maximum = multiprocessing.cpu_count())
-        #with Client(cluster) as client:
-    pm = PersistManager()
     t = t.lower()
     bands = glob(path + '*B*.tif')
     if bands == []:
@@ -61,7 +53,7 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
             else:
                 old = False
             with rioxarray.open_rasterio(qa, chunks = True, lock = True) as tif:
-                qa = tif.load().chunk('auto')
+                qa = persist(tif)#.load().chunk('auto')
             qar = None
         else:
             qar = sorted(qa)[1]
@@ -72,9 +64,9 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
             else:
                 old = False
             with rioxarray.open_rasterio(qa, chunks = True, lock = True) as tif:
-                qa = tif.load().chunk('auto')
+                qa = persist(tif)#.load().chunk('auto')
             with rioxarray.open_rasterio(qar, chunks = True, lock = True) as tif:
-                qar = tif.load().chunk('auto')
+                qar = persist(tif)#.load().chunk('auto')
         clears = []
         for v in np.unique(qa):
             val = format(v, 'b')[::-1]
@@ -147,10 +139,10 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
     files = []
     for i in bands:
         with rioxarray.open_rasterio(i, chunks = True, lock = True) as tif:
-            files.append(tif.load().chunk('auto'))
-        tif.close()
+            files.append(persist(tif))#.load().chunk('auto'))
+        #tif.close()
     img = xarray.concat(files, dim = xarray.Variable('band', band_names))
-    #img = xarray.concat([rioxarray.open_rasterio(i, chunks = True, lock = False) for i in bands], dim = xarray.Variable('band', band_names))
+    #img = xarray.concat([rioxarray.open_rasterio(i, chunks = True, lock = Lock("rio-read", client=client)) for i in bands], dim = xarray.Variable('band', band_names))
     try:
         if img.rio.nodata == None:
             nodata = 0
@@ -159,21 +151,21 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
     except:
         nodata = 0
     img.rio.write_nodata(nodata, inplace = True)
-    img = pm.persist(img)
+    img = persist(img)
     # Masking clouds
     if cloud_mask == True:
         img = img.where((mask.squeeze()) == 0, nodata)
     # Converting dn to reflectance and temperature to degrees
     calc_p = partial(calc, tbands = tbands, lsver = lsver, mtl = mtl, t = t, normalize_t = normalize_t, nodata = nodata, path = path)
-    img = img.groupby('band').map(calc_p)
-    img = pm.persist(img)
+    img = img.groupby('band', squeeze = False).map(calc_p)
+    img = persist(img)
     # Pansharpening
     if ((pansharpen == True) or (keep_pan_band == True)) and (lsver in ['Landsat8_up_l1', 'Landsat8_up_l2', 'Landsat7_up_l1', 'Landsat7_up_l2']) and (('B8' not in band) and ('B08' not in band)):
-        with rioxarray.open_rasterio(panband, chunks = True, lock = True) as tif:
-            pan = tif.load().drop_vars('band').assign_coords({'band': [panband_name]}).chunk('auto')
+        with rioxarray.open_rasterio(panband, chunks = True, lock = True).drop_vars('band').assign_coords({'band': [panband_name]}) as tif:
+            pan = persist(tif)#.load().drop_vars('band').assign_coords({'band': [panband_name]}).chunk('auto')
         pan = pan.where(((mask.rio.reproject_match(pan, resampling = Resampling.nearest)).squeeze()) == 0, nodata)
         pan = calc(pan, tbands, lsver, mtl, t, normalize_t, nodata, path)
-        pan = pm.persist(pan)
+        pan = persist(pan)
         if pansharpen == True:
             img = img.rio.reproject_match(pan, resampling = resample)
             img = img.chunk("auto")
@@ -183,15 +175,15 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
                     bands_to_pan = [b for b in img['band'].values if b in ['B4', 'B04', 'B3', 'B03', 'B2', 'B02']]
                 #img = img.where(img == nodata | ~img['band'].isin(['B4', 'B04', 'B3', 'B03', 'B2', 'B02']), (img * pan_c.squeeze()).clip(0, 1))
             elif lsver in ['Landsat7_up_l1', 'Landsat7_up_l2']:
-                with np.errstate(invalid='ignore', divide='ignore'):
+                with np.errstate(invalid = 'ignore', divide = 'ignore'):
                     pan_c = (pan / ((0.42 * img.sel({'band': blue}) + 0.98 * img.sel({'band': green}) + 0.6 * img.sel({'band': red}) + 1 * img.sel({'band': nir})) / 3)).squeeze()
                     bands_to_pan = [b for b in img['band'].values if b in ['B4', 'B04', 'B3', 'B03', 'B2', 'B02', 'B1', 'B01']]
             pansharp_p = partial(pansharp, pan_c = pan_c, bands_to_pan = bands_to_pan, nodata = nodata)
-            img = img.groupby('band').map(pansharp_p)
+            img = img.groupby('band', squeeze = False).map(pansharp_p)
             pan.rio.write_nodata(nodata, inplace = True)
             if keep_pan_band == True:
                 img = xarray.concat([img, pan], dim = 'band')   
-            img = pm.persist(img)
+            img = persist(img)
     # Reprojecting
     if projection != None:
         img = img.rio.reproject(projection, resampling = Resampling.nearest)
@@ -199,8 +191,8 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
         if ((pansharpen == False) and (keep_pan_band == True)):
             pan = pan.rio.reproject(projection, resampling = Resampling.nearest)
             pan = pan.chunk("auto")
-            pan = pm.persist(pan)
-        img = pm.persist(img)
+            pan = persist(pan)
+        img = persist(img)
     else:
         projection = img.rio.crs
     # Clipping
@@ -210,19 +202,19 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
         img = img.rio.clip(shape)
         if ((pansharpen == False) and (keep_pan_band == True)):
             pan = pan.rio.clip(shape)
-            pan = pm.persist(pan)
-        img = pm.persist(img)
+            pan = persist(pan)
+        img = persist(img)
     # Save
     outfiles = []
     results = []
     for band in img:
         pathres = path + band['band'].item() + '.tif'
         outfiles.append(pathlib.Path(pathres))
-        results.append(band.rio.to_raster(pathres, compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, windowed = True, compute = False, lock = True))
+        results.append(band.rio.to_raster(pathres, compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, NUM_THREADS = 'NUM_CPUS', compute = False, lock = True))
     if ((pansharpen == False) and (keep_pan_band == True)):
         pathres = path + pan['band'][0].item() + '.tif'
         outfiles.append(pathlib.Path(pathres))
-        results.append(pan.rio.to_raster(pathres, compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, windowed = True, compute = False, lock = True))
+        results.append(pan.rio.to_raster(pathres, compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, NUM_THREADS = 'NUM_CPUS', compute = False, lock = True))
     dask.compute(*results)
     # Unused code
     #print(dask.is_dask_collection(img))
@@ -364,6 +356,9 @@ def calc(img, tbands, lsver, mtl, t, normalize_t, nodata, path):
         # Normalize temperature in range 175 k - 375 k 
         if normalize_t:
             img = img.where(img == nodata, (img - (175 - deg)) / ((375 - deg) - (175 - deg)))
+        # Because predictor = 2 works with float64 only when libtiff > 3.2.0 is installed and default libtiff in ubuntu is 3.2.0
+        if img.dtype == 'float64':
+            img = img.astype('float32')
         return img
             
 

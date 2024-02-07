@@ -10,16 +10,15 @@ import rasterio.fill
 from rasterio.enums import Resampling
 import rioxarray
 
-from remote_sensing_processor.common.common_functions import convert_3D_2D, get_resampling, PersistManager
+from remote_sensing_processor.common.common_functions import convert_3D_2D, get_resampling, persist
 
 
-def s2postprocess_superres(img, projection, cloud_mask, clip, normalize, path, path1, pm):
+def s2postprocess_superres(img, projection, cloud_mask, clip, normalize, path, path1):
     bandnames = img.long_name
-    outfiles = s2postprocess(img = img, projection = projection, cloud_mask = cloud_mask, clip = clip, normalize = normalize, path = path, path1 = path1, bandoutnames = bandnames, pm = pm)
+    outfiles = s2postprocess(img = img, projection = projection, cloud_mask = cloud_mask, clip = clip, normalize = normalize, path = path, path1 = path1, bandoutnames = bandnames)
             
             
 def s2postprocess_no_superres(projection, cloud_mask, clip, normalize, resample, path, path1, upscale):
-    pm = PersistManager()
     if upscale == 'resample':
         resample = get_resampling(resample)
     # Getting bands with different resolution
@@ -73,7 +72,7 @@ def s2postprocess_no_superres(projection, cloud_mask, clip, normalize, resample,
     if upscale == None:
         bandoutnames = bnames10
         img = xarray.concat(files, dim = xarray.Variable('band', bandoutnames))        
-        outfiles.extend(s2postprocess(img = img, projection = projection, cloud_mask = cloud_mask, clip = clip, normalize = normalize, path = path, path1 = path1, bandoutnames = bandoutnames, pm = pm))
+        outfiles.extend(s2postprocess(img = img, projection = projection, cloud_mask = cloud_mask, clip = clip, normalize = normalize, path = path, path1 = path1, bandoutnames = bandoutnames))
         files = []
     # Processing 20 m bands
     for i in bands20:
@@ -86,7 +85,7 @@ def s2postprocess_no_superres(projection, cloud_mask, clip, normalize, resample,
     if upscale == None:
         bandoutnames = bnames20
         img = xarray.concat(files, dim = xarray.Variable('band', bandoutnames))        
-        outfiles.extend(s2postprocess(img = img, projection = projection, cloud_mask = cloud_mask, clip = clip, normalize = normalize, path = path, path1 = path1, bandoutnames = bandoutnames, pm = pm))
+        outfiles.extend(s2postprocess(img = img, projection = projection, cloud_mask = cloud_mask, clip = clip, normalize = normalize, path = path, path1 = path1, bandoutnames = bandoutnames))
         files = []
     # Processing 60 m bands
     for i in bands60:
@@ -99,15 +98,15 @@ def s2postprocess_no_superres(projection, cloud_mask, clip, normalize, resample,
     if upscale == None:
         bandoutnames = bnames60
         img = xarray.concat(files, dim = xarray.Variable('band', bandoutnames))        
-        outfiles.extend(s2postprocess(img = img, projection = projection, cloud_mask = cloud_mask, clip = clip, normalize = normalize, path = path, path1 = path1, bandoutnames = bandoutnames, pm = pm))
+        outfiles.extend(s2postprocess(img = img, projection = projection, cloud_mask = cloud_mask, clip = clip, normalize = normalize, path = path, path1 = path1, bandoutnames = bandoutnames))
     # If upscaling needed then process all bands together
     if upscale == 'resample':
         bandoutnames = bnames10 + bnames20 + bnames60
         img = xarray.concat(files, dim = xarray.Variable('band', bandoutnames))        
-        outfiles.extend(s2postprocess(img = img, projection = projection, cloud_mask = cloud_mask, clip = clip, normalize = normalize, path = path, path1 = path1, bandoutnames = bandoutnames, pm = pm))
+        outfiles.extend(s2postprocess(img = img, projection = projection, cloud_mask = cloud_mask, clip = clip, normalize = normalize, path = path, path1 = path1, bandoutnames = bandoutnames))
 
 
-def s2postprocess(img, projection, cloud_mask, clip, normalize, path, path1, bandoutnames, pm):
+def s2postprocess(img, projection, cloud_mask, clip, normalize, path, path1, bandoutnames):
     try:
         if img.rio.nodata == None:
             nodata = 0
@@ -116,12 +115,12 @@ def s2postprocess(img, projection, cloud_mask, clip, normalize, path, path1, ban
     except:
         nodata = 0
     img.rio.write_nodata(nodata, inplace = True)
-    img = pm.persist(img)
+    img = persist(img)
     # Masking 65555 pixels
     img = img.where(img <= 10000, 1)
     img = xarray.apply_ufunc(rio.fill.fillnodata, img, xarray.where(img == 1, 0, 1), dask = 'parallelized', keep_attrs = 'override', kwargs = {'max_search_distance': 500})
     img = img.chunk('auto')
-    img = pm.persist(img)
+    img = persist(img)
     if cloud_mask == True:
         # Masking clouds by mask
         shape = glob(path1 + '/GRANULE/**/QI_DATA/MSK_CLOUDS_B00.gml')
@@ -154,12 +153,12 @@ def s2postprocess(img, projection, cloud_mask, clip, normalize, path, path1, ban
             mask = xarray.apply_ufunc(rio.fill.fillnodata, mask, mask, dask = 'parallelized', keep_attrs = 'override', kwargs = {'max_search_distance': 22}) # fill 0 - data
             # Masking nodata
             img = img.where(mask.squeeze() == 0, 0) # 0 - data, 1 - nodata
-        img = pm.persist(img)
+        img = persist(img)
     # Reprojection
     if projection != None:
         img = img.rio.reproject(projection, resampling = Resampling.nearest)
         img = img.chunk('auto')
-        img = pm.persist(img)
+        img = persist(img)
     else:
         projection = img.rio.crs
     # Clipping
@@ -167,11 +166,14 @@ def s2postprocess(img, projection, cloud_mask, clip, normalize, path, path1, ban
         shape = gpd.read_file(clip).to_crs(projection)
         shape = convert_3D_2D(shape)
         img = img.rio.clip(shape)
-        img = pm.persist(img)
+        img = persist(img)
     # Normalization
     if normalize == True:
         img = img / 10000
-        img = pm.persist(img)
+        # Because predictor = 2 works with float64 only when libtiff > 3.2.0 is installed and default libtiff in ubuntu is 3.2.0
+        if img.dtype == 'float64':
+            img = img.astype('float32')
+        img = persist(img)
     # Save
     if 'long_name' in img.attrs:
         del img.attrs['long_name']
@@ -180,6 +182,6 @@ def s2postprocess(img, projection, cloud_mask, clip, normalize, path, path1, ban
     for i in range(img.shape[0]):
         pathres = path + '/' + bandoutnames[i] + '.tif'
         outfiles.append(pathres)
-        results.append(img[i].rio.to_raster(pathres, compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, windowed = True, compute = False, lock = True))
+        results.append(img[i].rio.to_raster(pathres, compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, NUM_THREADS = 'NUM_CPUS', compute = False, lock = True))
     dask.compute(*results)
     return outfiles

@@ -72,29 +72,25 @@ def get_first_proj(img):
     return projection
     
     
-class PersistManager:
+def persist(*inputs):
     """
-    This class is a simple dask persist manager.
-    It tries to persist array if it is not too big to fit in memory.
+    This function tries to persist array if it is not too big to fit in memory.
     """
-    def __init__(self):
-        self.enough_memory = True
-    
-    def persist(self, *inputs):
-        results = []
-        # Trying to persist dataset in memory (it makes processing much faster)
-        if self.enough_memory == True:
-            try:
-                for i in inputs:
-                    results.append(i.persist())
-            except:
-                warnings.warn("Dataset does not fit in memory. Processing can be much slower.")
-                self.enough_memory == False
-                results = inputs
-        else:
+    enough_memory = True
+    results = []
+    # Trying to persist dataset in memory (it makes processing much faster)
+    if enough_memory == True:
+        try:
+            for i in inputs:
+                results.append(i.persist())
+        except:
+            warnings.warn("Dataset does not fit in memory. Processing can be much slower.")
+            enough_memory == False
             results = inputs
-        # Return array instead of tuple if it consists of one element
-        results = tuple(results)
-        if len(results) == 1:
-            results = results[0]
-        return results
+    else:
+        results = inputs
+    # Return array instead of tuple if it consists of one element
+    results = tuple(results)
+    if len(results) == 1:
+        results = results[0]
+    return results

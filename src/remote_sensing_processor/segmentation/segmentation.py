@@ -16,7 +16,7 @@ import torchmetrics
 import transformers
 import lightning as l
 
-from remote_sensing_processor.common.common_functions import PersistManager
+from remote_sensing_processor.common.common_functions import persist
 
 from remote_sensing_processor.segmentation.models import load_model, load_sklearn_model
 
@@ -76,9 +76,8 @@ def segmentation_train(train_datasets, val_datasets, model, backbone, checkpoint
         if os.path.splitext(model_file)[1] != '.joblib':
             raise ValueError("Wrong model file format: .joblib file extention expected for " + model)
         # Setting up persist manager
-        pm = PersistManager()
         # Loading train datasets
-        x_train, y_train, classification, y_nodata, num_classes, pm = sklearn_load_dataset(train_datasets, pm)
+        x_train, y_train, classification, y_nodata, num_classes = sklearn_load_dataset(train_datasets)
         if checkpoint != None:
             model = joblib.load(checkpoint)
             if model.model_name in ["Random Forest", "Gradient Boosting"]:
@@ -90,7 +89,7 @@ def segmentation_train(train_datasets, val_datasets, model, backbone, checkpoint
         del y_train
         # Validation
         if not isinstance(val_datasets, type(None)):
-            x_val, y_val, _, _, _, pm = sklearn_load_dataset(val_datasets, pm)
+            x_val, y_val, _, _, _ = sklearn_load_dataset(val_datasets)
             model.test(x_val, y_val)
         try:
             joblib.dump(model, model_file, compress = 9)
@@ -119,9 +118,8 @@ def segmentation_test(test_datasets, model, batch_size, num_workers):
     # Sklearn models
     elif model.model_name in ["Nearest Neighbors", "Logistic Regression", "SVM", "Gaussian Process", "Decision Tree", "Random Forest", "Gradient Boosting", "Multilayer Perceptron", "AdaBoost", "Naive Bayes", "QDA", "Ridge", "Lasso", "ElasticNet", "XGBoost", "XGB Random Forest"]:
         classification = model.classification
-        pm = PersistManager()
         # Loading test datasets
-        x_test, y_test, _, _, _, pm = sklearn_load_dataset(test_datasets, pm)
+        x_test, y_test, _, _, _ = sklearn_load_dataset(test_datasets)
         model.test(x_test, y_test)
     else:
         raise ValueError("Wrong model name. Check spelling or read a documentation and choose a supported model")
@@ -160,16 +158,15 @@ class ZarrDataset(torch.utils.data.Dataset):
             self.y_dataset = None
         # Setting up transform
         self.transform = transform
-        self.pm = PersistManager()
-        self.pm.is_persisted = False
+        self.is_persisted = False
 
     def __getitem__(self, index):
         # Persist is in getitem because if it is in init then multiprocessing is not working because datasets are too big to pickle
-        if self.pm.is_persisted == False:
-            self.x_dataset = self.pm.persist(self.x_dataset)
+        if self.is_persisted == False:
+            self.x_dataset = persist(self.x_dataset)
             if not isinstance(self.y_dataset, type(None)):
-                self.y_dataset = self.pm.persist(self.y_dataset)
-            self.pm.is_persisted = True
+                self.y_dataset = persist(self.y_dataset)
+            self.is_persisted = True
         x = tv_tensors.Image(self.x_dataset[self.indices[index]].data.astype('float32').compute())
         if not isinstance(self.y_dataset, type(None)):
             y = tv_tensors.Mask(self.y_dataset[self.indices[index]].data.compute())
@@ -569,7 +566,7 @@ class SklearnModel:
         return pred
         
     
-def sklearn_load_dataset(ds, pm):
+def sklearn_load_dataset(ds):
     x_stack = None
     y_stack = None
     classification = None
@@ -584,14 +581,14 @@ def sklearn_load_dataset(ds, pm):
             x_dataset = xarray.open_dataarray(x, engine = 'zarr', chunks = 'auto', mask_and_scale = False)
         else:
             x_dataset = x
-        x_dataset = pm.persist(x_dataset)
+        x_dataset = persist(x_dataset)
         # Reading y dataset
         if not isinstance(y, type(None)):
             if isinstance(y, str):
                 y_dataset = xarray.open_dataarray(y, engine = 'zarr', chunks = 'auto', mask_and_scale = False)
             else:
                 y_dataset = y
-            y_dataset = pm.persist(y_dataset)
+            y_dataset = persist(y_dataset)
             assert y_dataset.tiles == x_dataset.tiles
             if isinstance(classification, type(None)):
                 classification = y_dataset.classification
@@ -632,14 +629,14 @@ def sklearn_load_dataset(ds, pm):
             else:
                 x_stack = xarray.concat([x_stack, x_dataset[index].astype('float32').stack(data = ('y', 'x'))], dim = 'data')
                 x_stack = x_stack.transpose('data', 'band')
-                x_stack = pm.persist(x_stack)
+                x_stack = persist(x_stack)
             if not isinstance(y, type(None)):
                 if isinstance(y_stack, type(None)):
                     y_stack = y_dataset[index].stack(data = ('y', 'x'))
                 else:
                     y_stack = xarray.concat([y_stack, y_dataset[index].stack(data = ('y', 'x'))], dim = 'data')
-                y_stack = pm.persist(y_stack)
+                y_stack = persist(y_stack)
     if not isinstance(y, type(None)):
-        return x_stack, y_stack, classification, y_nodata, num_classes, pm
+        return x_stack, y_stack, classification, y_nodata, num_classes
     else:
-        return x_stack, pm
+        return x_stack

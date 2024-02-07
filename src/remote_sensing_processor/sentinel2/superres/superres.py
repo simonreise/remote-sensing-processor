@@ -12,7 +12,7 @@ import rasterio
 import rioxarray
 import geopandas as gpd
 
-from remote_sensing_processor.common.common_functions import PersistManager, convert_3D_2D
+from remote_sensing_processor.common.common_functions import persist, convert_3D_2D
 
 from remote_sensing_processor.sentinel2.superres.supres import dsen2_20, dsen2_60
 
@@ -29,7 +29,6 @@ def superresolution(input_dir = "/tmp/input/", clip = None):
     data_final method creates the input data for the the convolutional neural network.
     It returns 10 m resolution for all the bands in 20 and 60 m resolutions.
     """
-    pm = PersistManager()
     # Reading datasets
     datasets, image_level = get_data(input_dir)
 
@@ -38,7 +37,7 @@ def superresolution(input_dir = "/tmp/input/", clip = None):
     for dataset in datasets:
         futures.append(dask.delayed(read_ds)(dataset))
     (data10, dic_10m), (data20, dic_20m), (data60, dic_60m) = dask.compute(*futures)
-    data10, data20, data60 = pm.persist(data10, data20, data60)
+    data10, data20, data60 = persist(data10, data20, data60)
     
     # Clipping
     if clip != None:
@@ -46,27 +45,27 @@ def superresolution(input_dir = "/tmp/input/", clip = None):
         data10 = dask.delayed(clip_data)(data10, clip, box)
         data20 = dask.delayed(clip_data)(data20, clip, box)
         data10, data20 = dask.compute(data10, data20)
-        data10, data20, data60 = pm.persist(data10, data20, data60)
+        data10, data20, data60 = persist(data10, data20, data60)
 
     validated_descriptions_all = [*dic_10m, *dic_20m, *dic_60m]
 
     # Super-resolving the 60m data into 10m bands
-    sr60, pm = dsen2_60(data10, data20, data60, image_level, pm)
+    sr60 = dsen2_60(data10, data20, data60, image_level)
     # Super-resolving the 20m data into 10m bands"
-    sr20, pm = dsen2_20(data10, data20, image_level, pm)
+    sr20 = dsen2_20(data10, data20, image_level)
 
     sr_final = xarray.concat((data10.astype('uint16'), sr20.astype('uint16'), sr60.astype('uint16')), dim = 'band')
 
     sr_final.attrs['long_name'] = tuple(validated_descriptions_all)
 
-    sr_final = pm.persist(sr_final)
+    sr_final = persist(sr_final)
     
     # This code is needed if you want to write superresolution result to file
     #path_to_output_img = Path(input_dir).stem + "_superresolution.tif"
     #filename = os.path.join(input_dir, path_to_output_img)
     #sr_final.rio.to_raster(filename, compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, windowed = True, lock = True)
     gc.collect()
-    return sr_final, pm
+    return sr_final
 
 
 def get_data(input_dir):
