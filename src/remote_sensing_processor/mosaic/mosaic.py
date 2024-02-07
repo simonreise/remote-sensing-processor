@@ -61,7 +61,7 @@ def proc_files(inputs, output_dir, fill_nodata, fill_distance, clip, crs, nodata
 
 def prepare_file(inp, crs, nodata, clip, match_hist, ref_hist):
     with rioxarray.open_rasterio(inp, chunks = True, lock = True) as tif:
-        pathfile = tif.load()
+        pathfile = persist(tif)
     # If nodata not defined then read nodata from first file or set to 0
     if nodata == None:
         if pathfile.rio.nodata == None:
@@ -74,18 +74,17 @@ def prepare_file(inp, crs, nodata, clip, match_hist, ref_hist):
     if pathfile.rio.crs != crs:
         #warnings.warn('File ' + pathfile.files[0] + ' have CRS ' + str(pathfile.crs) + ' which is different from ' + str(crs) + '. Reproject can be memory consuming. It is recommended to reproject all files to the same CRS before mosaicing.')
         pathfile = pathfile.rio.reproject(crs)
+        pathfile = persist(pathfile)
     if clip != None:
         shape = gpd.read_file(clip).to_crs(crs)
         shape = convert_3D_2D(shape)
         pathfile = pathfile.rio.clip(shape)
-    # Because predictor = 2 works with float64 only when libtiff > 3.2.0 is installed and default libtiff in ubuntu is 3.2.0
-    if pathfile.dtype == 'float64':
-        pathfile = pathfile.astype('float32')
+        pathfile = persist(pathfile)
     # Reading histogram if it is the first file
     if match_hist and isinstance(ref_hist, type(None)):
         mean = pathfile.where(pathfile != nodata).mean().item()
         ref_hist = pathfile.where(pathfile != nodata, mean)
-        pathfile = pathfile.chunk('auto')
+        pathfile = persist(pathfile)
         return pathfile, ref_hist
     # Histogram matching
     elif match_hist:
@@ -93,7 +92,7 @@ def prepare_file(inp, crs, nodata, clip, match_hist, ref_hist):
         filled = pathfile.where(pathfile != nodata, mean)
         matched = match_histograms(filled.data, ref_hist.data)
         pathfile = pathfile.where(pathfile == nodata, matched)
-    pathfile = pathfile.chunk('auto')
+        pathfile = persist(pathfile)
     return pathfile
 
 
@@ -125,6 +124,9 @@ def mosaic_process(files, output_dir, fill_nodata, fill_distance, clip, crs, nod
             ref = tif.load()
         final = final.rio.reproject_match(ref)
         final = persist(final)
+    # Because predictor = 2 works with float64 only when libtiff > 3.2.0 is installed and default libtiff in ubuntu is 3.2.0
+    if final.dtype == 'float64':
+        final = final.astype('float32')
     final.rio.to_raster(os.path.join(output_dir, band + '.tif'), compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, NUM_THREADS = 'NUM_CPUS', lock = True)
     return output_dir + band + '.tif'
 

@@ -3,21 +3,6 @@
 
 environment:
   matrix:
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-      PYTHON: "3.8"
-      TOXENV: python3.8
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-      PYTHON: "3.9"
-      TOXENV: python3.9
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-      PYTHON: "3.10"
-      TOXENV: python3.10
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-      PYTHON: "3.11"
-      TOXENV: python3.11
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-      PYTHON: "3.12"
-      TOXENV: python3.12
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       PYTHON: "3.8"
       PYTHONPATH: "C:\\Python38-x64"
@@ -37,6 +22,21 @@ environment:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       PYTHON: "3.12"
       PYTHONPATH: "C:\\Python312-x64"
+      TOXENV: python3.12
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+      PYTHON: "3.8"
+      TOXENV: python3.8
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+      PYTHON: "3.9"
+      TOXENV: python3.9
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+      PYTHON: "3.10"
+      TOXENV: python3.10
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+      PYTHON: "3.11"
+      TOXENV: python3.11
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+      PYTHON: "3.12"
       TOXENV: python3.12
 stack: python %PYTHON%
 

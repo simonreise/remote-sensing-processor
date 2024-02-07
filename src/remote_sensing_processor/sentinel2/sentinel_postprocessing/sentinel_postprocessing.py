@@ -67,7 +67,7 @@ def s2postprocess_no_superres(projection, cloud_mask, clip, normalize, resample,
     # Processing 10 m bands
     for i in bands10:
         with rioxarray.open_rasterio(i, chunks = True, lock = True) as tif:
-            files.append(tif.load())
+            files.append(persist(tif))
     # If no upscaling needed then process different resolution bands separately
     if upscale == None:
         bandoutnames = bnames10
@@ -77,7 +77,7 @@ def s2postprocess_no_superres(projection, cloud_mask, clip, normalize, resample,
     # Processing 20 m bands
     for i in bands20:
         with rioxarray.open_rasterio(i, chunks = True, lock = True) as tif:
-            band = tif.load()
+            band = persist(tif)
             if upscale == 'resample':
                 band = band.rio.reproject_match(files[0], resampling = resample)
             files.append(band)
@@ -90,7 +90,7 @@ def s2postprocess_no_superres(projection, cloud_mask, clip, normalize, resample,
     # Processing 60 m bands
     for i in bands60:
         with rioxarray.open_rasterio(i, chunks = True, lock = True) as tif:
-            band = tif.load()
+            band = persist(tif)
             if upscale == 'resample':
                 band = band.rio.reproject_match(files[0], resampling = resample)
             files.append(band)
@@ -132,7 +132,7 @@ def s2postprocess(img, projection, cloud_mask, clip, normalize, path, path1, ban
         sclpath = glob(path1 + r'/GRANULE/*/IMG_DATA/R20m/*SCL_20m.jp2')
         if sclpath != []:
             with rioxarray.open_rasterio(sclpath[0], chunks = True, lock = True) as tif:
-                mask = tif.load().chunk('auto')
+                mask = persist(tif)
             mask = mask.rio.reproject_match(img, resampling = Resampling.nearest)
             mask = xarray.where(mask.isin([0, 1, 3, 8, 9, 10]), 0, 1) # 0 - nodata, 1 - data
         else:
@@ -140,7 +140,7 @@ def s2postprocess(img, projection, cloud_mask, clip, normalize, path, path1, ban
         clmpath = glob(path1 + r'/GRANULE/**/QI_DATA/MSK_CLDPRB_20m.jp2')
         if clmpath != []:
             with rioxarray.open_rasterio(clmpath[0], chunks = True, lock = True) as tif:
-                clmask = tif.load().chunk('auto')
+                clmask = persist(tif)
             clmask = clmask.rio.reproject_match(img, resampling = Resampling.nearest)
             if not isinstance(mask, type(None)):
                 mask = mask.where(clmask < 10, 0) # 0 - nodata, 1 - data

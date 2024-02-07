@@ -94,14 +94,14 @@ def read_ds(dataset):
     validated_indices = []
     validated_descriptions = []
     with rioxarray.open_rasterio(dataset, chunks = True, lock = True) as tif:
-        bands = tif.load()
+        bands = persist(tif)
         for i in range(bands.shape[0]):
             desc = validate_description(bands.long_name[i])
             name = get_band_short_name(desc)
             if name in select_bands:
                 validated_descriptions.append(name)
                 validated_indices.append(i)
-        bands = bands.isel(band = validated_indices).chunk('auto')
+        bands = bands.isel(band = validated_indices)
         assert bands.shape[1] >= 192 and bands.shape[2] >= 192
     return bands, validated_descriptions
 

@@ -22,7 +22,7 @@ def get_ss_tiles(x, y, tile_size, classification, shuffle, split, split_names, x
     files = []
     for i in x:
         with rioxarray.open_rasterio(i, chunks = True, lock = True) as tif:
-            band = tif.load().chunk('auto')
+            band = persist(tif)
             if band.rio.nodata != x_nodata:
                 warnings.warn(str(i) + " nodata value is " + str(band.rio.nodata) + ". It will be converted to " + str(x_nodata))
                 band = band.where(band.rio.nodata, x_nodata)
@@ -36,7 +36,7 @@ def get_ss_tiles(x, y, tile_size, classification, shuffle, split, split_names, x
         files = []
         for i in y:
             with rioxarray.open_rasterio(i, chunks = True, lock = True) as tif:
-                band = tif.load().chunk('auto')
+                band = persist(tif)
                 files.append(band)
         y_img = xarray.concat(files, dim = xarray.Variable('band', y_names))
         if y_dtype != None:

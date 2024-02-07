@@ -2,6 +2,8 @@ import numpy as np
 
 import rioxarray
 
+from remote_sensing_processor.common.common_functions import persist
+
 
 def replace_val(input_file, output_file, new, old, nodata):
     # Read
@@ -14,7 +16,9 @@ def replace_val(input_file, output_file, new, old, nodata):
         # Because predictor = 2 works with float64 only when libtiff > 3.2.0 is installed and default libtiff in ubuntu is 3.2.0
         if img.dtype == 'float64':
             img = img.astype('float32')
-        # Write
+        # Rewrite nodata
         if nodata == True:
             img.rio.write_nodata(new, inplace=True)
-        img.rio.to_raster(output_file, compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, NUM_THREADS = 'NUM_CPUS', lock = True)
+        img = persist(img)
+    # Write
+    img.rio.to_raster(output_file, compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, NUM_THREADS = 'NUM_CPUS', lock = True)

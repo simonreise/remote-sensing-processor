@@ -19,7 +19,7 @@ def nd(name, b1, b2, folder = None):
                 raise RuntimeError('Datasets have different transforms')
             else:
                 with np.errstate(divide='ignore', invalid = 'ignore'):
-                    final = (band1.astype('float64') - band2.astype('float64')) / (band1.astype('float64') + band2.astype('float64'))
+                    final = (band1.astype('float32') - band2.astype('float32')) / (band1.astype('float32') + band2.astype('float32'))
                 final = final.fillna(0)
                 if folder == None:
                     savefolder = os.path.dirname(b1)

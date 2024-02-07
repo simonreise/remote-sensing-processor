@@ -16,7 +16,7 @@ from remote_sensing_processor.segmentation.segmentation import Model, SegDataMod
 def predict_map_from_tiles(x, y, reference, model, output, nodata, batch_size, num_workers):
     # Loading reference raster
     with rioxarray.open_rasterio(reference, chunks = True, lock = True) as tif:
-        reference = tif.load()
+        reference = persist(tif)
     if isinstance(model, str):
         if '.ckpt' in model:
             model = Model.load_from_checkpoint(model)
