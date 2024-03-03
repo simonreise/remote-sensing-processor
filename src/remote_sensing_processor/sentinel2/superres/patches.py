@@ -178,6 +178,7 @@ def recompose_images(a, border, ref):
 
         # Initialize image
         # print('Image size is: {}'.format(size))
+        # TODO : uses compute because of notimplementederror: xarray can't set arrays with multiple array indices to dask yet
         images = xarray.concat([xarray.full_like(ref[0], 0, dtype = 'float32') for i in range(a.shape[1])], dim = 'band').compute()
         current_patch = 0
         for y in range(0, y_tiles):

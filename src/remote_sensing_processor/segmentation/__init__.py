@@ -164,7 +164,7 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
     return x, y
 
     
-def train(train_datasets, val_datasets, model_file, model, backbone = None, checkpoint = None, weights = None, epochs = 5, batch_size = 32, repeat = 1, augment = False, less_metrics = False, lr = 1e-3, num_workers = 0, classification = None, num_classes = None, y_nodata = None):
+def train(train_datasets, val_datasets, model_file, model, backbone = None, checkpoint = None, weights = None, epochs = 5, batch_size = 32, repeat = 1, augment = False, less_metrics = False, lr = 1e-3, num_workers = 0, classification = None, num_classes = None, y_nodata = None, **kwargs):
     """
     Trains segmentation model.
     
@@ -204,6 +204,8 @@ def train(train_datasets, val_datasets, model_file, model, backbone = None, chec
         Number of classes for classification task. If not defined then is read from train dataset.
     y_nodata : int or float (optional)
         You can define which value in y raster corresponds to nodata and areas that contain nodata in y raster will be ignored while training and testing. If not defined then is read from train dataset.
+    **kwargs
+        Additional keyword arguments that are used to initialise model. They are different for every model, so read the documentation.
     
     Returns
     ----------
@@ -360,7 +362,7 @@ def train(train_datasets, val_datasets, model_file, model, backbone = None, chec
     if cuda == False:
         warnings.warn('CUDA or MPS is not available. Training on CPU could be very slow.')
     
-    model = segmentation_train(train_datasets = train_datasets, val_datasets = val_datasets, model = model, backbone = backbone, checkpoint = checkpoint, weights = weights, model_file = model_file, epochs = epochs, batch_size = batch_size, augment = augment, repeat = repeat, classification = classification, num_classes = num_classes, y_nodata = y_nodata, less_metrics = less_metrics, lr = lr, num_workers = num_workers)
+    model = segmentation_train(train_datasets = train_datasets, val_datasets = val_datasets, model = model, backbone = backbone, checkpoint = checkpoint, weights = weights, model_file = model_file, epochs = epochs, batch_size = batch_size, augment = augment, repeat = repeat, classification = classification, num_classes = num_classes, y_nodata = y_nodata, less_metrics = less_metrics, lr = lr, num_workers = num_workers, **kwargs)
     return model
     
 def test(test_datasets, model, batch_size = 32, num_workers = 0):

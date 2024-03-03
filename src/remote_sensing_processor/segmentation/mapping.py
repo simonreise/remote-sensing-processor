@@ -31,7 +31,8 @@ def predict_map_from_tiles(x, y, reference, model, output, nodata, batch_size, n
         nodata = y_dataset.rio.nodata
     classes = y_dataset.classes
     # Creating empty array
-    y = xarray.full_like(reference[0], nodata)
+    # TODO : uses compute because of notimplementederror: xarray can't set arrays with multiple array indices to dask yet
+    y = xarray.full_like(reference[0], nodata).compute()
     # Neural networks
     if model.model_name in ['BEiT', 'ConditionalDETR', 'Data2Vec', 'DETR', 'DPT', 'Mask2Former', 'MaskFormer', 'MobileNetV2', 'MobileViT', 'MobileViTV2', 'OneFormer', 'SegFormer', 'UperNet', 'DeepLabV3', 'FCN', 'LRASPP']:
         # Setting datamodule

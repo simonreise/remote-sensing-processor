@@ -30,7 +30,7 @@ warnings.filterwarnings("ignore", message = "Skipping val loop")
 dask.config.set(scheduler='synchronous')
 
 
-def segmentation_train(train_datasets, val_datasets, model, backbone, checkpoint, weights, model_file, epochs, batch_size, augment, repeat, classification, num_classes, y_nodata, less_metrics, lr, num_workers):
+def segmentation_train(train_datasets, val_datasets, model, backbone, checkpoint, weights, model_file, epochs, batch_size, augment, repeat, classification, num_classes, y_nodata, less_metrics, lr, num_workers, **kwargs):
     input_shape = None
     input_dims = None
     # Deep learning pytorch models
@@ -55,7 +55,7 @@ def segmentation_train(train_datasets, val_datasets, model, backbone, checkpoint
         if checkpoint != None:
             model = Model.load_from_checkpoint(checkpoint, input_shape = input_shape, input_dims = input_dims, num_classes = num_classes, classification = classification, y_nodata = y_nodata, lr = lr)
         else:
-            model = Model(model, backbone, weights, input_shape, input_dims, num_classes, classification, y_nodata, less_metrics, lr)
+            model = Model(model, backbone, weights, input_shape, input_dims, num_classes, classification, y_nodata, less_metrics, lr, **kwargs)
         # Setting up trainer
         checkpoint_callback = l.pytorch.callbacks.ModelCheckpoint(
             save_top_k = 1,
@@ -83,7 +83,7 @@ def segmentation_train(train_datasets, val_datasets, model, backbone, checkpoint
             if model.model_name in ["Random Forest", "Gradient Boosting"]:
                 model.model.n_estimators += 50
         else:
-            model = SklearnModel(model, backbone, classification, epochs, y_nodata, num_classes)
+            model = SklearnModel(model, backbone, classification, epochs, y_nodata, num_classes, **kwargs)
         model.fit(x_train, y_train)
         del x_train
         del y_train
@@ -353,13 +353,14 @@ class Model(l.LightningModule):
         classification,
         y_nodata,
         less_metrics,
-        lr
+        lr,
+        **kwargs
     ):
         super().__init__()
         self.save_hyperparameters()
         
         self.model_name = model
-        self.model = load_model(model, backbone, weights, input_shape, input_dims, num_classes)
+        self.model = load_model(model, backbone, weights, input_shape, input_dims, num_classes, **kwargs)
         self.classification = classification
         self.less_metrics = less_metrics
         self.num_classes = num_classes
@@ -535,10 +536,10 @@ class Model(l.LightningModule):
         
         
 class SklearnModel:
-    def __init__(self, model, backbone, classification, epochs, y_nodata, num_classes):
+    def __init__(self, model, backbone, classification, epochs, y_nodata, num_classes, **kwargs):
         self.classification = classification
         self.model_name = model
-        self.model = load_sklearn_model(model, backbone, classification, epochs)
+        self.model = load_sklearn_model(model, backbone, classification, epochs, **kwargs)
         self.y_nodata = y_nodata
         self.num_classes = num_classes
     
@@ -558,8 +559,8 @@ class SklearnModel:
         else:
             filtered = np.where(y.data.compute() != self.y_nodata, True, False).nonzero()[0].tolist()
             pred = self.model.predict(x)
-            print('R2: ', torchmetrics.functional.r2_score(torch.Tensor(pred[filtered]), torch.Tensor(y[filtered].data.compute())).item())
-            print('MSE: ', torchmetrics.functional.mean_squared_error(torch.Tensor(pred[filtered]), torch.Tensor(y[filtered].data.compute())).item())
+            print('R2: ', torchmetrics.functional.r2_score(torch.Tensor(pred[filtered]), torch.Tensor(y[filtered].data.compute()).float()).item())
+            print('MSE: ', torchmetrics.functional.mean_squared_error(torch.Tensor(pred[filtered]), torch.Tensor(y[filtered].data.compute()).float()).item())
     
     def predict(self, x):
         pred = self.model.predict(x)
