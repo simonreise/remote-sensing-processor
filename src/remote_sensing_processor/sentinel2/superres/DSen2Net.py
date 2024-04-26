@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class DSen2Net(nn.Module):
-    def __init__(self, input_shape, num_layers = 32, feature_size = 256):
+    def __init__(self, input_shape, num_layers=32, feature_size=256):
         super(DSen2Net, self).__init__()
         self.input_shape = input_shape
         self.num_layers = num_layers

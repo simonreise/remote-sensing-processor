@@ -36,7 +36,7 @@ def get_resampling(resample):
     if resample == 'bilinear':
         resample = Resampling.bilinear
     elif resample == 'cubic':
-        resample == Resampling.cubic
+        resample = Resampling.cubic
     elif resample == 'cubic_spline':
         resample = Resampling.cubic_spline
     elif resample == 'lanczos':
@@ -79,16 +79,17 @@ def persist(*inputs):
     enough_memory = True
     results = []
     # Trying to persist dataset in memory (it makes processing much faster)
-    if enough_memory == True:
-        try:
-            for i in inputs:
+    for i in inputs:
+        if enough_memory == True:
+            try:
                 results.append(i.persist())
-        except:
-            warnings.warn("Dataset does not fit in memory. Processing can be much slower.")
-            enough_memory == False
+            except:
+                warnings.warn("Dataset does not fit in memory. Processing can be much slower.")
+                enough_memory = False
+                results = inputs
+                break
+        else:
             results = inputs
-    else:
-        results = inputs
     # Return array instead of tuple if it consists of one element
     results = tuple(results)
     if len(results) == 1:

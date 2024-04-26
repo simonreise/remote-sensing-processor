@@ -59,7 +59,7 @@ By default `sen2cor` parameter is `True`, `upscale` is  `superres` and `cloud_ma
 Machine learning models usually work best with normalized data, so we need to set `normalize` parameter to `True`.
 
 ```
->>> output_sentinels = rsp.sentinel2(sentinel2_imgs, normalize = True)
+>>> output_sentinels = rsp.sentinel2(sentinel2_imgs, normalize=True)
 Preprocessing of /home/rsp_test/sentinels/L1C_T42VWR_A032192_20210821T064626.zip completed
 Preprocessing of /home/rsp_test/sentinels/L1C_T42WXS_A032192_20210821T064626.zip completed
 Preprocessing of /home/rsp_test/sentinels/L1C_T43VCL_A032192_20210821T064626.zip completed
@@ -81,7 +81,13 @@ Function returns list of folders with preprocessed images.
 In this stage preprocessed Sentinel-2 images are being merged into one mosaic. This function can merge not only single-band images, but also multi-band imagery like Sentinel-2. `clip` argument is a path to a file with a border of our region of interest that is used to clip data, `crs` is a CRS we need, and `nodata_order` is to merge images in order from images with less nodata values on top (they are usually clear) to images with most nodata on bottom (they usually are most distorted and cloudy).
 ```
 >>> border = '/home/rsp_test/border.gpkg'
->>> mosaic_sentinel = rsp.mosaic(output_sentinels, '/home/rsp_test/mosaics/sentinel/', clip = border, crs = 'EPSG:4326', nodata_order = True)
+>>> mosaic_sentinel = rsp.mosaic(
+... 	output_sentinels, 
+... 	'/home/rsp_test/mosaics/sentinel/', 
+... 	clip=border, 
+... 	crs='EPSG:4326', 
+... 	nodata_order=True,
+... )
 Processing completed
 >>> print(mosaic_sentinel)
 ['/home/rsp_test/mosaics/sentinel/B1.tif',
@@ -121,7 +127,13 @@ We also need to merge ASTER GDEM images into one mosaic.
 ```
 For machine learning we need our data sources to have the same CRS and the same resolution. We can match different rasters by setting `reference_raster` parameter. Here we set one of the Sentinel band mosaics as a reference raster.
 ```
-mosaic_dem = rsp.mosaic(dems, '/home/rsp_test/mosaics/dem/', clip = border, reference_raster = '/home/rsp_test/mosaics/sentinel/B1.tif', nodata = 0)
+>>> mosaic_dem = rsp.mosaic(
+... 	dems, 
+... 	'/home/rsp_test/mosaics/dem/', 
+... 	clip=border, 
+... 	reference_raster='/home/rsp_test/mosaics/sentinel/B1.tif', 
+... 	nodata=0,
+... )
 Processing completed
 >>> print(mosaic_dem)
 ['/home/rsp_test/mosaics/dem/N63E069_FABDEM_V1-0_mosaic.tif']
@@ -137,9 +149,14 @@ Data normalization usually can significantly improve convergence time and accura
 We have a custom landcover map that we want to use to train a model. We need to rasterize it. We want it to match the resolution and CRS of other data sources, so we set one of Sentinel bands as a `reference_raster`. Vector files usually contain several attributes. We want to vectorize `type` attribute, so we set `value = "type"`.
 
 ```
-landcover_shp = '/home/rsp_test/landcover/types.shp'
-landcover = '/home/rsp_test/landcover/types.tif'
-rsp.rasterize(landcover_shp, reference_raster = '/home/rsp_test/mosaics/sentinel/B1.tif', value = "type", output_file = landcover)
+>>> landcover_shp = '/home/rsp_test/landcover/types.shp'
+>>> landcover = '/home/rsp_test/landcover/types.tif'
+>>> rsp.rasterize(
+... 	landcover_shp, 
+... 	reference_raster='/home/rsp_test/mosaics/sentinel/B1.tif', 
+... 	value="type", 
+... 	output_file=landcover,
+... )
 ```
 
 ## Cutting data to tiles
@@ -154,7 +171,14 @@ We will cut Sentinel and DEM (x) and landcover (y) data to 256x256 px tiles (`ti
 
 The function returns x dataset and list of y datasets (because it can handle several target variables).
 ```
->>> x_tiles, y_tiles = rsp.segmentation.generate_tiles(x, y, tile_size = 256, shuffle = True, split = [3, 1, 1], split_names = ['train', 'val', 'test'])
+>>> x_tiles, y_tiles = rsp.segmentation.generate_tiles(
+... 	x, 
+... 	y, 
+... 	tile_size=256, 
+... 	shuffle=True, 
+... 	split=[3, 1, 1], 
+... 	split_names=['train', 'val', 'test'],
+... )
 ```
 There are 3000 tiles in train set and 1000 tiles in both validation and test sets.
 ```
@@ -207,7 +231,14 @@ First, we need to set up train and validation datasets. Each dataset is a list o
 
 We will use the UperNet model architecture (`model == 'UperNet'`) with ConvNeXTV2 backbone (`backbone = 'ConvNeXTV2'`). Model will be saved to `/home/rsp_test/model/upernet.ckpt` and could be used later for testing and prediction. Model will be trained for 100 epochs (`epochs = 100`) with batch size of 32 tiles (`batch_size = 32`).
 ```
->>> model = rsp.segmentation.train(train_ds, val_ds, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 100)
+>>> model = rsp.segmentation.train(
+... 	train_ds, 
+... 	val_ds, 
+... 	model='UperNet', 
+... 	backbone='ConvNeXTV2', 
+... 	model_file='/home/rsp_test/model/upernet.ckpt', 
+... 	epochs=100,
+... )
 GPU available: True (cuda), used: True
 TPU available: False, using: 0 TPU cores
 IPU available: False, using: 0 IPUs
@@ -233,7 +264,7 @@ train_loss_epoch=0.349, train_acc_epoch=0.842, train_auroc_epoch=0.797, train_io
 Then we need to test model performance on test data.
 ```
 >>> test_ds = [x_tiles, y_tiles[0], 'test']
->>> rsp.segmentation.test(test_ds, model = model)
+>>> rsp.segmentation.test(test_ds, model=model)
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃        Test metric        ┃       DataLoader 0        ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩

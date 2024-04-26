@@ -10,7 +10,10 @@ from remote_sensing_processor.unzip.unzip import unzip_sentinel, unzip_landsat
 
 from remote_sensing_processor.sentinel2.sen2cor.sen2cor import sen2correct
 from remote_sensing_processor.sentinel2.superres.superres import superresolution
-from remote_sensing_processor.sentinel2.sentinel_postprocessing.sentinel_postprocessing import s2postprocess_superres, s2postprocess_no_superres
+from remote_sensing_processor.sentinel2.sentinel_postprocessing.sentinel_postprocessing import (
+    s2postprocess_superres,
+    s2postprocess_no_superres,
+)
 
 from remote_sensing_processor.landsat.landsat import landsat_proc, del_landsat_temp
 
@@ -26,7 +29,8 @@ from remote_sensing_processor.common.replace import replace_val
 from remote_sensing_processor.common.rasterize import rasterize_vector
 
 from remote_sensing_processor.common.common_functions import get_first_proj
-# A function that get dask client from a cluster, or creates local cluster. Will be useful if functions will support computation on dask clusters.
+# A function that get dask client from a cluster, or creates local cluster.
+# Will be useful if functions will support computation on dask clusters.
 # TODO : make everything support computation on dask clusters
 #from remote_sensing_processor.common.dask import get_client
 
@@ -35,7 +39,16 @@ from remote_sensing_processor import segmentation
 
 __version__ = '0.2.2'
 
-def sentinel2(archives, sen2cor = True, upscale = 'superres', resample = 'bilinear', crs = None, cloud_mask = True, clip = None, normalize = False):
+def sentinel2(
+    archives, 
+    sen2cor=True, 
+    upscale='superres', 
+    resample='bilinear', 
+    crs=None, 
+    cloud_mask=True, 
+    clip=None, 
+    normalize=False,
+):
     """
     Preprocess Sentinel-2 imagery.
     
@@ -46,9 +59,14 @@ def sentinel2(archives, sen2cor = True, upscale = 'superres', resample = 'biline
     sen2cor : bool (default = True)
         Is atmospheric correction using Sen2Cor needed. Set to False if you have troubles with Sen2Cor.
     upscale : string or None (default = 'superres')
-        Method for upscaling 20- and 60-m bands to 10 m resolution. Can be 'superres' - uses neural network for superresolution, 'resample' - uses resampling, or None - keeps original band resolution. Set it to 'resample' or None if you do not have GPU that supports CUDA.
+        Method for upscaling 20- and 60-m bands to 10 m resolution.
+        Can be 'superres' - uses neural network for superresolution, 'resample' - uses resampling,
+        or None - keeps original band resolution.
+        Set it to 'resample' or None if you do not have GPU that supports CUDA.
     resample : resampling method from rasterio as a string (default = 'bilinear')
-        Resampling method that will be used to upscale 20 and 60 m bands if upscale == 'resample'. You can read more about resampling methods `here <https://rasterio.readthedocs.io/en/latest/topics/resampling.html>`_. 
+        Resampling method that will be used to upscale 20 and 60 m bands if upscale == 'resample'.
+        You can read more about resampling methods
+        `here <https://rasterio.readthedocs.io/en/latest/topics/resampling.html>`_.
     crs : string (optional)
         CRS in which output data should be or `same` to get CRS from the first archive.
     cloud_mask : bool (default = True)
@@ -144,22 +162,49 @@ def sentinel2(archives, sen2cor = True, upscale = 'superres', resample = 'biline
             sen2correct(path1)
             path1 = glob(path + '/*/')[0]
         if upscale == 'superres':
-            img, pm = superresolution(input_dir = path1, clip = clip)
+            img = superresolution(input_dir=path1, clip=clip)
             if crs == 'same':
                 crs = img.rio.crs
-            s2postprocess_superres(img = img, projection = crs, cloud_mask = cloud_mask, clip = clip, normalize = normalize, path = path, path1 = path1, pm = pm)
+            s2postprocess_superres(
+                img=img, 
+                projection=crs, 
+                cloud_mask=cloud_mask, 
+                clip=clip, 
+                normalize=normalize, 
+                path=path, 
+                path1=path1,
+            )
         else:
             if crs == 'same':
                 img = glob(path1 + '/**/*.jp2')[0]
                 crs = get_first_proj(img)
-            s2postprocess_no_superres(projection = crs, cloud_mask = cloud_mask, clip = clip, normalize = normalize, resample = resample, path = path, path1 = path1, upscale = upscale)
+            s2postprocess_no_superres(
+                projection=crs, 
+                cloud_mask=cloud_mask, 
+                clip=clip, 
+                normalize=normalize, 
+                resample=resample, 
+                path=path, 
+                path1=path1, 
+                upscale=upscale,
+            )
         shutil.rmtree(path1)
         paths.append(path)
         print('Preprocessing of ' + archive + ' completed')
     return paths
     
 
-def landsat(archives, crs = None, cloud_mask = True, pansharpen = True, keep_pan_band = False, resample = 'bilinear', clip = None, t = 'k', normalize_t = False):
+def landsat(
+    archives, 
+    crs=None, 
+    cloud_mask=True, 
+    pansharpen=True, 
+    keep_pan_band=False, 
+    resample='bilinear', 
+    clip=None, 
+    t='k', 
+    normalize_t=False,
+):
     """
     Preprocess Landsat imagery.
     
@@ -174,9 +219,12 @@ def landsat(archives, crs = None, cloud_mask = True, pansharpen = True, keep_pan
     pansharpen : bool (default = True)
         Is pansharpening needed. RSP uses Brovey transform for pansarpening Landsat 7, 8 and 9.
     keep_pan_band : bool (default = False)
-        Keep pansharpening band or delete it. Pansharpening band have the same wavelengths as optical bands, so it does not contain any additional information to other bands. Affects only Landsat 7, 8 and 9. 
+        Keep pansharpening band or delete it. Pansharpening band have the same wavelengths as optical bands,
+        so it does not contain any additional information to other bands. Affects only Landsat 7, 8 and 9.
     resample : resampling method from rasterio as a string (default = 'bilinear')
-        Resampling method that will be used to upscale bands that cannot be upscaled in pansharpening operation. You can read more about resampling methods `here <https://rasterio.readthedocs.io/en/latest/topics/resampling.html>`_. Affects only Landsat 7, 8 and 9. 
+        Resampling method that will be used to upscale bands that cannot be upscaled in pansharpening operation.
+        You can read more about resampling methods
+        `here <https://rasterio.readthedocs.io/en/latest/topics/resampling.html>`_. Affects only Landsat 7, 8 and 9.
     clip : string (optional)
         Path to vector file to be used to crop the image.
     t : string ('k' or 'c', default = 'k')
@@ -265,21 +313,45 @@ def landsat(archives, crs = None, cloud_mask = True, pansharpen = True, keep_pan
         path = unzip_landsat(archive)
         if crs == 'same':
             crs = get_first_proj(glob(path + '/*.tif')[0])
-        outfiles = landsat_proc(path = path, projection = crs, cloud_mask = cloud_mask, pansharpen = pansharpen, keep_pan_band = keep_pan_band, resample = resample, t = t, clip = clip, normalize_t = normalize_t)
+        outfiles = landsat_proc(
+            path=path, 
+            projection=crs, 
+            cloud_mask=cloud_mask, 
+            pansharpen=pansharpen, 
+            keep_pan_band=keep_pan_band, 
+            resample=resample, 
+            t=t, 
+            clip=clip, 
+            normalize_t=normalize_t,
+        )
         del_landsat_temp(path, outfiles)
         paths.append(path)
         print('Preprocessing of ' + archive + ' completed')
     return paths
 
 
-def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clip = None, crs = None, nodata = None, reference_raster = None, resample = 'average', nodata_order = False, match_hist = False, keep_all_channels = True):
+def mosaic(
+    inputs, 
+    output_dir, 
+    fill_nodata=False, 
+    fill_distance=250, 
+    clip=None, 
+    crs=None, 
+    nodata=None, 
+    reference_raster=None, 
+    resample='average', 
+    nodata_order=False, 
+    match_hist=False, 
+    keep_all_channels=True,
+):
     """
     Creates mosaic from several rasters.
     
     Parameters
     ----------
     inputs : list of strings
-        List of pathes to rasters to be merged or to folders where multiband imagery data is stored in order from images that should be on top to images that should be on bottom.
+        List of pathes to rasters to be merged or to folders where multiband imagery data is stored
+        in order from images that should be on top to images that should be on bottom.
     output_dir: path to output directory as a string
         Path where mosaic raster or rasters will be saved.
     fill_nodata : bool (default = False)
@@ -293,15 +365,22 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clip = 
     nodata : int or float (default = None)
         Nodata value. If not set then is read from file or set to 0.
     reference_raster : path to reference raster as a string (optional)
-        Reference raster is needed to bring output mosaic raster to same resolution and projection as other data source. Is useful when you need to use data from different sources together.
+        Reference raster is needed to bring output mosaic raster to same resolution and projection as other data source.
+        Is useful when you need to use data from different sources together.
     resample : resampling method from rasterio as a string (default = 'average')
-        Resampling method that will be used to reshape to a reference raster shape. You can read more about resampling methods `here <https://rasterio.readthedocs.io/en/latest/topics/resampling.html>`_. Use 'nearest' if you want to keep only class values.
+        Resampling method that will be used to reshape to a reference raster shape.
+        You can read more about resampling methods
+        `here <https://rasterio.readthedocs.io/en/latest/topics/resampling.html>`_.
+        Use 'nearest' if you want to keep only class values.
     nodata_order : bool (default = False)
-        Is needed to merge images in order from images with less nodata on top (they are usually clear) to images with most nodata values on bottom (they usually are most distorted and cloudy).
+        Is needed to merge images in order from images with less nodata on top (they are usually clear)
+        to images with most nodata values on bottom (they usually are most distorted and cloudy).
     match_hist : bool (default = False)
         Is needed to match histograms of merged images. Improve mosaic uniformity, but change original data.
     keep_all_channels : bool (default = True)
-        Is needed only when you are merging Landsat images from different generations. If True, all bands are processed, if False, only bands that are present in all input images are processed and others are omited.
+        Is needed only when you are merging Landsat images from different generations.
+        If True, all bands are processed, if False, only bands that are present in all input images are processed
+        and others are omited.
     
     Returns
     ----------
@@ -318,7 +397,12 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clip = 
         ...                    '/home/rsp_test/sentinels/L1C_T43VDL_A023312_20210823T063624/',
         ...                    '/home/rsp_test/sentinels/L1C_T43VDL_A031577_20210709T064041/']
         >>> border = '/home/rsp_test/border.gpkg'
-        >>> mosaic_sentinel = rsp.mosaic(input_sentinels, '/home/rsp_test/mosaics/sentinel/', clip = border, crs = 'EPSG:4326', nodata_order = True)
+        >>> mosaic_sentinel = rsp.mosaic(input_sentinels, 
+        ...     '/home/rsp_test/mosaics/sentinel/', 
+        ...     clip=border, 
+        ...     crs='EPSG:4326', 
+        ...     nodata_order=True,
+        ... )
         Processing completed
         >>> print(mosaic_sentinel)
         ['/home/rsp_test/mosaics/sentinel/B1.tif',
@@ -339,7 +423,13 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clip = 
         ['/home/rsp_test/landcover/ESA_WorldCover_10m_2020_v100_N60E075_Map.tif',
          '/home/rsp_test/landcover/ESA_WorldCover_10m_2020_v100_N63E072_Map.tif',
          '/home/rsp_test/landcover/ESA_WorldCover_10m_2020_v100_N63E075_Map.tif']
-        >>> mosaic_landcover = rsp.mosaic(lcs, '/home/rsp_test/mosaics/landcover/', clip = border, reference_raster = '/home/rsp_test/mosaics/sentinel/B1.tif', nodata = -1)
+        >>> mosaic_landcover = rsp.mosaic(
+        ...     lcs, 
+        ...     '/home/rsp_test/mosaics/landcover/', 
+        ...     clip=border, 
+        ...     reference_raster='/home/rsp_test/mosaics/sentinel/B1.tif', 
+        ...     nodata=-1,
+        ... )
         Processing completed
         >>> print(mosaic_landcover)
         ['/home/rsp_test/mosaics/landcover/ESA_WorldCover_10m_2020_v100_N60E075_Map_mosaic.tif']
@@ -410,11 +500,24 @@ def mosaic(inputs, output_dir, fill_nodata = False, fill_distance = 250, clip = 
         output_dir = output_dir + r'/'
     if nodata_order == True:
         inputs = order(inputs)
-    paths = mosaic_main(inputs = inputs, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clip = clip, crs = crs, nodata = nodata, reference_raster = reference_raster, resample = resample, match_hist = match_hist, mb = mb, keep_all_channels = keep_all_channels)
+    paths = mosaic_main(
+        inputs=inputs, 
+        output_dir=output_dir, 
+        fill_nodata=fill_nodata, 
+        fill_distance=fill_distance, 
+        clip=clip, 
+        crs=crs, 
+        nodata=nodata, 
+        reference_raster=reference_raster, 
+        resample=resample, 
+        match_hist=match_hist, 
+        mb=mb, 
+        keep_all_channels=keep_all_channels,
+    )
     return paths
 
 
-def calculate_index(name, folder = None, b1 = None, b2 = None):
+def calculate_index(name, folder=None, b1=None, b2=None):
     """
     Calculates vegetation indexes.
     
@@ -423,9 +526,11 @@ def calculate_index(name, folder = None, b1 = None, b2 = None):
     name : string
         Name of index.
     folder: path to input product as a string (optional)
-        If you define path to a supported imagery product and a name of supported index, you do not need to define `b1` and `b2`. Bands needed for index calculation are picked automatically.
+        If you define path to a supported imagery product and a name of supported index,
+        you do not need to define `b1` and `b2`. Bands needed for index calculation are picked automatically.
     b1, b2 : path as string (optional)
-        Path to band to calculate normalized difference index. If you define bands, you do not need to define `folder`, but still need to define `name` - it will be an output file name.
+        Path to band to calculate normalized difference index. If you define bands, you do not need to define `folder`,
+        but still need to define `name` - it will be an output file name.
     
     Returns
     ----------
@@ -434,11 +539,18 @@ def calculate_index(name, folder = None, b1 = None, b2 = None):
     
     Examples
     --------
-        >>> ndvi = rsp.calculate_index('NDVI', '/home/rsp_test/mosaics/sentinel/')
+        >>> ndvi = rsp.calculate_index(
+        ...     'NDVI', 
+        ...     '/home/rsp_test/mosaics/sentinel/'
+        ... )
         >>> print(ndvi)
         '/home/rsp_test/mosaics/sentinel/NDVI.tif'
         
-        >>> ndvi = rsp.calculate_index('NDVI', b1 = '/home/rsp_test/mosaics/sentinel/B8.tif', b2 = '/home/rsp_test/mosaics/sentinel/B4.tif')
+        >>> ndvi = rsp.calculate_index(
+        ...     'NDVI', 
+        ...     b1='/home/rsp_test/mosaics/sentinel/B8.tif', 
+        ...     b2='/home/rsp_test/mosaics/sentinel/B4.tif',
+        ... )
         >>> print(ndvi)
         '/home/rsp_test/mosaics/sentinel/NDVI.tif'
     """
@@ -469,13 +581,13 @@ def calculate_index(name, folder = None, b1 = None, b2 = None):
             raise ValueError('Cannot define imagery type')
         b1, b2 = get_index(t, name, folder)
     if (b1 != None) and (b2 != None):
-        path = nd(name = name, b1 = b1, b2 = b2, folder = folder)
+        path = nd(name=name, b1=b1, b2=b2, folder=folder)
     else:
         raise ValueError('Bands 1 and 2 must be defined')
     return path
 
 
-def normalize(input_file, output_file, minimum = None, maximum = None):
+def normalize(input_file, output_file, minimum=None, maximum=None):
     """
     Applies min-max normalization to input file.
     
@@ -492,7 +604,12 @@ def normalize(input_file, output_file, minimum = None, maximum = None):
     
     Examples
     --------
-        >>> rsp.normalize('/home/rsp_test/mosaics/sentinel/B1.tif', '/home/rsp_test/mosaics/sentinel/B1_norm.tif', 0, 10000)
+        >>> rsp.normalize(
+        ...     '/home/rsp_test/mosaics/sentinel/B1.tif', 
+        ...     '/home/rsp_test/mosaics/sentinel/B1_norm.tif', 
+        ...     0, 
+        ...     10000,
+        ... )
     """
     # Type checking
     if not isinstance(input_file, str):
@@ -527,7 +644,12 @@ def replace_value(input_file, output_file, old, new):
     
     Examples
     --------
-        >>> rsp.replace_value('/home/rsp_test/mosaics/sentinel/B1.tif', '/home/rsp_test/mosaics/sentinel/B1_new.tif', 0, -9999)
+        >>> rsp.replace_value(
+        ...     '/home/rsp_test/mosaics/sentinel/B1.tif', 
+        ...     '/home/rsp_test/mosaics/sentinel/B1_new.tif', 
+        ...     0, 
+        ...     -9999,
+        ... )
     """
     # Type checking
     if not isinstance(input_file, str):
@@ -541,10 +663,10 @@ def replace_value(input_file, output_file, old, new):
     if not isinstance(new, int) and not isinstance(new, float):
         raise TypeError("new must be int or float")
     
-    replace_val(input_file, output_file, new, old, nodata = False)
+    replace_val(input_file, output_file, new, old, nodata=False)
     
     
-def replace_nodata(input_file, output_file, new, old = None):
+def replace_nodata(input_file, output_file, new, old=None):
     """
     Replaces a nodata value in a raster.
     
@@ -561,7 +683,11 @@ def replace_nodata(input_file, output_file, new, old = None):
     
     Examples
     --------
-        >>> rsp.replace_nodata('/home/rsp_test/mosaics/landcover/landcover.tif', '/home/rsp_test/mosaics/landcover/landcover_new.tif', 0)
+        >>> rsp.replace_nodata(
+        ...     '/home/rsp_test/mosaics/landcover/landcover.tif', 
+        ...     '/home/rsp_test/mosaics/landcover/landcover_new.tif', 
+        ...     0,
+        ... )
     """
     #type checking
     if not isinstance(input_file, str):
@@ -575,10 +701,10 @@ def replace_nodata(input_file, output_file, new, old = None):
     if not isinstance(new, int) and not isinstance(new, float):
         raise TypeError("new must be int or float")
     
-    replace_val(input_file, output_file, new, old, nodata = True)
+    replace_val(input_file, output_file, new, old, nodata=True)
     
     
-def rasterize(vector, reference_raster, value, output_file, nodata = 0):
+def rasterize(vector, reference_raster, value, output_file, nodata=0):
     """
     Rasterizes a vector file.
     
@@ -597,7 +723,13 @@ def rasterize(vector, reference_raster, value, output_file, nodata = 0):
     
     Examples
     --------
-        >>> rsp.rasterize('/home/rsp_test/mosaics/treecover/treecover.shp', '/home/rsp_test/mosaics/sentinel/B1.tif', 'tree_species', '/home/rsp_test/mosaics/treecover/treecover.tif', nodata = 0)
+        >>> rsp.rasterize(
+        ...     '/home/rsp_test/mosaics/treecover/treecover.shp', 
+        ...     '/home/rsp_test/mosaics/sentinel/B1.tif', 
+        ...     'tree_species', 
+        ...     '/home/rsp_test/mosaics/treecover/treecover.tif', 
+        ...     nodata=0,
+        ... )
     """
     # Type checking
     if not isinstance(vector, str):

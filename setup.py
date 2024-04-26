@@ -12,31 +12,49 @@ with open("src/remote_sensing_processor/__init__.py") as f:
             continue
 
 setuptools.setup(
-	name = 'remote-sensing-processor',
-	version = version,
-	author = 'Mikhail Moskovchenko',
-	author_email = 'moskovchenkomike@gmail.com',
-	description = 'RSP is a tool for geospatial raster data processing',
-	long_description = long_description,
-	long_description_content_type = 'text/markdown',
-	url = 'https://github.com/simonreise/remote-sensing-processor',
-	project_urls = {
+	name='remote-sensing-processor',
+	version=version,
+	author='Mikhail Moskovchenko',
+	author_email='moskovchenkomike@gmail.com',
+	description='RSP is a tool for geospatial raster data processing',
+	long_description=long_description,
+	long_description_content_type='text/markdown',
+	url='https://github.com/simonreise/remote-sensing-processor',
+	project_urls={
 		'Bug Tracker': 'https://github.com/simonreise/remote-sensing-processor/issues',
         'Source': 'https://github.com/simonreise/remote-sensing-processor',
         'Documentation': 'https://remote-sensing-processor.readthedocs.io'
 	},
-	classifiers = [
+	classifiers=[
 		'Programming Language :: Python :: 3',
 		'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
 		'Operating System :: OS Independent',
 		'Environment :: GPU :: NVIDIA CUDA',
 		'Topic :: Scientific/Engineering :: GIS'
 	],
-    keywords = 'remote sensing, landsat, sentinel, gdal, rasterio',
-	package_dir = {"": "src"},
-    packages = setuptools.find_packages(where="src"),
-    setup_requires = ['cython', 'numpy>=1.17'],
-    install_requires = ['numpy>=1.17', 'dask', 'torch>=2.0', 'torchvision>=0.10', 'lightning', 'tensorboard', 'transformers', 'timm', 'scikit-learn', 'scikit-image', 'rasterio', 'rioxarray', 'pyproj', 'geopandas', 'zarr', 'xgboost'],
-    python_requires = ">=3.8",
-    include_package_data = True
+    keywords='remote sensing, landsat, sentinel, gdal, rasterio',
+	package_dir={"": "src"},
+    packages=setuptools.find_packages(where="src"),
+    setup_requires=['cython', 'numpy>=1.17'],
+    install_requires=[
+        'numpy>=1.17', 
+        'dask', 
+        'torch>=2.0', 
+        'torchvision>=0.10', 
+        'lightning', 
+        'tensorboard', 
+        'transformers', 
+        'timm', 
+        'xgboost'
+        'scikit-learn', 
+        'scikit-image', 
+        'rasterio', 
+        'rioxarray', 
+        'pyproj', 
+        'geopandas', 
+        'geocube',
+        'zarr', 
+    ],
+    python_requires=">=3.8",
+    include_package_data=True
 )

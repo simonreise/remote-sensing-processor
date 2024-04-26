@@ -9,7 +9,21 @@ import rioxarray
 from remote_sensing_processor.common.common_functions import persist
 
 
-def get_ss_tiles(x, y, tile_size, classification, shuffle, split, split_names, x_output, y_output, x_dtype, y_dtype, x_nodata, y_nodata):
+def get_ss_tiles(
+    x, 
+    y, 
+    tile_size, 
+    classification, 
+    shuffle, 
+    split, 
+    split_names, 
+    x_output, 
+    y_output, 
+    x_dtype, 
+    y_dtype, 
+    x_nodata, 
+    y_nodata
+):
     x_names = [os.path.basename(i).split('.')[0] for i in x]
     if y != None:
         y_names = [os.path.basename(i).split('.')[0] for i in y]
@@ -21,13 +35,14 @@ def get_ss_tiles(x, y, tile_size, classification, shuffle, split, split_names, x
     # Reading all x files
     files = []
     for i in x:
-        with rioxarray.open_rasterio(i, chunks = True, lock = True) as tif:
+        with rioxarray.open_rasterio(i, chunks=True, lock=True) as tif:
             band = persist(tif)
             if band.rio.nodata != x_nodata:
-                warnings.warn(str(i) + " nodata value is " + str(band.rio.nodata) + ". It will be converted to " + str(x_nodata))
+                warnings.warn(str(i) + " nodata value is " + str(band.rio.nodata)
+                              + ". It will be converted to " + str(x_nodata))
                 band = band.where(band.rio.nodata, x_nodata)
             files.append(band)
-    x_img = xarray.concat(files, dim = xarray.Variable('band', x_names))
+    x_img = xarray.concat(files, dim=xarray.Variable('band', x_names))
     if x_dtype != None:
         x_img = x_img.astype(x_dtype)
     x_img = persist(x_img)
@@ -35,10 +50,10 @@ def get_ss_tiles(x, y, tile_size, classification, shuffle, split, split_names, x
     if y != None:
         files = []
         for i in y:
-            with rioxarray.open_rasterio(i, chunks = True, lock = True) as tif:
+            with rioxarray.open_rasterio(i, chunks=True, lock=True) as tif:
                 band = persist(tif)
                 files.append(band)
-        y_img = xarray.concat(files, dim = xarray.Variable('band', y_names))
+        y_img = xarray.concat(files, dim=xarray.Variable('band', y_names))
         if y_dtype != None:
             y_img = y_img.astype(y_dtype)
         if y_nodata == None:
@@ -54,10 +69,18 @@ def get_ss_tiles(x, y, tile_size, classification, shuffle, split, split_names, x
             d += 1
         shp_pad.append(d)
     # Padding
-    x_img = x_img.pad({'y': (0, shp_pad[0] - x_img.shape[1]), 'x': (0, shp_pad[1] - x_img.shape[2])}, mode = 'constant', constant_values = x_nodata)
+    x_img = x_img.pad(
+        {'y': (0, shp_pad[0] - x_img.shape[1]), 'x': (0, shp_pad[1] - x_img.shape[2])}, 
+        mode='constant', 
+        constant_values=x_nodata
+    )
     x_img = persist(x_img)
     if y != None:
-        y_img = y_img.pad({'y': (0, shp_pad[0] - y_img.shape[1]), 'x': (0, shp_pad[1] - y_img.shape[2])}, mode = 'constant', constant_values = y_nodata)
+        y_img = y_img.pad(
+            {'y': (0, shp_pad[0] - y_img.shape[1]), 'x': (0, shp_pad[1] - y_img.shape[2])}, 
+            mode='constant', 
+            constant_values=y_nodata
+        )
         y_img = persist(y_img)
     # Generating tiles
     tiles = []
@@ -79,10 +102,16 @@ def get_ss_tiles(x, y, tile_size, classification, shuffle, split, split_names, x
     # Deleting tiles that contain only nodata (if needed)
     samples_filtered = []
     for i in samples:
-        x_tile = x_img.isel(y = slice(tiles[i][0], tiles[i][2]), x = slice(tiles[i][1], tiles[i][3]))
+        x_tile = x_img.isel(
+            y=slice(tiles[i][0], tiles[i][2]), 
+            x=slice(tiles[i][1], tiles[i][3])
+        )
         if x_tile.mean().values.item() == x_nodata:
             if y != None:
-                y_tile = y_img.isel(y = slice(tiles[i][0], tiles[i][2]), x = slice(tiles[i][1], tiles[i][3]))
+                y_tile = y_img.isel(
+                    y=slice(tiles[i][0], tiles[i][2]), 
+                    x=slice(tiles[i][1], tiles[i][3])
+                )
                 if y_tile.mean().values.item() != y_nodata:
                     samples_filtered.append(i)
         else:
@@ -98,17 +127,22 @@ def get_ss_tiles(x, y, tile_size, classification, shuffle, split, split_names, x
         split_samples.append(samples[j : j + round(split[i] / sum(split) * len(samples))])
         j = j + round(split[i] / sum(split) * len(samples))
     # Cutting x data into chips and stacking
-    stack = [x_img.isel(y = slice(tiles[i][0], tiles[i][2]), x = slice(tiles[i][1], tiles[i][3])) for i in samples]
-    x_img = xarray.concat(stack, 'chips', join = "override").chunk('auto')
+    stack = [x_img.isel(y=slice(tiles[i][0], tiles[i][2]), x=slice(tiles[i][1], tiles[i][3])) for i in samples]
+    x_img = xarray.concat(stack, 'chips', join="override").chunk('auto')
     x_img = persist(x_img)
     # Adding border to tiles to avoid border effects on predict
-    x_img = x_img.pad({'y': border, 'x': border}, mode = "symmetric").chunk('auto')
+    x_img = x_img.pad({'y': border, 'x': border}, mode="symmetric").chunk('auto')
     x_img = persist(x_img)
     # Saving x data
-    x_img = x_img.assign_attrs(tiles = tiles, border = border, samples = split_samples, names = split_names)
-    x_img.rio.write_nodata(x_nodata, inplace = True)
+    x_img = x_img.assign_attrs(
+        tiles=tiles, 
+        border=border, 
+        samples=split_samples, 
+        names=split_names
+    )
+    x_img.rio.write_nodata(x_nodata, inplace=True)
     if x_output != None:
-        x_img.to_zarr(x_output, mode = 'w')
+        x_img.to_zarr(x_output, mode='w')
     # Cutting y data into chips and stacking
     y_data = []
     if y != None:
@@ -129,17 +163,25 @@ def get_ss_tiles(x, y, tile_size, classification, shuffle, split, split_names, x
                 num_classes = 1
                 classes = 0
             # Cutting data into chips and stacking
-            stack = [y_var.isel(y = slice(tiles[i][0], tiles[i][2]), x = slice(tiles[i][1], tiles[i][3])) for i in samples]
-            y_var = xarray.concat(stack, 'chips', join = "override").chunk('auto')
+            stack = [y_var.isel(y=slice(tiles[i][0], tiles[i][2]), x=slice(tiles[i][1], tiles[i][3])) for i in samples]
+            y_var = xarray.concat(stack, 'chips', join="override").chunk('auto')
             y_var = persist(y_var)
             # Adding border to tiles to avoid border effects on predict
-            y_var = y_var.pad({'y': border, 'x': border}, mode = "symmetric").chunk('auto')
+            y_var = y_var.pad({'y': border, 'x': border}, mode="symmetric").chunk('auto')
             y_var = persist(y_var)
             # Saving x data
-            y_var = y_var.assign_attrs(tiles = tiles, border = border, samples = split_samples, names = split_names, classification = classification, classes = classes, num_classes = num_classes)
-            y_var.rio.write_nodata(y_nodata, inplace = True)
+            y_var = y_var.assign_attrs(
+                tiles=tiles, 
+                border=border, 
+                samples=split_samples, 
+                names=split_names, 
+                classification=classification, 
+                classes=classes, 
+                num_classes=num_classes
+            )
+            y_var.rio.write_nodata(y_nodata, inplace=True)
             if y_output != None:
-                y_var.to_zarr(y_output[i], mode = 'w')
+                y_var.to_zarr(y_output[i], mode='w')
             y_data.append(y_var)
     else:
         y_data = None
@@ -155,7 +197,7 @@ def remap(array, classes):
 def get_nodata(x):
     nodatas = []
     for i in x:
-        with rioxarray.open_rasterio(i, chunks = True, lock = True) as f:
+        with rioxarray.open_rasterio(i, chunks=True, lock=True) as f:
             nodatas.append(f.rio.nodata)
-    nodata = max(set(nodatas), key = nodatas.count)
+    nodata = max(set(nodatas), key=nodatas.count)
     return nodata

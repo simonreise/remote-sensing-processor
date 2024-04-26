@@ -13,9 +13,18 @@ from remote_sensing_processor.common.common_functions import persist
 from remote_sensing_processor.segmentation.segmentation import Model, SegDataModule
 
 
-def predict_map_from_tiles(x, y, reference, model, output, nodata, batch_size, num_workers):
+def predict_map_from_tiles(
+    x, 
+    y, 
+    reference, 
+    model, 
+    output, 
+    nodata, 
+    batch_size, 
+    num_workers,
+):
     # Loading reference raster
-    with rioxarray.open_rasterio(reference, chunks = True, lock = True) as tif:
+    with rioxarray.open_rasterio(reference, chunks=True, lock=True) as tif:
         reference = persist(tif)
     if isinstance(model, str):
         if '.ckpt' in model:
@@ -24,20 +33,38 @@ def predict_map_from_tiles(x, y, reference, model, output, nodata, batch_size, n
             model = joblib.load(model)
     # Reading classes and nodata
     if isinstance(y, str):
-        y_dataset = xarray.open_dataarray(y, engine = 'zarr', chunks = 'auto', mask_and_scale = False)
+        y_dataset = xarray.open_dataarray(y, engine='zarr', chunks='auto', mask_and_scale=False)
     elif isinstance(y, xarray.DataArray):
         y_dataset = y
     if nodata == None:
         nodata = y_dataset.rio.nodata
     classes = y_dataset.classes
     # Creating empty array
-    # TODO : uses compute because of notimplementederror: xarray can't set arrays with multiple array indices to dask yet
+    # TODO : uses compute because of notimplementederror:
+    #  xarray can't set arrays with multiple array indices to dask yet
     y = xarray.full_like(reference[0], nodata).compute()
     # Neural networks
-    if model.model_name in ['BEiT', 'ConditionalDETR', 'Data2Vec', 'DETR', 'DPT', 'Mask2Former', 'MaskFormer', 'MobileNetV2', 'MobileViT', 'MobileViTV2', 'OneFormer', 'SegFormer', 'UperNet', 'DeepLabV3', 'FCN', 'LRASPP']:
+    if model.model_name in [
+        'BEiT', 
+        'ConditionalDETR', 
+        'Data2Vec', 
+        'DETR', 
+        'DPT', 
+        'Mask2Former', 
+        'MaskFormer', 
+        'MobileNetV2', 
+        'MobileViT', 
+        'MobileViTV2', 
+        'OneFormer', 
+        'SegFormer', 
+        'UperNet', 
+        'DeepLabV3', 
+        'FCN', 
+        'LRASPP',
+    ]:
         # Setting datamodule
-        dm = SegDataModule(pred_dataset = x, batch_size = batch_size, num_workers = num_workers)
-        dm.setup(stage = 'predict')
+        dm = SegDataModule(pred_dataset=x, batch_size=batch_size, num_workers=num_workers)
+        dm.setup(stage='predict')
         tiles = dm.ds_pred.tiles
         border = dm.ds_pred.border
         samples = [x for x in dm.ds_pred.samples]
@@ -45,9 +72,26 @@ def predict_map_from_tiles(x, y, reference, model, output, nodata, batch_size, n
         trainer = l.Trainer()
         predictions = trainer.predict(model, dm)
     # Sklearn models
-    elif model.model_name in ["Nearest Neighbors", "Logistic Regression", "SVM", "Gaussian Process", "Decision Tree", "Random Forest", "Gradient Boosting", "Multilayer Perceptron", "AdaBoost", "Naive Bayes", "QDA", "Ridge", "Lasso", "ElasticNet", "XGBoost", "XGB Random Forest"]:
+    elif model.model_name in [
+        "Nearest Neighbors", 
+        "Logistic Regression", 
+        "SVM", 
+        "Gaussian Process", 
+        "Decision Tree", 
+        "Random Forest", 
+        "Gradient Boosting", 
+        "Multilayer Perceptron", 
+        "AdaBoost", 
+        "Naive Bayes", 
+        "QDA", 
+        "Ridge", 
+        "Lasso", 
+        "ElasticNet", 
+        "XGBoost", 
+        "XGB Random Forest",
+    ]:
         if isinstance(x, str):
-            x_dataset = xarray.open_dataarray(x, engine = 'zarr', chunks = 'auto', mask_and_scale = False)
+            x_dataset = xarray.open_dataarray(x, engine='zarr', chunks='auto', mask_and_scale=False)
         else:
             x_dataset = x
         x_dataset = persist(x_dataset)
@@ -58,13 +102,13 @@ def predict_map_from_tiles(x, y, reference, model, output, nodata, batch_size, n
         # Predict every tile
         predictions = []
         for i in x_dataset:
-            i = i.astype('float32').stack(data = ('y', 'x')).transpose('data', 'band')
+            i = i.astype('float32').stack(data=('y', 'x')).transpose('data', 'band')
             prediction = model.predict(i)
             prediction = prediction.reshape(input_shape, input_shape)
             predictions.append(prediction[np.newaxis, :])
     else:
         raise ValueError("Wrong model name. Check spelling or read a documentation and choose a supported model")
-    predictions = np.concatenate(predictions, axis = 0)
+    predictions = np.concatenate(predictions, axis=0)
     # Mapping
     for i in range(len(samples)):
         prediction = predictions[i]
@@ -77,7 +121,7 @@ def predict_map_from_tiles(x, y, reference, model, output, nodata, batch_size, n
         else:
             prediction = prediction[border : prediction.shape[0] - border, border : prediction.shape[1] - border]
         # TODO: not working with dask arrays, so had to load reference without chunking, can be memory-consuming.
-        area = y.isel(y = slice(t[0], t[2]), x = slice(t[1], t[3]))
+        area = y.isel(y=slice(t[0], t[2]), x=slice(t[1], t[3]))
         y.loc[{'x': area.x, 'y': area.y}] = prediction
     # Recreating original classes values
     if classes != 0 and not set([k == v for v, k in enumerate(classes)]) == {True}:
@@ -86,9 +130,19 @@ def predict_map_from_tiles(x, y, reference, model, output, nodata, batch_size, n
         for _, v in enumerate(classes).items():
             y = xr.where(y == v + 100000, y - 100000, y)
     y = persist(y)
-    # Because predictor = 2 works with float64 only when libtiff > 3.2.0 is installed and default libtiff in ubuntu is 3.2.0
+    # Because predictor = 2 works with float64 only when libtiff > 3.2.0 is installed
+    # and default libtiff in ubuntu is 3.2.0
     if y.dtype == 'float64':
         y = y.astype('float32')
         y = persist(y)
     # Writing to file
-    y.rio.to_raster(output, compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, NUM_THREADS = 'NUM_CPUS', lock = True)
+    y.rio.to_raster(
+        output, 
+        compress='deflate', 
+        PREDICTOR=2, 
+        ZLEVEL=9, 
+        BIGTIFF='IF_SAFER', 
+        tiled=True, 
+        NUM_THREADS='NUM_CPUS', 
+        lock=True,
+    )

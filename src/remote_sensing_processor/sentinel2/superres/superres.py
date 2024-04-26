@@ -23,7 +23,7 @@ warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarni
 # license.
 
 
-def superresolution(input_dir = "/tmp/input/", clip = None):
+def superresolution(input_dir="/tmp/input/", clip=None):
     """
     This function takes the raster data at 10, 20, and 60 m resolutions and by applying
     data_final method creates the input data for the the convolutional neural network.
@@ -54,7 +54,7 @@ def superresolution(input_dir = "/tmp/input/", clip = None):
     # Super-resolving the 20m data into 10m bands"
     sr20 = dsen2_20(data10, data20, image_level)
 
-    sr_final = xarray.concat((data10.astype('uint16'), sr20.astype('uint16'), sr60.astype('uint16')), dim = 'band')
+    sr_final = xarray.concat((data10.astype('uint16'), sr20.astype('uint16'), sr60.astype('uint16')), dim='band')
 
     sr_final.attrs['long_name'] = tuple(validated_descriptions_all)
 
@@ -63,7 +63,7 @@ def superresolution(input_dir = "/tmp/input/", clip = None):
     # This code is needed if you want to write superresolution result to file
     #path_to_output_img = Path(input_dir).stem + "_superresolution.tif"
     #filename = os.path.join(input_dir, path_to_output_img)
-    #sr_final.rio.to_raster(filename, compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, windowed = True, lock = True)
+    #sr_final.rio.to_raster(filename, compress='deflate', PREDICTOR=2, ZLEVEL=9, BIGTIFF='IF_SAFER', tiled=True, windowed=True, lock=True)
     gc.collect()
     return sr_final
 
@@ -82,7 +82,11 @@ def get_data(input_dir):
     image_level = Path(data_path).stem.split("_")[1]
     with rasterio.open(data_path) as rd:
         datasets = rd.subdatasets
-    datasets = [next(x for x in datasets if ':10m:' in x), next(x for x in datasets if ':20m:' in x), next(x for x in datasets if ':60m:' in x)]
+    datasets = [
+        next(x for x in datasets if ':10m:' in x),
+        next(x for x in datasets if ':20m:' in x),
+        next(x for x in datasets if ':60m:' in x)
+    ]
     return datasets, image_level
 
     
@@ -93,7 +97,7 @@ def read_ds(dataset):
     select_bands = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9', 'B11', 'B12']
     validated_indices = []
     validated_descriptions = []
-    with rioxarray.open_rasterio(dataset, chunks = True, lock = True) as tif:
+    with rioxarray.open_rasterio(dataset, chunks=True, lock=True) as tif:
         bands = persist(tif)
         for i in range(bands.shape[0]):
             desc = validate_description(bands.long_name[i])
@@ -164,5 +168,5 @@ def clip_data(data, clip, box):
     shape = gpd.read_file(clip).to_crs(data.rio.crs)
     shape = convert_3D_2D(shape)
     data = data.rio.clip_box(box[0], box[1], box[2], box[3])
-    data = data.rio.clip(shape, all_touched = True, drop = False)
+    data = data.rio.clip(shape, all_touched=True, drop=False)
     return data

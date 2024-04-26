@@ -22,24 +22,67 @@ from remote_sensing_processor.segmentation.models import load_model, load_sklear
 
 
 # These warnings usually appear on sanity check if a loaded tile is empty
-warnings.filterwarnings("ignore", message = "No positive samples in targets")
-warnings.filterwarnings("ignore", message = "exists and is not empty")
-warnings.filterwarnings("ignore", message = "could not find the monitored key in the returned metrics")
-warnings.filterwarnings("ignore", message = "Skipping val loop")
+warnings.filterwarnings("ignore", message="No positive samples in targets")
+warnings.filterwarnings("ignore", message="exists and is not empty")
+warnings.filterwarnings("ignore", message="could not find the monitored key in the returned metrics")
+warnings.filterwarnings("ignore", message="Skipping val loop")
 
 dask.config.set(scheduler='synchronous')
 
 
-def segmentation_train(train_datasets, val_datasets, model, backbone, checkpoint, weights, model_file, epochs, batch_size, augment, repeat, classification, num_classes, y_nodata, less_metrics, lr, num_workers, **kwargs):
+def segmentation_train(
+    train_datasets, 
+    val_datasets, 
+    model, 
+    backbone, 
+    checkpoint, 
+    weights, 
+    model_file, 
+    epochs, 
+    batch_size, 
+    augment, 
+    repeat, 
+    classification, 
+    num_classes, 
+    y_nodata, 
+    less_metrics, 
+    lr, 
+    num_workers, 
+    **kwargs
+):
     input_shape = None
     input_dims = None
     # Deep learning pytorch models
-    if model in ['BEiT', 'ConditionalDETR', 'Data2Vec', 'DETR', 'DPT', 'Mask2Former', 'MaskFormer', 'MobileNetV2', 'MobileViT', 'MobileViTV2', 'OneFormer', 'SegFormer', 'UperNet', 'DeepLabV3', 'FCN', 'LRASPP']:
+    if model in [
+        'BEiT', 
+        'ConditionalDETR', 
+        'Data2Vec', 
+        'DETR', 
+        'DPT', 
+        'Mask2Former', 
+        'MaskFormer', 
+        'MobileNetV2', 
+        'MobileViT', 
+        'MobileViTV2', 
+        'OneFormer', 
+        'SegFormer', 
+        'UperNet', 
+        'DeepLabV3', 
+        'FCN', 
+        'LRASPP'
+    ]:
         # Checking if file extention is right
         if os.path.splitext(model_file)[1] != '.ckpt':
             raise ValueError("Wrong model file format: .ckpt file extention expected for " + model)
         # Setting up data module
-        dm = SegDataModule(train_datasets = train_datasets, val_datasets = val_datasets, repeat = repeat, augment = augment, batch_size = batch_size, num_workers = num_workers)
+        dm = SegDataModule(
+            train_datasets=train_datasets, 
+            val_datasets=val_datasets, 
+            repeat=repeat, 
+            augment=augment, 
+            batch_size=batch_size, 
+            num_workers=num_workers
+        )
         # Reading parameters that are needed to build the model
         if input_shape == None:
             input_shape = dm.input_shape
@@ -53,21 +96,49 @@ def segmentation_train(train_datasets, val_datasets, model, backbone, checkpoint
             y_nodata = dm.y_nodata
         # Loading model
         if checkpoint != None:
-            model = Model.load_from_checkpoint(checkpoint, input_shape = input_shape, input_dims = input_dims, num_classes = num_classes, classification = classification, y_nodata = y_nodata, lr = lr)
+            model = Model.load_from_checkpoint(
+                checkpoint, 
+                input_shape=input_shape, 
+                input_dims=input_dims, 
+                num_classes=num_classes, 
+                classification=classification, 
+                y_nodata=y_nodata, 
+                lr=lr
+            )
         else:
-            model = Model(model, backbone, weights, input_shape, input_dims, num_classes, classification, y_nodata, less_metrics, lr, **kwargs)
+            model = Model(
+                model, 
+                backbone, 
+                weights, 
+                input_shape, 
+                input_dims, 
+                num_classes, 
+                classification, 
+                y_nodata, 
+                less_metrics, 
+                lr, 
+                **kwargs
+            )
         # Setting up trainer
         checkpoint_callback = l.pytorch.callbacks.ModelCheckpoint(
-            save_top_k = 1,
-            monitor = "val_loss" if not isinstance(val_datasets, type(None)) else "train_loss",
-            mode = "min",
-            dirpath = os.path.dirname(model_file),
-            filename = os.path.basename(os.path.splitext(model_file)[0]),
-            enable_version_counter = False
+            save_top_k=1,
+            monitor="val_loss" if not isinstance(val_datasets, type(None)) else "train_loss",
+            mode="min",
+            dirpath=os.path.dirname(model_file),
+            filename=os.path.basename(os.path.splitext(model_file)[0]),
+            enable_version_counter=False
         )
-        tb_logger = l.pytorch.loggers.TensorBoardLogger(save_dir = os.path.join(os.path.dirname(model_file), 'logs' , 'tensorboard'))
-        csv_logger = l.pytorch.loggers.CSVLogger(save_dir = os.path.join(os.path.dirname(model_file), 'logs' , 'csv'))
-        trainer = l.Trainer(max_epochs = epochs, callbacks = [checkpoint_callback], logger = [tb_logger, csv_logger])
+        tb_logger = l.pytorch.loggers.TensorBoardLogger(
+            save_dir=os.path.join(os.path.dirname(model_file), 'logs' , 'tensorboard')
+        )
+        csv_logger = l.pytorch.loggers.CSVLogger(
+            save_dir=os.path.join(os.path.dirname(model_file), 'logs' , 'csv')
+        )
+        trainer = l.Trainer(
+            max_epochs=epochs, 
+            callbacks=[checkpoint_callback], 
+            logger=[tb_logger, csv_logger],
+        )
         # Training
         trainer.fit(model, dm)
     # Sklearn ML models
@@ -83,7 +154,15 @@ def segmentation_train(train_datasets, val_datasets, model, backbone, checkpoint
             if model.model_name in ["Random Forest", "Gradient Boosting"]:
                 model.model.n_estimators += 50
         else:
-            model = SklearnModel(model, backbone, classification, epochs, y_nodata, num_classes, **kwargs)
+            model = SklearnModel(
+                model, 
+                backbone, 
+                classification, 
+                epochs, 
+                y_nodata, 
+                num_classes, 
+                **kwargs
+            )
         model.fit(x_train, y_train)
         del x_train
         del y_train
@@ -111,12 +190,50 @@ def segmentation_test(test_datasets, model, batch_size, num_workers):
         elif '.joblib' in model:
             model = joblib.load(model)
     # Neural networks
-    if model.model_name in ['BEiT', 'ConditionalDETR', 'Data2Vec', 'DETR', 'DPT', 'Mask2Former', 'MaskFormer', 'MobileNetV2', 'MobileViT', 'MobileViTV2', 'OneFormer', 'SegFormer', 'UperNet', 'DeepLabV3', 'FCN', 'LRASPP']:
-        dm = SegDataModule(test_datasets = test_datasets, batch_size = batch_size, num_workers = num_workers)
+    if model.model_name in [
+        'BEiT', 
+        'ConditionalDETR', 
+        'Data2Vec', 
+        'DETR', 
+        'DPT', 
+        'Mask2Former', 
+        'MaskFormer', 
+        'MobileNetV2', 
+        'MobileViT', 
+        'MobileViTV2', 
+        'OneFormer', 
+        'SegFormer', 
+        'UperNet', 
+        'DeepLabV3', 
+        'FCN', 
+        'LRASPP'
+    ]:
+        dm = SegDataModule(
+            test_datasets=test_datasets, 
+            batch_size=batch_size, 
+            num_workers=num_workers
+        )
         trainer = l.Trainer()
         trainer.test(model, dm)
     # Sklearn models
-    elif model.model_name in ["Nearest Neighbors", "Logistic Regression", "SVM", "Gaussian Process", "Decision Tree", "Random Forest", "Gradient Boosting", "Multilayer Perceptron", "AdaBoost", "Naive Bayes", "QDA", "Ridge", "Lasso", "ElasticNet", "XGBoost", "XGB Random Forest"]:
+    elif model.model_name in [
+        "Nearest Neighbors", 
+        "Logistic Regression", 
+        "SVM", 
+        "Gaussian Process", 
+        "Decision Tree", 
+        "Random Forest", 
+        "Gradient Boosting", 
+        "Multilayer Perceptron", 
+        "AdaBoost", 
+        "Naive Bayes", 
+        "QDA", 
+        "Ridge", 
+        "Lasso", 
+        "ElasticNet", 
+        "XGBoost", 
+        "XGB Random Forest"
+    ]:
         classification = model.classification
         # Loading test datasets
         x_test, y_test, _, _, _ = sklearn_load_dataset(test_datasets)
@@ -129,7 +246,7 @@ class ZarrDataset(torch.utils.data.Dataset):
     def __init__(self, x, y, names, transform):
         # Reading x dataset
         if isinstance(x, str):
-            self.x_dataset = xarray.open_dataarray(x, engine = 'zarr', chunks = 'auto', mask_and_scale = False)
+            self.x_dataset = xarray.open_dataarray(x, engine='zarr', chunks='auto', mask_and_scale=False)
         elif isinstance(x, xarray.DataArray):
             self.x_dataset = x
         # Getting tiles and samples
@@ -151,7 +268,7 @@ class ZarrDataset(torch.utils.data.Dataset):
         if not isinstance(y, type(None)):
             # Reading y dataset
             if isinstance(y, str):
-                self.y_dataset = xarray.open_dataarray(y, engine = 'zarr', chunks = 'auto', mask_and_scale = False)
+                self.y_dataset = xarray.open_dataarray(y, engine='zarr', chunks='auto', mask_and_scale=False)
             elif isinstance(y, xarray.DataArray):
                 self.y_dataset = y
         else:
@@ -161,7 +278,8 @@ class ZarrDataset(torch.utils.data.Dataset):
         self.is_persisted = False
 
     def __getitem__(self, index):
-        # Persist is in getitem because if it is in init then multiprocessing is not working because datasets are too big to pickle
+        # Persist is in getitem because if it is in init then multiprocessing is not working
+        # because datasets are too big to pickle
         if self.is_persisted == False:
             self.x_dataset = persist(self.x_dataset)
             if not isinstance(self.y_dataset, type(None)):
@@ -190,7 +308,17 @@ class ZarrDataset(torch.utils.data.Dataset):
             
 
 class SegDataModule(l.LightningDataModule):
-    def __init__(self, train_datasets = None, val_datasets = None, test_datasets = None, pred_dataset = None, repeat = 1, augment = False, batch_size = 32, num_workers = 'auto'):
+    def __init__(
+        self, 
+        train_datasets=None, 
+        val_datasets=None, 
+        test_datasets=None, 
+        pred_dataset=None, 
+        repeat=1, 
+        augment=False, 
+        batch_size=32, 
+        num_workers='auto'
+    ):
         super().__init__()
         # Setting up datasets
         self.train_datasets = train_datasets
@@ -201,7 +329,8 @@ class SegDataModule(l.LightningDataModule):
         self.batch_size = batch_size
         # Configuring multiporcessing
         if num_workers != 0 and num_workers != 'auto' and num_workers > torch.multiprocessing.cpu_count():
-            warnings.warn("'num_workers' is " + num_workers + ", but you have only " + torch.multiprocessing.cpu_count() + "CPU cores. Setting 'num_workers' to 'auto'")
+            warnings.warn("'num_workers' is " + num_workers + ", but you have only "
+                          + torch.multiprocessing.cpu_count() + "CPU cores. Setting 'num_workers' to 'auto'")
             num_workers = 'auto'
         if num_workers == 'auto':
             cpus = torch.multiprocessing.cpu_count()
@@ -234,19 +363,19 @@ class SegDataModule(l.LightningDataModule):
         # Setting up transform
         if augment == True:
             self.transform = v2.Compose([
-                v2.RandomResizedCrop(size = (self.input_shape, self.input_shape), antialias = True),
-                v2.RandomHorizontalFlip(p = 0.5),
+                v2.RandomResizedCrop(size=(self.input_shape, self.input_shape), antialias=True),
+                v2.RandomHorizontalFlip(p=0.5),
                 # Removed because of nans
-                #v2.RandomRotation(45, fill = {tv_tensors.Image: self.x_nodata.item(), tv_tensors.Mask: self.y_nodata.item()}),
-                #v2.ElasticTransform(fill = {tv_tensors.Image: self.x_nodata.item(), tv_tensors.Mask: self.y_nodata.item()}),
-                ])
+                #v2.RandomRotation(45, fill={tv_tensors.Image: self.x_nodata.item(), tv_tensors.Mask: self.y_nodata.item()}),
+                #v2.ElasticTransform(fill={tv_tensors.Image: self.x_nodata.item(), tv_tensors.Mask: self.y_nodata.item()}),
+            ])
         else:
             self.transform = None
     
     def dataset_check(self, datasets):
         for ds in datasets:
             if isinstance(ds[0], str):
-                x_dataset = xarray.open_dataarray(ds[0], engine = 'zarr', mask_and_scale = False)
+                x_dataset = xarray.open_dataarray(ds[0], engine='zarr', mask_and_scale=False)
             elif isinstance(ds[0], xarray.DataArray):
                 x_dataset = ds[0]
             input_shape = x_dataset.shape[2]
@@ -254,7 +383,7 @@ class SegDataModule(l.LightningDataModule):
             x_nodata = x_dataset.rio.nodata
             if not isinstance(ds[1], type(None)):
                 if isinstance(ds[1], str):
-                    y_dataset = xarray.open_dataarray(ds[1], engine = 'zarr', mask_and_scale = False)
+                    y_dataset = xarray.open_dataarray(ds[1], engine='zarr', mask_and_scale=False)
                 elif isinstance(ds[1], xarray.DataArray):
                     y_dataset = ds[1]
                 y_nodata = y_dataset.rio.nodata
@@ -304,41 +433,66 @@ class SegDataModule(l.LightningDataModule):
             datasets = []
             for ds in self.train_datasets:
                 for j in range(self.repeat):
-                    datasets.append(ZarrDataset(ds[0], ds[1], ds[2], transform = self.transform))
+                    datasets.append(ZarrDataset(ds[0], ds[1], ds[2], transform=self.transform))
             self.ds_train = torch.utils.data.ConcatDataset(datasets)
             if not isinstance(self.val_datasets, type(None)):
                 datasets = []
                 for ds in self.val_datasets:
-                    datasets.append(ZarrDataset(ds[0], ds[1], ds[2], transform = None))
+                    datasets.append(ZarrDataset(ds[0], ds[1], ds[2], transform=None))
                 self.ds_val = torch.utils.data.ConcatDataset(datasets)
             else:
                 self.ds_val = None
         if stage == 'test':
             datasets = []
             for ds in self.test_datasets:
-                datasets.append(ZarrDataset(ds[0], ds[1], ds[2], transform = None))
+                datasets.append(ZarrDataset(ds[0], ds[1], ds[2], transform=None))
             self.ds_test = torch.utils.data.ConcatDataset(datasets)
         if stage == 'predict':
-            self.ds_pred = ZarrDataset(self.pred_dataset, None, 'all', transform = None)
+            self.ds_pred = ZarrDataset(self.pred_dataset, None, 'all', transform=None)
         
     def train_dataloader(self):
-        return torch.utils.data.DataLoader(self.ds_train, batch_size = self.batch_size, shuffle = True, pin_memory = True, num_workers = self.workers, persistent_workers = self.pw)
-        #return DataLoader2(self.ds_train, reading_service = self.rs)
+        return torch.utils.data.DataLoader(
+            self.ds_train, 
+            batch_size=self.batch_size, 
+            shuffle=True, 
+            pin_memory=True, 
+            num_workers=self.workers, 
+            persistent_workers=self.pw
+        )
+        #return DataLoader2(self.ds_train, reading_service=self.rs)
 
     def val_dataloader(self):
         if not isinstance(self.ds_val, type(None)):
-            return torch.utils.data.DataLoader(self.ds_val, batch_size = self.batch_size, pin_memory = True, num_workers = self.workers, persistent_workers = self.pw)
-            #return DataLoader2(self.ds_val, reading_service = self.rs)
+            return torch.utils.data.DataLoader(
+                self.ds_val, 
+                batch_size=self.batch_size, 
+                pin_memory=True, 
+                num_workers=self.workers, 
+                persistent_workers=self.pw
+            )
+            #return DataLoader2(self.ds_val, reading_service=self.rs)
         else:
             return None
 
     def test_dataloader(self):
-        return torch.utils.data.DataLoader(self.ds_test, batch_size = self.batch_size, pin_memory = True, num_workers = self.workers, persistent_workers = self.pw)
-        #return DataLoader2(self.ds_test, reading_service = self.rs)
+        return torch.utils.data.DataLoader(
+            self.ds_test, 
+            batch_size=self.batch_size, 
+            pin_memory=True, 
+            num_workers=self.workers, 
+            persistent_workers=self.pw
+        )
+        #return DataLoader2(self.ds_test, reading_service=self.rs)
 
     def predict_dataloader(self):
-        return torch.utils.data.DataLoader(self.ds_pred, batch_size = self.batch_size, pin_memory = True, num_workers = self.workers, persistent_workers = self.pw)
-        #return DataLoader2(self.ds_pred, reading_service = self.rs)
+        return torch.utils.data.DataLoader(
+            self.ds_pred, 
+            batch_size=self.batch_size, 
+            pin_memory=True, 
+            num_workers=self.workers, 
+            persistent_workers=self.pw
+        )
+        #return DataLoader2(self.ds_pred, reading_service=self.rs)
 
 
 class Model(l.LightningModule):
@@ -366,7 +520,7 @@ class Model(l.LightningModule):
         self.num_classes = num_classes
         self.y_nodata = y_nodata
         if classification:
-            self.loss_fn = torch.nn.CrossEntropyLoss(ignore_index = int(y_nodata))
+            self.loss_fn = torch.nn.CrossEntropyLoss(ignore_index=int(y_nodata))
         self.lr = lr
         torch.autograd.set_detect_anomaly(True)
     
@@ -380,7 +534,7 @@ class Model(l.LightningModule):
                  0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
                  0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
                  0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-                 0,     0,     0,     0,     0,     0,     0]], device = self.device)
+                 0,     0,     0,     0,     0,     0,     0]], device=self.device)
             t = torch.cat([t] * x.shape[0], dim=0)
             pred = self.model(x, t)
         else: 
@@ -398,7 +552,7 @@ class Model(l.LightningModule):
         if self.classification:
             loss = self.loss_fn(pred, y)
         else:
-            loss = self.mse_loss(pred.squeeze(), y.squeeze(), ignore_index = self.y_nodata)
+            loss = self.mse_loss(pred.squeeze(), y.squeeze(), ignore_index=self.y_nodata)
         self.log_all(y, pred, loss, 'train')
         return loss
         
@@ -410,7 +564,7 @@ class Model(l.LightningModule):
         if self.classification:
             loss = self.loss_fn(pred, y)
         else:
-            loss = self.mse_loss(pred.squeeze(), y.squeeze(), ignore_index = self.y_nodata)
+            loss = self.mse_loss(pred.squeeze(), y.squeeze(), ignore_index=self.y_nodata)
         self.log_all(y, pred, loss, 'val')
     
     def test_step(self, batch, batch_idx):
@@ -421,25 +575,60 @@ class Model(l.LightningModule):
         if self.classification:
             loss = self.loss_fn(pred, y)
         else:
-            loss = self.mse_loss(pred.squeeze(), y.squeeze(), ignore_index = self.y_nodata)
+            loss = self.mse_loss(pred.squeeze(), y.squeeze(), ignore_index=self.y_nodata)
         self.log_all(y, pred, loss, 'test')
     
     def log_all(self, y, pred, loss, stage):
-        self.log(stage + '_loss', loss, on_step = True, on_epoch = True, prog_bar = True)
+        self.log(stage + '_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
         if self.classification:
             # Acc average is micro because most of papers use micro and sklearn uses micro
-            self.log(stage + '_acc', torchmetrics.functional.classification.multiclass_accuracy(pred, y, num_classes = self.num_classes, average = 'micro', ignore_index = int(self.y_nodata)), on_step = True, on_epoch = True, prog_bar = True)
-            self.log(stage + '_auroc', torchmetrics.functional.classification.multiclass_auroc(pred, y, num_classes = self.num_classes, average = 'macro', ignore_index = int(self.y_nodata)), on_step = True, on_epoch = True, prog_bar = True)
+            self.log(stage + '_acc', torchmetrics.functional.classification.multiclass_accuracy(
+                pred, 
+                y, 
+                num_classes=self.num_classes, 
+                average='micro', 
+                ignore_index=int(self.y_nodata)
+            ), on_step=True, on_epoch=True, prog_bar=True)
+            self.log(stage + '_auroc', torchmetrics.functional.classification.multiclass_auroc(
+                pred, 
+                y, 
+                num_classes=self.num_classes, 
+                average='macro', 
+                ignore_index=int(self.y_nodata)
+            ), on_step=True, on_epoch=True, prog_bar=True)
             # TODO: these metrics somehow make detr freeze after first steps, hope this is temporary fix
             if not self.less_metrics:
-                self.log(stage + '_precision', torchmetrics.functional.classification.multiclass_precision(pred, y, num_classes = self.num_classes, average = 'macro', ignore_index = int(self.y_nodata)), on_step = True, on_epoch = True)
-                self.log(stage + '_recall', torchmetrics.functional.classification.multiclass_recall(pred, y, num_classes = self.num_classes, average = 'macro', ignore_index = int(self.y_nodata)), on_step = True, on_epoch = True)
-                self.log(stage + '_iou', torchmetrics.functional.classification.multiclass_jaccard_index(pred, y, num_classes = self.num_classes, average = 'macro', ignore_index = int(self.y_nodata)), on_step = True, on_epoch = True, prog_bar = True)
+                self.log(stage + '_precision', torchmetrics.functional.classification.multiclass_precision(
+                    pred, 
+                    y, 
+                    num_classes=self.num_classes, 
+                    average='macro', 
+                    ignore_index=int(self.y_nodata)
+                ), on_step=True, on_epoch=True)
+                self.log(stage + '_recall', torchmetrics.functional.classification.multiclass_recall(
+                    pred, 
+                    y, 
+                    num_classes=self.num_classes, 
+                    average='macro',
+                    ignore_index=int(self.y_nodata)
+                ), on_step=True, on_epoch=True)
+                self.log(stage + '_iou', torchmetrics.functional.classification.multiclass_jaccard_index(
+                    pred, 
+                    y, 
+                    num_classes=self.num_classes, 
+                    average='macro', 
+                    ignore_index=int(self.y_nodata)
+                ), on_step=True, on_epoch=True, prog_bar=True)
         else:
-            filtered = torch.where(torch.reshape(y, (y.shape[0], -1)) != self.y_nodata, True, False).nonzero().flatten().tolist()
-            self.log(stage + '_r2', torchmetrics.functional.r2_score(torch.reshape(torch.squeeze(pred), (pred.shape[0], -1))[filtered], torch.reshape(y, (y.shape[0], -1))[filtered]), on_step = True, on_epoch = True, prog_bar = True)
+            filtered = torch.where(
+                torch.reshape(y, (y.shape[0], -1)) != self.y_nodata, True, False
+            ).nonzero().flatten().tolist()
+            self.log(stage + '_r2', torchmetrics.functional.r2_score(
+                torch.reshape(torch.squeeze(pred), (pred.shape[0], -1))[filtered], 
+                torch.reshape(y, (y.shape[0], -1))[filtered]
+            ), on_step=True, on_epoch=True, prog_bar=True)
     
-    def predict_step(self, batch, batch_idx, dataloader_idx = 0):
+    def predict_step(self, batch, batch_idx, dataloader_idx=0):
         x = batch
         pred = self.forward(x)
         pred = self.process_output(pred, x)
@@ -450,16 +639,22 @@ class Model(l.LightningModule):
         return pred
     
     def process_output(self, pred, x):
-        if isinstance(pred, transformers.modeling_outputs.SemanticSegmenterOutput) or isinstance(pred, transformers.models.clipseg.modeling_clipseg.CLIPSegImageSegmentationOutput):
+        if (
+            isinstance(pred, transformers.modeling_outputs.SemanticSegmenterOutput) 
+            or isinstance(pred, transformers.models.clipseg.modeling_clipseg.CLIPSegImageSegmentationOutput)
+        ):
             pred = pred.logits
             if pred.shape[2:4] != x.shape[2:4]:
                 pred = torch.nn.functional.interpolate(
                     pred,
-                    size = x.shape[2:4],
-                    mode = "bilinear",
-                    align_corners = False,
+                    size=x.shape[2:4],
+                    mode="bilinear",
+                    align_corners=False,
                 )
-        elif isinstance(pred, transformers.models.conditional_detr.modeling_conditional_detr.ConditionalDetrSegmentationOutput) or isinstance(pred, transformers.models.detr.modeling_detr.DetrSegmentationOutput):
+        elif (
+            isinstance(pred, transformers.models.conditional_detr.modeling_conditional_detr.ConditionalDetrSegmentationOutput) 
+            or isinstance(pred, transformers.models.detr.modeling_detr.DetrSegmentationOutput)
+        ):
             class_queries_logits = pred.logits  # [batch_size, num_queries, num_classes+1]
             masks_queries_logits = pred.pred_masks  # [batch_size, num_queries, height, width]
             
@@ -468,7 +663,7 @@ class Model(l.LightningModule):
             if isinstance(pred, transformers.models.detr.modeling_detr.DetrSegmentationOutput):
                 masks_classes = class_queries_logits.softmax(dim = -1)[..., :-1]
             else:
-                masks_classes = class_queries_logits.softmax(dim = -1)
+                masks_classes = class_queries_logits.softmax(dim=-1)
             masks_probs = masks_queries_logits.sigmoid()  # [batch_size, num_queries, height, width]
 
             # Semantic segmentation logits of shape (batch_size, num_classes, height, width)
@@ -477,14 +672,17 @@ class Model(l.LightningModule):
             if pred.shape[2:4] != x.shape[2:4]:
                 pred = torch.nn.functional.interpolate(
                     pred,
-                    size = x.shape[2:4],
-                    mode = "bilinear",
-                    align_corners = False,
+                    size=x.shape[2:4],
+                    mode="bilinear",
+                    align_corners=False,
                 )
-        elif isinstance(pred, transformers.models.mask2former.modeling_mask2former.Mask2FormerForUniversalSegmentationOutput) or isinstance(pred, transformers.models.maskformer.modeling_maskformer.MaskFormerForInstanceSegmentationOutput):
+        elif (
+            isinstance(pred, transformers.models.mask2former.modeling_mask2former.Mask2FormerForUniversalSegmentationOutput) 
+            or isinstance(pred, transformers.models.maskformer.modeling_maskformer.MaskFormerForInstanceSegmentationOutput)
+        ):
             class_queries_logits = pred.class_queries_logits  # [batch_size, num_queries, num_classes+1]
             masks_queries_logits = pred.masks_queries_logits  # [batch_size, num_queries, height, width]
-            masks_classes = class_queries_logits.softmax(dim = -1)[..., :-1]
+            masks_classes = class_queries_logits.softmax(dim=-1)[..., :-1]
             masks_probs = masks_queries_logits.sigmoid()  # [batch_size, num_queries, height, width]
             
             # Semantic segmentation logits of shape (batch_size, num_classes, height, width)
@@ -492,14 +690,14 @@ class Model(l.LightningModule):
             if pred.shape[2:4] != x.shape[2:4]:
                 pred = torch.nn.functional.interpolate(
                     pred,
-                    size = x.shape[2:4],
-                    mode = "bilinear",
-                    align_corners = False,
+                    size=x.shape[2:4],
+                    mode="bilinear",
+                    align_corners=False,
                 )
         elif isinstance(pred, transformers.models.oneformer.modeling_oneformer.OneFormerForUniversalSegmentationOutput):
             class_queries_logits = pred.class_queries_logits  # [batch_size, num_queries, num_classes+1]
             masks_queries_logits = pred.masks_queries_logits  # [batch_size, num_queries, height, width]
-            masks_classes = class_queries_logits.softmax(dim = -1)[..., :-1]
+            masks_classes = class_queries_logits.softmax(dim=-1)[..., :-1]
             masks_probs = masks_queries_logits.sigmoid()  # [batch_size, num_queries, height, width]
 
             # Semantic segmentation logits of shape (batch_size, num_classes, height, width)
@@ -507,9 +705,9 @@ class Model(l.LightningModule):
             if pred.shape[2:4] != x.shape[2:4]:
                 pred = torch.nn.functional.interpolate(
                     pred,
-                    size = x.shape[2:4],
-                    mode = "bilinear",
-                    align_corners = False,
+                    size=x.shape[2:4],
+                    mode="bilinear",
+                    align_corners=False,
                 )        
         elif isinstance(pred, collections.OrderedDict):
             pred = pred['out']
@@ -522,7 +720,7 @@ class Model(l.LightningModule):
             y = y.float()
         return y
     
-    def mse_loss(self, pred, target, ignore_index = 0.0, reduction = 'mean'):
+    def mse_loss(self, pred, target, ignore_index=0.0, reduction='mean'):
         mask = target == ignore_index
         out = (pred[~mask] - target[~mask])**2
         if reduction == "mean":
@@ -531,7 +729,7 @@ class Model(l.LightningModule):
             return out
     
     def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(self.model.parameters(), lr = self.lr)
+        optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr)
         return optimizer
         
         
@@ -551,16 +749,52 @@ class SklearnModel:
         if self.classification:
             pred = self.model.predict_proba(x)
             # TODO: find a way to implement macro average accuracy
-            print('Accuracy: ', torchmetrics.functional.classification.multiclass_accuracy(torch.Tensor(pred), torch.Tensor(y.data.compute()).long(), num_classes = self.num_classes, average = 'micro', ignore_index = int(self.y_nodata)).item())
-            print('Precision: ', torchmetrics.functional.classification.multiclass_precision(torch.Tensor(pred), torch.Tensor(y.data.compute()).long(), num_classes = self.num_classes, average = 'macro', ignore_index = int(self.y_nodata)).item())
-            print('Recall: ', torchmetrics.functional.classification.multiclass_recall(torch.Tensor(pred), torch.Tensor(y.data.compute()).long(), num_classes = self.num_classes, average = 'macro', ignore_index = int(self.y_nodata)).item())
-            print('ROC_AUC: ', torchmetrics.functional.classification.multiclass_auroc(torch.Tensor(pred), torch.Tensor(y.data.compute()).long(), num_classes = self.num_classes, average = 'macro', ignore_index = int(self.y_nodata)).item())
-            print('IOU: ', torchmetrics.functional.classification.multiclass_jaccard_index(torch.Tensor(pred), torch.Tensor(y.data.compute()).long(), num_classes = self.num_classes, average = 'macro', ignore_index = int(self.y_nodata)).item())
+            print('Accuracy: ', torchmetrics.functional.classification.multiclass_accuracy(
+                torch.Tensor(pred), 
+                torch.Tensor(y.data.compute()).long(), 
+                num_classes=self.num_classes, 
+                average='micro', 
+                ignore_index=int(self.y_nodata),
+            ).item())
+            print('Precision: ', torchmetrics.functional.classification.multiclass_precision(
+                torch.Tensor(pred), 
+                torch.Tensor(y.data.compute()).long(), 
+                num_classes=self.num_classes, 
+                average='macro', 
+                ignore_index=int(self.y_nodata),
+            ).item())
+            print('Recall: ', torchmetrics.functional.classification.multiclass_recall(
+                torch.Tensor(pred), 
+                torch.Tensor(y.data.compute()).long(), 
+                num_classes=self.num_classes, 
+                average='macro', 
+                ignore_index=int(self.y_nodata),
+            ).item())
+            print('ROC_AUC: ', torchmetrics.functional.classification.multiclass_auroc(
+                torch.Tensor(pred), 
+                torch.Tensor(y.data.compute()).long(), 
+                num_classes=self.num_classes, 
+                average='macro', 
+                ignore_index=int(self.y_nodata),
+            ).item())
+            print('IOU: ', torchmetrics.functional.classification.multiclass_jaccard_index(
+                torch.Tensor(pred), 
+                torch.Tensor(y.data.compute()).long(), 
+                num_classes=self.num_classes, 
+                average='macro', 
+                ignore_index=int(self.y_nodata),
+            ).item())
         else:
             filtered = np.where(y.data.compute() != self.y_nodata, True, False).nonzero()[0].tolist()
             pred = self.model.predict(x)
-            print('R2: ', torchmetrics.functional.r2_score(torch.Tensor(pred[filtered]), torch.Tensor(y[filtered].data.compute()).float()).item())
-            print('MSE: ', torchmetrics.functional.mean_squared_error(torch.Tensor(pred[filtered]), torch.Tensor(y[filtered].data.compute()).float()).item())
+            print('R2: ', torchmetrics.functional.r2_score(
+                torch.Tensor(pred[filtered]), 
+                torch.Tensor(y[filtered].data.compute()).float(),
+            ).item())
+            print('MSE: ', torchmetrics.functional.mean_squared_error(
+                torch.Tensor(pred[filtered]), 
+                torch.Tensor(y[filtered].data.compute()).float(),
+            ).item())
     
     def predict(self, x):
         pred = self.model.predict(x)
@@ -579,14 +813,14 @@ def sklearn_load_dataset(ds):
         names = d[2]
         # Reading x dataset
         if isinstance(x, str):
-            x_dataset = xarray.open_dataarray(x, engine = 'zarr', chunks = 'auto', mask_and_scale = False)
+            x_dataset = xarray.open_dataarray(x, engine='zarr', chunks='auto', mask_and_scale=False)
         else:
             x_dataset = x
         x_dataset = persist(x_dataset)
         # Reading y dataset
         if not isinstance(y, type(None)):
             if isinstance(y, str):
-                y_dataset = xarray.open_dataarray(y, engine = 'zarr', chunks = 'auto', mask_and_scale = False)
+                y_dataset = xarray.open_dataarray(y, engine='zarr', chunks='auto', mask_and_scale=False)
             else:
                 y_dataset = y
             y_dataset = persist(y_dataset)
@@ -626,16 +860,16 @@ def sklearn_load_dataset(ds):
         # Reading dataset
         for index in indices:
             if isinstance(x_stack, type(None)):
-                x_stack = x_dataset[index].astype('float32').stack(data = ('y', 'x'))
+                x_stack = x_dataset[index].astype('float32').stack(data=('y', 'x'))
             else:
-                x_stack = xarray.concat([x_stack, x_dataset[index].astype('float32').stack(data = ('y', 'x'))], dim = 'data')
+                x_stack = xarray.concat([x_stack, x_dataset[index].astype('float32').stack(data=('y', 'x'))], dim='data')
                 x_stack = x_stack.transpose('data', 'band')
                 x_stack = persist(x_stack)
             if not isinstance(y, type(None)):
                 if isinstance(y_stack, type(None)):
-                    y_stack = y_dataset[index].stack(data = ('y', 'x'))
+                    y_stack = y_dataset[index].stack(data=('y', 'x'))
                 else:
-                    y_stack = xarray.concat([y_stack, y_dataset[index].stack(data = ('y', 'x'))], dim = 'data')
+                    y_stack = xarray.concat([y_stack, y_dataset[index].stack(data=('y', 'x'))], dim='data')
                 y_stack = persist(y_stack)
     if not isinstance(y, type(None)):
         return x_stack, y_stack, classification, y_nodata, num_classes

@@ -11,6 +11,6 @@ def get_client(cluster):
         
 
 def get_local():
-    cluster = LocalCluster(memory_limit = None)
-    cluster.adapt(minimum = 1, maximum = multiprocessing.cpu_count())
+    cluster = LocalCluster(memory_limit=None)
+    cluster.adapt(minimum=1, maximum=multiprocessing.cpu_count())
     return cluster

@@ -18,10 +18,19 @@ from remote_sensing_processor.imagery_types.types import get_type
 from remote_sensing_processor.common.common_functions import get_resampling, convert_3D_2D, persist
 
 
-warnings.filterwarnings("ignore", message = "divide by zero")
-warnings.filterwarnings("ignore", message = "invalid value encountered")
+warnings.filterwarnings("ignore", message="divide by zero")
+warnings.filterwarnings("ignore", message="invalid value encountered")
 
-def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resample, t, clip, normalize_t):
+def landsat_proc(path, 
+    projection, 
+    cloud_mask, 
+    pansharpen, 
+    keep_pan_band, 
+    resample, 
+    t, 
+    clip, 
+    normalize_t,
+):
     t = t.lower()
     bands = glob(path + '*B*.tif')
     if bands == []:
@@ -52,7 +61,7 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
                 old = True
             else:
                 old = False
-            with rioxarray.open_rasterio(qa, chunks = True, lock = True) as tif:
+            with rioxarray.open_rasterio(qa, chunks=True, lock=True) as tif:
                 qa = persist(tif)#.load().chunk('auto')
             qar = None
         else:
@@ -63,9 +72,9 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
                 old = True
             else:
                 old = False
-            with rioxarray.open_rasterio(qa, chunks = True, lock = True) as tif:
+            with rioxarray.open_rasterio(qa, chunks=True, lock=True) as tif:
                 qa = persist(tif)#.load().chunk('auto')
-            with rioxarray.open_rasterio(qar, chunks = True, lock = True) as tif:
+            with rioxarray.open_rasterio(qar, chunks=True, lock=True) as tif:
                 qar = persist(tif)#.load().chunk('auto')
         clears = []
         for v in np.unique(qa):
@@ -75,23 +84,65 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
             # Collection 1 qa images have different values
             if old:
                 if lsver in ['Landsat8_up_l1', 'Landsat8_up_l2']:
-                    if val[0] == '0' and val[1] == '0' and val[2:4] == '00' and val[4] == '0' and val[5:7] in ['00', '10'] and val[7:9] in ['00', '10'] and val[11:13] in ['00', '10']:
+                    if (
+                        val[0] == '0' 
+                        and val[1] == '0' 
+                        and val[2:4] == '00' 
+                        and val[4] == '0' 
+                        and val[5:7] in ['00', '10'] 
+                        and val[7:9] in ['00', '10'] 
+                        and val[11:13] in ['00', '10']
+                    ):
                         clears.append(v)
                 elif lsver in ['Landsat7_up_l1', 'Landsat7_up_l2', 'Landsat5_up_l1', 'Landsat5_up_l2']:
-                    if val[0] == '0' and val[1] == '0' and val[2:4] == '00' and val[4] == '0' and val[5:7] in ['00', '10'] and val[7:9] in ['00', '10']:
+                    if (
+                        val[0] == '0' 
+                        and val[1] == '0' 
+                        and val[2:4] == '00' 
+                        and val[4] == '0' 
+                        and val[5:7] in ['00', '10'] 
+                        and val[7:9] in ['00', '10']
+                    ):
                         clears.append(v)
                 elif lsver in ['Landsat1_up_l1', 'Landsat1_up_l2']:
-                    if val[0] == '0' and val[1] == '0' and val[2:4] == '00' and val[4] == '0' and val[5:7] in ['00', '10']:
+                    if (
+                        val[0] == '0' 
+                        and val[1] == '0' 
+                        and val[2:4] == '00' 
+                        and val[4] == '0' 
+                        and val[5:7] in ['00', '10']
+                    ):
                         clears.append(v)
             else:
                 if lsver in ['Landsat8_up_l1', 'Landsat8_up_l2']:
-                    if val[0] == '0' and val[1] == '0' and val[2] == '0' and val[3] == '0' and val[4] == '0' and val[6] == '1' and val[8:10] in ['00', '10'] and val[10:12] in ['00', '10'] and val[14:16] in ['00', '10']:
+                    if (
+                        val[0] == '0' 
+                        and val[1] == '0' 
+                        and val[2] == '0' 
+                        and val[3] == '0' 
+                        and val[4] == '0' 
+                        and val[6] == '1' 
+                        and val[8:10] in ['00', '10'] 
+                        and val[10:12] in ['00', '10'] 
+                        and val[14:16] in ['00', '10']
+                    ):
                         clears.append(v)
                 elif lsver in ['Landsat7_up_l1', 'Landsat7_up_l2', 'Landsat5_up_l1', 'Landsat5_up_l2']:
-                    if val[0] == '0' and val[1] == '0' and val[3] == '0' and val[4] == '0' and val[8:10] in ['00', '10'] and val[10:12] in ['00', '10']:
+                    if (
+                        val[0] == '0' 
+                        and val[1] == '0' 
+                        and val[3] == '0' 
+                        and val[4] == '0' 
+                        and val[8:10] in ['00', '10'] 
+                        and val[10:12] in ['00', '10']
+                    ):
                         clears.append(v)
                 elif lsver in ['Landsat1_up_l1', 'Landsat1_up_l2']:
-                    if val[0] == '0' and val[3] == '0' and val[8:10] in ['00', '10']:
+                    if (
+                        val[0] == '0' 
+                        and val[3] == '0' 
+                        and val[8:10] in ['00', '10']
+                    ):
                         clears.append(v)
         mask = xarray.where(qa.isin(clears), 0, 1)
         if not isinstance(qar, type(None)):
@@ -110,7 +161,9 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
     # Picking pansharpening band and bands that can be pansharpened
     if pansharpen == True and lsver in ['Landsat8_up_l1', 'Landsat8_up_l2', 'Landsat7_up_l1', 'Landsat7_up_l2']:
         for i in range(len(bands)):
-            if (lsver in ['Landsat8_up_l1', 'Landsat8_up_l2', 'Landsat7_up_l1', 'Landsat7_up_l2']) and (('B8' in band_names[i]) or ('B08' in band_names[i])):
+            if ((lsver in ['Landsat8_up_l1', 'Landsat8_up_l2', 'Landsat7_up_l1', 'Landsat7_up_l2'])
+                    and (('B8' in band_names[i]) or ('B08' in band_names[i]))
+            ):
                 break
         panband = bands.pop(i)
         panband_name = band_names.pop(i)
@@ -138,11 +191,11 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
     # Reading files
     files = []
     for i in bands:
-        with rioxarray.open_rasterio(i, chunks = True, lock = True) as tif:
+        with rioxarray.open_rasterio(i, chunks=True, lock=True) as tif:
             files.append(persist(tif))#.load().chunk('auto'))
         #tif.close()
-    img = xarray.concat(files, dim = xarray.Variable('band', band_names))
-    #img = xarray.concat([rioxarray.open_rasterio(i, chunks = True, lock = Lock("rio-read", client=client)) for i in bands], dim = xarray.Variable('band', band_names))
+    img = xarray.concat(files, dim=xarray.Variable('band', band_names))
+    #img = xarray.concat([rioxarray.open_rasterio(i, chunks=True, lock=Lock("rio-read", client=client)) for i in bands], dim=xarray.Variable('band', band_names))
     try:
         if img.rio.nodata == None:
             nodata = 0
@@ -156,40 +209,53 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
     if cloud_mask == True:
         img = img.where((mask.squeeze()) == 0, nodata)
     # Converting dn to reflectance and temperature to degrees
-    calc_p = partial(calc, tbands = tbands, lsver = lsver, mtl = mtl, t = t, normalize_t = normalize_t, nodata = nodata, path = path)
-    img = img.groupby('band', squeeze = False).map(calc_p)
+    calc_p = partial(calc, tbands=tbands, lsver=lsver, mtl=mtl, t=t, normalize_t=normalize_t, nodata=nodata, path=path)
+    img = img.groupby('band', squeeze=False).map(calc_p)
     img = persist(img)
     # Pansharpening
-    if ((pansharpen == True) or (keep_pan_band == True)) and (lsver in ['Landsat8_up_l1', 'Landsat8_up_l2', 'Landsat7_up_l1', 'Landsat7_up_l2']) and (('B8' not in band) and ('B08' not in band)):
-        with rioxarray.open_rasterio(panband, chunks = True, lock = True).drop_vars('band').assign_coords({'band': [panband_name]}) as tif:
+    if (((pansharpen == True) or (keep_pan_band == True))
+            and (lsver in ['Landsat8_up_l1', 'Landsat8_up_l2', 'Landsat7_up_l1', 'Landsat7_up_l2'])
+            and (('B8' not in band) and ('B08' not in band))
+    ):
+        with rioxarray.open_rasterio(
+                panband,
+                chunks=True,
+                lock=True
+        ).drop_vars('band').assign_coords({'band': [panband_name]}) as tif:
             pan = persist(tif)#.load().drop_vars('band').assign_coords({'band': [panband_name]}).chunk('auto')
-        pan = pan.where(((mask.rio.reproject_match(pan, resampling = Resampling.nearest)).squeeze()) == 0, nodata)
+        pan = pan.where(((mask.rio.reproject_match(pan, resampling=Resampling.nearest)).squeeze()) == 0, nodata)
         pan = calc(pan, tbands, lsver, mtl, t, normalize_t, nodata, path)
         pan = persist(pan)
         if pansharpen == True:
-            img = img.rio.reproject_match(pan, resampling = resample)
+            img = img.rio.reproject_match(pan, resampling=resample)
             img = img.chunk("auto")
             if lsver in ['Landsat8_up_l1', 'Landsat8_up_l2']:
                 with np.errstate(invalid='ignore', divide='ignore'):
-                    pan_c = (pan / ((0.42 * img.sel({'band': blue}) + 0.98 * img.sel({'band': green}) + 0.6 * img.sel({'band': red})) / 2)).squeeze()
+                    pan_c = (pan / ((0.42 * img.sel({'band': blue})
+                             + 0.98 * img.sel({'band': green})
+                             + 0.6 * img.sel({'band': red})) / 2)).squeeze()
                     bands_to_pan = [b for b in img['band'].values if b in ['B4', 'B04', 'B3', 'B03', 'B2', 'B02']]
                 #img = img.where(img == nodata | ~img['band'].isin(['B4', 'B04', 'B3', 'B03', 'B2', 'B02']), (img * pan_c.squeeze()).clip(0, 1))
             elif lsver in ['Landsat7_up_l1', 'Landsat7_up_l2']:
                 with np.errstate(invalid = 'ignore', divide = 'ignore'):
-                    pan_c = (pan / ((0.42 * img.sel({'band': blue}) + 0.98 * img.sel({'band': green}) + 0.6 * img.sel({'band': red}) + 1 * img.sel({'band': nir})) / 3)).squeeze()
-                    bands_to_pan = [b for b in img['band'].values if b in ['B4', 'B04', 'B3', 'B03', 'B2', 'B02', 'B1', 'B01']]
-            pansharp_p = partial(pansharp, pan_c = pan_c, bands_to_pan = bands_to_pan, nodata = nodata)
-            img = img.groupby('band', squeeze = False).map(pansharp_p)
-            pan.rio.write_nodata(nodata, inplace = True)
+                    pan_c = (pan / ((0.42 * img.sel({'band': blue})
+                                     + 0.98 * img.sel({'band': green})
+                                     + 0.6 * img.sel({'band': red}) + 1 * img.sel({'band': nir})) / 3)).squeeze()
+                    bands_to_pan = [b for b in img['band'].values if b in [
+                        'B4', 'B04', 'B3', 'B03', 'B2', 'B02', 'B1', 'B01'
+                    ]]
+            pansharp_p = partial(pansharp, pan_c=pan_c, bands_to_pan=bands_to_pan, nodata=nodata)
+            img = img.groupby('band', squeeze=False).map(pansharp_p)
+            pan.rio.write_nodata(nodata, inplace=True)
             if keep_pan_band == True:
-                img = xarray.concat([img, pan], dim = 'band')   
+                img = xarray.concat([img, pan], dim='band')   
             img = persist(img)
     # Reprojecting
     if projection != None:
-        img = img.rio.reproject(projection, resampling = Resampling.nearest)
+        img = img.rio.reproject(projection, resampling=Resampling.nearest)
         img = img.chunk("auto")
         if ((pansharpen == False) and (keep_pan_band == True)):
-            pan = pan.rio.reproject(projection, resampling = Resampling.nearest)
+            pan = pan.rio.reproject(projection, resampling=Resampling.nearest)
             pan = pan.chunk("auto")
             pan = persist(pan)
         img = persist(img)
@@ -214,11 +280,31 @@ def landsat_proc(path, projection, cloud_mask, pansharpen, keep_pan_band, resamp
     for band in img:
         pathres = path + band['band'].item() + '.tif'
         outfiles.append(pathlib.Path(pathres))
-        results.append(band.rio.to_raster(pathres, compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, NUM_THREADS = 'NUM_CPUS', compute = False, lock = True))
+        results.append(band.rio.to_raster(
+            pathres, 
+            compress='deflate', 
+            PREDICTOR=2, 
+            ZLEVEL=9, 
+            BIGTIFF='IF_SAFER', 
+            tiled=True, 
+            NUM_THREADS='NUM_CPUS', 
+            compute=False, 
+            lock=True,
+        ))
     if ((pansharpen == False) and (keep_pan_band == True)):
         pathres = path + pan['band'][0].item() + '.tif'
         outfiles.append(pathlib.Path(pathres))
-        results.append(pan.rio.to_raster(pathres, compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, NUM_THREADS = 'NUM_CPUS', compute = False, lock = True))
+        results.append(pan.rio.to_raster(
+            pathres, 
+            compress='deflate', 
+            PREDICTOR=2, 
+            ZLEVEL=9, 
+            BIGTIFF='IF_SAFER', 
+            tiled=True, 
+            NUM_THREADS='NUM_CPUS', 
+            compute=False, 
+            lock=True,
+        ))
     dask.compute(*results)
     # Unused code
     #print(dask.is_dask_collection(img))
@@ -270,10 +356,12 @@ def calc(img, tbands, lsver, mtl, t, normalize_t, nodata, path):
                 m = float([i for i in mtl if 'RADIANCE_MULT_BAND_' + btitle in i][0].split('=')[1])
                 a = float([i for i in mtl if 'RADIANCE_ADD_BAND_' + btitle in i][0].split('=')[1])
             if lsver == 'Landsat8_up_l1':
-                eS = (np.pi * eSD * eSD) *radM / refM
+                eS = (np.pi * eSD * eSD) * radM / refM
             else:
                 band = os.path.normpath(path).split(os.sep)[-1]
-                # Esun from Chander, G.; Markham, B. L. & Helder, D. L. Summary of current radiometric calibration coefficients for Landsat MSS, TM, ETM+, and EO-1 ALI sensors Remote Sensing of Environment, 2009, 113, 893 - 903
+                # Esun from Chander, G.; Markham, B. L. & Helder, D. L.
+                # Summary of current radiometric calibration coefficients for Landsat MSS, TM, ETM+, and EO-1 ALI sensors
+                # Remote Sensing of Environment, 2009, 113, 893 - 903
                 # Landsat 1
                 if 'LM01' in band:
                     dEsunB = {'ESUN_BAND1': 1823, 'ESUN_BAND2': 1559, 'ESUN_BAND3': 1276, 'ESUN_BAND4': 880.1}
@@ -287,21 +375,24 @@ def calc(img, tbands, lsver, mtl, t, normalize_t, nodata, path):
                 elif 'LM04' in band:
                     dEsunB = {'ESUN_BAND1': 1827, 'ESUN_BAND2': 1569, 'ESUN_BAND3': 1260, 'ESUN_BAND4': 866.4}
                 elif 'LT04' in band:
-                    dEsunB = {'ESUN_BAND1': 1983, 'ESUN_BAND2': 1795, 'ESUN_BAND3': 1539, 'ESUN_BAND4': 1028, 'ESUN_BAND5': 219.8, 'ESUN_BAND7': 83.49}
+                    dEsunB = {'ESUN_BAND1': 1983, 'ESUN_BAND2': 1795, 'ESUN_BAND3': 1539, 'ESUN_BAND4': 1028,
+                              'ESUN_BAND5': 219.8, 'ESUN_BAND7': 83.49}
                 # Landsat 5
                 elif 'LM05' in band:
                     dEsunB = {'ESUN_BAND1': 1824, 'ESUN_BAND2': 1570, 'ESUN_BAND3': 1249, 'ESUN_BAND4': 853.4}
                 elif 'LT05' in band:
-                    dEsunB = {'ESUN_BAND1': 1983, 'ESUN_BAND2': 1796, 'ESUN_BAND3': 1536, 'ESUN_BAND4': 1031, 'ESUN_BAND5': 220, 'ESUN_BAND7': 83.44}
+                    dEsunB = {'ESUN_BAND1': 1983, 'ESUN_BAND2': 1796, 'ESUN_BAND3': 1536, 'ESUN_BAND4': 1031,
+                              'ESUN_BAND5': 220, 'ESUN_BAND7': 83.44}
                 # Landsat 7 Esun from http://landsathandbook.gsfc.nasa.gov/data_prod/prog_sect11_3.html
                 elif 'LE07' in band:
-                    dEsunB = {'ESUN_BAND1': 1970, 'ESUN_BAND2': 1842, 'ESUN_BAND3': 1547, 'ESUN_BAND4': 1044, 'ESUN_BAND5': 225.7, 'ESUN_BAND7': 82.06, 'ESUN_BAND8': 1369}
+                    dEsunB = {'ESUN_BAND1': 1970, 'ESUN_BAND2': 1842, 'ESUN_BAND3': 1547, 'ESUN_BAND4': 1044,
+                              'ESUN_BAND5': 225.7, 'ESUN_BAND7': 82.06, 'ESUN_BAND8': 1369}
                 eS = float(dEsunB['ESUN_BAND' + btitle])
             # Sine sun elevation
             sA = np.sin(sE * np.pi /180)
             # dn 1%
             DNm = 0
-            values, count = np.unique(img, return_counts = True)
+            values, count = np.unique(img, return_counts=True)
             rasterBandUniqueVal = dict(zip(values, count))
             rasterBandUniqueVal.pop(0, None)
             sumTot = sum(rasterBandUniqueVal.values())
@@ -382,7 +473,7 @@ def del_landsat_temp(path, outfiles):
 """
 def write(band, path):
     pathres = path + band['band'].item() + '.tif'
-    band.rio.to_raster(pathres, compress = 'deflate', PREDICTOR = 2, ZLEVEL=9, BIGTIFF='IF_SAFER', tiled = True, windowed = True) #, lock = threading.Lock())
+    band.rio.to_raster(pathres, compress='deflate', PREDICTOR=2, ZLEVEL=9, BIGTIFF='IF_SAFER', tiled=True, windowed=True) #, lock=threading.Lock())
     return pathlib.Path(pathres)
     
     
@@ -390,5 +481,5 @@ def upscale(band, pan, resample):
     with rioxarray.open_rasterio(band, chunks=True, lock=False) as tif:
         band = tif #.load()
     crs = band.rio.crs
-    band = band.rio.reproject_match(pan, resampling = resample)
+    band = band.rio.reproject_match(pan, resampling=resample)
     return band"""

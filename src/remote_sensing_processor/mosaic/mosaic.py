@@ -18,7 +18,20 @@ from remote_sensing_processor.common.common_functions import convert_3D_2D, get_
 from remote_sensing_processor.imagery_types.types import get_type
 
 
-def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clip, crs, nodata, reference_raster, resample, match_hist, mb, keep_all_channels):
+def mosaic_main(
+    inputs, 
+    output_dir, 
+    fill_nodata, 
+    fill_distance, 
+    clip, 
+    crs, 
+    nodata, 
+    reference_raster, 
+    resample, 
+    match_hist, 
+    mb, 
+    keep_all_channels,
+):
     paths = []
     resample = get_resampling(resample)
     if reference_raster != None:
@@ -29,38 +42,99 @@ def mosaic_main(inputs, output_dir, fill_nodata, fill_distance, clip, crs, nodat
         for b in bands:
             # Opening files
             band = b['name']
-            path = proc_files(inputs = b['bands'], output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clip = clip, crs = crs, nodata = nodata, reference_raster = reference_raster, resample = resample, band = band, match_hist = match_hist)
+            path = proc_files(
+                inputs=b['bands'], 
+                output_dir=output_dir, 
+                fill_nodata=fill_nodata, 
+                fill_distance=fill_distance, 
+                clip=clip, 
+                crs=crs, 
+                nodata=nodata, 
+                reference_raster=reference_raster, 
+                resample=resample, 
+                band=band, 
+                match_hist=match_hist,
+            )
             paths.append(path)
             print('Processing band ' + band + ' is completed')
     else:
         band = os.path.basename(inputs[0])[:-4]+'_mosaic'
-        path = proc_files(inputs = inputs, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clip = clip, crs = crs, nodata = nodata, reference_raster = reference_raster, resample = resample, band = band, match_hist = match_hist)
+        path = proc_files(
+            inputs=inputs, 
+            output_dir=output_dir, 
+            fill_nodata=fill_nodata, 
+            fill_distance=fill_distance, 
+            clip=clip, 
+            crs=crs, 
+            nodata=nodata, 
+            reference_raster=reference_raster, 
+            resample=resample, 
+            band=band, 
+            match_hist=match_hist,
+        )
         paths.append(path)
         print('Processing completed')
     return paths
     
     
-def proc_files(inputs, output_dir, fill_nodata, fill_distance, clip, crs, nodata, reference_raster, resample, band, match_hist):
+def proc_files(inputs, 
+    output_dir, 
+    fill_nodata, 
+    fill_distance, 
+    clip, 
+    crs, 
+    nodata, 
+    reference_raster, 
+    resample, 
+    band, 
+    match_hist
+):
     files = []
     ref_hist = None
     futures = []
     for inp in inputs:
-        # If histogram matching is needed then we need the histogram of the first file to process other files, so we cannot do it in parallel
+        # If histogram matching is needed then we need the histogram of
+        # the first file to process other files, so we cannot do it in parallel
         if match_hist and isinstance(ref_hist, type(None)):
-            first, ref_hist = prepare_file(inp = inp, crs = crs, nodata = nodata, clip = clip, match_hist = match_hist, ref_hist = ref_hist)
+            first, ref_hist = prepare_file(
+                inp=inp, 
+                crs=crs, 
+                nodata=nodata, 
+                clip=clip, 
+                match_hist=match_hist, 
+                ref_hist=ref_hist,
+            )
         else:
-            futures.append(dask.delayed(prepare_file)(inp = inp, crs = crs, nodata = nodata, clip = clip, match_hist = match_hist, ref_hist = ref_hist))
+            futures.append(dask.delayed(prepare_file)(
+                inp=inp, 
+                crs=crs, 
+                nodata=nodata, 
+                clip=clip, 
+                match_hist=match_hist, 
+                ref_hist=ref_hist,
+            ))
     files = dask.compute(*futures)
     files = list(files)
     # Adding first file
     if match_hist:
         files.insert(0, first)
-    path = mosaic_process(files = files, output_dir = output_dir, fill_nodata = fill_nodata, fill_distance = fill_distance, clip = clip, crs = crs, nodata = nodata, reference_raster = reference_raster, resample = resample, band = band)
+    path = mosaic_process(
+        files=files, 
+        output_dir=output_dir, 
+        fill_nodata=fill_nodata, 
+        fill_distance=fill_distance, 
+        clip=clip, 
+        crs=crs, 
+        nodata=nodata, 
+        reference_raster=reference_raster, 
+        resample=resample, 
+        band=band,
+    )
     return path
 
 
 def prepare_file(inp, crs, nodata, clip, match_hist, ref_hist):
-    with rioxarray.open_rasterio(inp, chunks = True, lock = True) as tif:
+    with rioxarray.open_rasterio(inp, chunks=True, lock=True) as tif:
         pathfile = persist(tif)
     # If nodata not defined then read nodata from first file or set to 0
     if nodata == None:
@@ -68,7 +142,7 @@ def prepare_file(inp, crs, nodata, clip, match_hist, ref_hist):
             nodata = 0
         else:
             nodata = pathfile.rio.nodata
-    pathfile.rio.write_nodata(nodata, inplace = True)
+    pathfile.rio.write_nodata(nodata, inplace=True)
     if crs == None:
         crs = pathfile.rio.crs
     if pathfile.rio.crs != crs:
@@ -96,18 +170,36 @@ def prepare_file(inp, crs, nodata, clip, match_hist, ref_hist):
     return pathfile
 
 
-def mosaic_process(files, output_dir, fill_nodata, fill_distance, clip, crs, nodata, reference_raster, resample, band):
+def mosaic_process(
+    files, 
+    output_dir, 
+    fill_nodata, 
+    fill_distance, 
+    clip, 
+    crs, 
+    nodata, 
+    reference_raster, 
+    resample, 
+    band,
+):
     # Nodata check
     if nodata == None:
         nodata = files[0].rio.nodata
     for file in files:
         assert file.rio.nodata == nodata
     # Merging files
-    final = merge_arrays(files, method = 'first', nodata = nodata)
+    final = merge_arrays(files, method='first', nodata=nodata)
     final = persist(final)
     # Filling nodata
     if fill_nodata == True:
-        final = xarray.apply_ufunc(rio.fill.fillnodata, final, xarray.where(final == nodata, 0, 1), dask = 'parallelized', keep_attrs = 'override', kwargs = {'max_search_distance': fill_distance})
+        final = xarray.apply_ufunc(
+            rio.fill.fillnodata, 
+            final, 
+            xarray.where(final == nodata, 0, 1), 
+            dask='parallelized', 
+            keep_attrs='override', 
+            kwargs={'max_search_distance': fill_distance},
+        )
         final = persist(final)
     files = None
     # Clipping mosaic with vector mask
@@ -120,14 +212,24 @@ def mosaic_process(files, output_dir, fill_nodata, fill_distance, clip, crs, nod
         final = persist(final)
     # Resampling to the same shape and resolution as another raster
     if reference_raster != None:
-        with rioxarray.open_rasterio(reference_raster, chunks = True, lock = True) as tif:
+        with rioxarray.open_rasterio(reference_raster, chunks=True, lock=True) as tif:
             ref = tif.load()
         final = final.rio.reproject_match(ref)
         final = persist(final)
-    # Because predictor = 2 works with float64 only when libtiff > 3.2.0 is installed and default libtiff in ubuntu is 3.2.0
+    # Because predictor = 2 works with float64 only when libtiff > 3.2.0 is installed
+    # and default libtiff in ubuntu is 3.2.0
     if final.dtype == 'float64':
         final = final.astype('float32')
-    final.rio.to_raster(os.path.join(output_dir, band + '.tif'), compress = 'deflate', PREDICTOR = 2, ZLEVEL = 9, BIGTIFF = 'IF_SAFER', tiled = True, NUM_THREADS = 'NUM_CPUS', lock = True)
+    final.rio.to_raster(
+        os.path.join(output_dir, band + '.tif'), 
+        compress='deflate', 
+        PREDICTOR=2, 
+        ZLEVEL=9, 
+        BIGTIFF='IF_SAFER', 
+        tiled=True, 
+        NUM_THREADS='NUM_CPUS', 
+        lock=True,
+    )
     return output_dir + band + '.tif'
 
 
@@ -148,7 +250,11 @@ def get_bands(paths, keep_all_channels):
         sets.append([bands, im_type])
     # Getting imagery type and bands list
     unique_types = set(x[1] for x in sets)
-    if (unique_types.issubset(['Landsat8_up_l1', 'Landsat7_up_l1', 'Landsat5_up_l1', 'Landsat1_up_l1'])) or (unique_types.issubset(['Landsat8_up_l2', 'Landsat7_up_l2', 'Landsat5_up_l2', 'Landsat1_up_l2'])) or (unique_types.issubset(['Landsat8_p', 'Landsat7_p', 'Landsat5_p', 'Landsat1_p'])):
+    if (
+        (unique_types.issubset(['Landsat8_up_l1', 'Landsat7_up_l1', 'Landsat5_up_l1', 'Landsat1_up_l1'])) 
+        or (unique_types.issubset(['Landsat8_up_l2', 'Landsat7_up_l2', 'Landsat5_up_l2', 'Landsat1_up_l2'])) 
+        or (unique_types.issubset(['Landsat8_p', 'Landsat7_p', 'Landsat5_p', 'Landsat1_p']))
+    ):
         b1 = {'name': 'B1', 'bands': []} #coastal/aerosol
         b2 = {'name': 'B2', 'bands': []} #blue
         b3 = {'name': 'B3', 'bands': []} #green
@@ -305,7 +411,10 @@ def get_bands(paths, keep_all_channels):
         bands = final_bands
     final_bands = []
     for i in bands:
-        if (len(i['bands']) != 0) and (((len(i['bands']) == len(paths)) and (keep_all_channels == False)) or (keep_all_channels == True)):
+        if (
+            (len(i['bands']) != 0)
+            and (((len(i['bands']) == len(paths)) and (keep_all_channels == False)) or (keep_all_channels == True))
+        ):
             final_bands.append(i)
     return final_bands
     
@@ -321,7 +430,7 @@ def order(dirs):
         except:
             zeros.append(0)
     zerosdict = dict(zip(dirs, zeros))
-    sortedzeros = dict(sorted(zerosdict.items(), key=lambda item: item[1], reverse = False))
+    sortedzeros = dict(sorted(zerosdict.items(), key=lambda item: item[1], reverse=False))
     order = list(sortedzeros.keys())
     return order
     

@@ -48,7 +48,7 @@ def dsen2_20(d10, d20, image_level):
     #     deep: specifies whether to use VDSen2 (True), or DSen2 (False)
 
     border = 8
-    p10, p20 = get_test_patches(d10, d20, patch_size = 128, border = border)
+    p10, p20 = get_test_patches(d10, d20, patch_size=128, border=border)
     p10 /= SCALE
     p20 /= SCALE
     p10, p20 = persist(p10, p20)
@@ -60,7 +60,7 @@ def dsen2_20(d10, d20, image_level):
     input_shape = ((4, None, None), (6, None, None))
     prediction = _predict(test, model_filename, input_shape)
     del test, p10, p20
-    images = recompose_images(prediction, border = border, ref = d10)
+    images = recompose_images(prediction, border=border, ref=d10)
     images = persist(images)
     images *= SCALE
     images = persist(images)
@@ -75,7 +75,7 @@ def dsen2_60(d10, d20, d60, image_level):
     #     deep: specifies whether to use VDSen2 (True), or DSen2 (False)
 
     border = 12
-    p10, p20, p60 = get_test_patches60(d10, d20, d60, patch_size = 192, border = border)
+    p10, p20, p60 = get_test_patches60(d10, d20, d60, patch_size=192, border=border)
     p10 /= SCALE
     p20 /= SCALE
     p60 /= SCALE
@@ -89,7 +89,7 @@ def dsen2_60(d10, d20, d60, image_level):
     input_shape = ((4, None, None), (6, None, None), (2, None, None))
     prediction = _predict(test, model_filename, input_shape)
     del test, p10, p20, p60
-    images = recompose_images(prediction, border = border, ref = d10)
+    images = recompose_images(prediction, border=border, ref=d10)
     images = persist(images)
     images *= SCALE
     images = persist(images)
@@ -112,12 +112,12 @@ def _predict(test, model_filename, input_shape):
         cpus = torch.multiprocessing.cpu_count()
         gpus = max(torch.cuda.device_count(), 1)
         num_workers = max(1 , cpus // gpus - 1)
-    loader = DataLoader(dataset, batch_size = 32, num_workers = num_workers, pin_memory = True)
+    loader = DataLoader(dataset, batch_size=32, num_workers=num_workers, pin_memory=True)
     predictions = []
     with torch.inference_mode():
         for data in loader:
             predictions.append(model(*[d.to(device) for d in data]).cpu().numpy())
-    predictions = np.concatenate(predictions, axis = 0)
+    predictions = np.concatenate(predictions, axis=0)
     del model
     del dataset
     del loader

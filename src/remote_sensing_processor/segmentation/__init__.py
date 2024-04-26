@@ -10,7 +10,21 @@ from remote_sensing_processor.segmentation.tiles import get_ss_tiles
 from remote_sensing_processor.segmentation.mapping import predict_map_from_tiles
 
 
-def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False, split = [1], split_names = ['train'], x_output = None, y_output = None, x_dtype = None, y_dtype = None, x_nodata = None, y_nodata = None):
+def generate_tiles(
+    x, 
+    y, 
+    tile_size=128, 
+    classification=True, 
+    shuffle=False, 
+    split=[1], 
+    split_names=['train'], 
+    x_output=None, 
+    y_output=None, 
+    x_dtype=None, 
+    y_dtype=None, 
+    x_nodata=None, 
+    y_nodata=None,
+):
     """
     Cut rasters into tiles.
     
@@ -23,11 +37,13 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
     tile_size : int (default = 128)
         Size of tiles to generate (tile_size x tile_size).
     classification : bool (default = True)
-        If True then tiles will be prepared for classification (e.g. semantic segmentation) task, else will be prepared for regression task.
+        If True then tiles will be prepared for classification (e.g. semantic segmentation) task,
+        else will be prepared for regression task.
     shuffle : bool (default = False)
         Is random shuffling of samples needed.
     split : list of ints or floats (optional)
-        Splitting data in subsets. Is a list of integers defining proportions of every subset. [3, 1, 1] will generate 3 subsets in proportion 3 to 1 to 1.
+        Splitting data in subsets. Is a list of integers defining proportions of every subset.
+        [3, 1, 1] will generate 3 subsets in proportion 3 to 1 to 1.
     split_names : list of strings
         Names of split subsets.
     x_output : path as a string (optional)
@@ -39,9 +55,15 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
     y_dtype : dtype definition as a string (optional)
         If you run out of memory, you can try to convert your data to less memory consuming format.
     x_nodata : int or float (optional)
-        You can define which value in x raster corresponds to nodata and areas that contain nodata in x raster will be ignored while training and testing. Tiles that contain only nodata in both x and y will be omited. If not defined then nodata of first x file will be used.
+        You can define which value in x raster corresponds to nodata
+        and areas that contain nodata in x raster will be ignored while training and testing.
+        Tiles that contain only nodata in both x and y will be omited.
+        If not defined then nodata of first x file will be used.
     y_nodata : int or float (optional)
-        You can define which value in y raster corresponds to nodata and areas that contain nodata in y raster will be ignored while training and testing. Tiles that contain only nodata in both x and y will be omited. If not defined then nodata of y file will be used.
+        You can define which value in y raster corresponds to nodata
+        and areas that contain nodata in y raster will be ignored while training and testing.
+        Tiles that contain only nodata in both x and y will be omited.
+        If not defined then nodata of y file will be used.
     
     Returns
     ----------
@@ -71,7 +93,18 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
         >>> x_file = '/home/rsp_test/model/x.zarr'
         >>> y_files = ['/home/rsp_test/model/y_landcover.zarr', 
         ... '/home/rsp_test/model/y_forest_types.zarr']
-        >>> x_out, y_out = rsp.segmentation.generate_tiles(x, y, tile_size = 256, shuffle = True, split = [3, 1, 1], split_names = ['train', 'val', 'test'], x_output = x_file, y_output = y_files, x_nodata = 0, y_nodata = 0)
+        >>> x_out, y_out = rsp.segmentation.generate_tiles(
+        ...     x, 
+        ...     y, 
+        ...     tile_size=256, 
+        ...     shuffle=True, 
+        ...     split=[3, 1, 1], 
+        ...     split_names=['train', 'val', 'test'], 
+        ...     x_output=x_file, 
+        ...     y_output=y_files, 
+        ...     x_nodata=0, 
+        ...     y_nodata=0
+        ... )
         >>> print(x_out.shape)
         (12, 8704, 6912)
         >>> y_landcover = y_out[0]
@@ -160,22 +193,63 @@ def generate_tiles(x, y, tile_size = 128, classification = True, shuffle = False
     if not isinstance(y_nodata, int) and not isinstance(y_nodata, float) and not isinstance(y_nodata, type(None)):
         raise TypeError("y_nodata must be integer or float")
     
-    x, y = get_ss_tiles(x = x, y = y, tile_size = tile_size, classification = classification, shuffle = shuffle, split = split, split_names = split_names, x_output = x_output, y_output = y_output, x_dtype = x_dtype, y_dtype = y_dtype, x_nodata = x_nodata, y_nodata = y_nodata)
+    x, y = get_ss_tiles(
+        x=x, 
+        y=y, 
+        tile_size=tile_size, 
+        classification=classification, 
+        shuffle=shuffle, 
+        split=split, 
+        split_names=split_names, 
+        x_output=x_output, 
+        y_output=y_output, 
+        x_dtype=x_dtype, 
+        y_dtype=y_dtype, 
+        x_nodata=x_nodata, 
+        y_nodata=y_nodata,
+    )
     return x, y
 
     
-def train(train_datasets, val_datasets, model_file, model, backbone = None, checkpoint = None, weights = None, epochs = 5, batch_size = 32, repeat = 1, augment = False, less_metrics = False, lr = 1e-3, num_workers = 0, classification = None, num_classes = None, y_nodata = None, **kwargs):
+def train(
+    train_datasets, 
+    val_datasets, 
+    model_file, 
+    model, 
+    backbone=None, 
+    checkpoint=None, 
+    weights=None, 
+    epochs=5, 
+    batch_size=32, 
+    repeat=1, 
+    augment=False, 
+    less_metrics=False, 
+    lr=1e-3, 
+    num_workers=0, 
+    classification=None, 
+    num_classes=None, 
+    y_nodata=None, 
+    **kwargs
+):
     """
     Trains segmentation model.
     
     Parameters
     ----------
     train_datasets : list or list of lists
-        Training data generated by generate_tiles() function. Each dataset is a list of 3 elements: training data (x): file path or xarray.DataArray, target variable (y): file path or xarray.DataArray, split_names: string or list of strings or 'all' if you need to use the whole dataset. You can provide a list of datasets to train model on multiple datasets.
+        Training data generated by generate_tiles() function. Each dataset is a list of 3 elements:
+        training data (x): file path or xarray.DataArray, target variable (y): file path or xarray.DataArray,
+        split_names: string or list of strings or 'all' if you need to use the whole dataset.
+        You can provide a list of datasets to train model on multiple datasets.
     val_datasets : list or list of lists or None
-        Validation data generated by generate_tiles() function. Each dataset is a list of 3 elements: training data (x): file path or xarray.DataArray, target variable (y): file path or xarray.DataArray, split_names: string or list of strings or 'all' if you need to use the whole dataset. You can provide a list of datasets to validate model on multiple datasets. Can be set to None if no validation needed.
+        Validation data generated by generate_tiles() function. Each dataset is a list of 3 elements:
+        training data (x): file path or xarray.DataArray, target variable (y): file path or xarray.DataArray,
+        split_names: string or list of strings or 'all' if you need to use the whole dataset.
+        You can provide a list of datasets to validate model on multiple datasets.
+        Can be set to None if no validation needed.
     model_file : path as a string
-        Checkpoint file where model will be saved after training. File extension must be *.ckpt for neural networks and *.joblib for scikit-learn models.
+        Checkpoint file where model will be saved after training.
+        File extension must be *.ckpt for neural networks and *.joblib for scikit-learn models.
     model : str
         Name of model architecture.
     backbone : str (optional)
@@ -193,19 +267,26 @@ def train(train_datasets, val_datasets, model_file, model, backbone = None, chec
     augment : bool (default = False)
         Apply augmentations to dataset.
     less_metrics : bool (default = False)
-        Sometimes Torchmetrics can freeze while calculating precision, recall and IOU. If it happens, try restarting with `less_metrics = True`.
+        Sometimes Torchmetrics can freeze while calculating precision, recall and IOU.
+        If it happens, try restarting with `less_metrics = True`.
     lr : float (default = 1e-3)
         Learning rate of a model. Lower value results usually in better model convergence, but much slower training.
     num_workers: int or 'auto' (default = 0)
-        Number of parallel workers that will load the data. Set 'auto' to let RSP choose the optimal number of workers, set 0 to disable multiprocessing. Can increase training speed, but can also cause errors (e.g. pickling errors).
+        Number of parallel workers that will load the data.
+        Set 'auto' to let RSP choose the optimal number of workers, set 0 to disable multiprocessing.
+        Can increase training speed, but can also cause errors (e.g. pickling errors).
     classification : bool (default = None)
-        If True then perform classification (e.g. semantic segmentation) task, else perform regression task. If not defined then is read from from train dataset.
+        If True then perform classification (e.g. semantic segmentation) task, else perform regression task.
+        If not defined then is read from from train dataset.
     num_classes: int (optional)
         Number of classes for classification task. If not defined then is read from train dataset.
     y_nodata : int or float (optional)
-        You can define which value in y raster corresponds to nodata and areas that contain nodata in y raster will be ignored while training and testing. If not defined then is read from train dataset.
+        You can define which value in y raster corresponds to nodata
+        and areas that contain nodata in y raster will be ignored while training and testing.
+        If not defined then is read from train dataset.
     **kwargs
-        Additional keyword arguments that are used to initialise model. They are different for every model, so read the documentation.
+        Additional keyword arguments that are used to initialise model.
+        They are different for every model, so read the documentation.
     
     Returns
     ----------
@@ -214,10 +295,25 @@ def train(train_datasets, val_datasets, model_file, model, backbone = None, chec
             
     Examples
     --------
-        >>> x_out, y_out = rsp.segmentation.generate_tiles(x, y, tile_size = 256, shuffle = True, split = [3, 1, 1], split_names = ['train', 'val', 'test'])
+        >>> x_out, y_out = rsp.segmentation.generate_tiles(
+        ...     x, 
+        ...     y, 
+        ...     tile_size=256, 
+        ...     shuffle=True, 
+        ...     split=[3, 1, 1], 
+        ...     split_names=['train', 'val', 'test']
+        ...     )
         >>> train_ds = [x_out, y_out[0], 'train']
         >>> val_ds = [x_out, y_out[0], 'val']
-        >>> model = rsp.segmentation.train(train_ds, val_ds, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 100, batch_size = 32)
+        >>> model = rsp.segmentation.train(
+        ...     train_ds, 
+        ...     val_ds, 
+        ...     model='UperNet', 
+        ...     backbone='ConvNeXTV2', 
+        ...     model_file='/home/rsp_test/model/upernet.ckpt', 
+        ...     epochs=100, 
+        ...     batch_size=32
+        ... )
         GPU available: True (cuda), used: True
         TPU available: False, using: 0 TPU cores
         IPU available: False, using: 0 IPUs
@@ -233,7 +329,8 @@ def train(train_datasets, val_datasets, model_file, model, backbone = None, chec
         59.8 M    Total params
         239.395   Total estimated model params size (MB)
         Epoch 9: 100% #############################################
-        223/223 [1:56:20<00:00, 31.30s/it, v_num=54, train_loss_step=0.326, train_acc_step=0.871, train_auroc_step=0.796, train_iou_step=0.655,
+        223/223 [1:56:20<00:00, 31.30s/it, v_num=54,
+        train_loss_step=0.326, train_acc_step=0.871, train_auroc_step=0.796, train_iou_step=0.655,
         val_loss_step=0.324, val_acc_step=0.869, val_auroc_step=0.620, val_iou_step=0.678,
         val_loss_epoch=0.334, val_acc_epoch=0.807, val_auroc_epoch=0.795, val_iou_epoch=0.688,
         train_loss_epoch=0.349, train_acc_epoch=0.842, train_auroc_epoch=0.797, train_iou_epoch=0.648]
@@ -243,9 +340,18 @@ def train(train_datasets, val_datasets, model_file, model, backbone = None, chec
         >>> y_mo = '/home/rsp_test/model/y_montana.zarr'
         >>> x_id = '/home/rsp_test/model/x_idaho.zarr'
         >>> y_id = '/home/rsp_test/model/y_idaho.zarr'
+        >>> # Training on two different datasets - one from Montana and one from Idaho
         >>> train_datasets = [[x_mo, y_mo, ['area_1', 'area_2']], [x_id, y_id, ['area_3', 'area_6', 'area8']]]
         >>> val_datasets = [[x_mo, y_mo, ['area_3', 'area_4']], [x_id, y_id, ['area_1']]]
-        >>> model = rsp.segmentation.train(train_datasets, val_datasets, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 100, batch_size = 32)
+        >>> model = rsp.segmentation.train(
+        ...     train_datasets, 
+        ...     val_datasets, 
+        ...     model='UperNet', 
+        ...     backbone='ConvNeXTV2', 
+        ...     model_file='/home/rsp_test/model/upernet.ckpt', 
+        ...     epochs=100, 
+        ...     batch_size=32
+        ... )
         GPU available: True (cuda), used: True
         TPU available: False, using: 0 TPU cores
         IPU available: False, using: 0 IPUs
@@ -261,7 +367,8 @@ def train(train_datasets, val_datasets, model_file, model, backbone = None, chec
         59.8 M    Total params
         239.395   Total estimated model params size (MB)
         Epoch 99: 100% #############################################
-        223/223 [1:56:20<00:00, 31.30s/it, v_num=54, train_loss_step=0.326, train_acc_step=0.871, train_auroc_step=0.796, train_iou_step=0.655,
+        223/223 [1:56:20<00:00, 31.30s/it, v_num=54, train_loss_step=0.326,
+        train_acc_step=0.871, train_auroc_step=0.796, train_iou_step=0.655,
         val_loss_step=0.324, val_acc_step=0.869, val_auroc_step=0.620, val_iou_step=0.678,
         val_loss_epoch=0.334, val_acc_epoch=0.807, val_auroc_epoch=0.795, val_iou_epoch=0.688,
         train_loss_epoch=0.349, train_acc_epoch=0.842, train_auroc_epoch=0.797, train_iou_epoch=0.648]
@@ -276,11 +383,11 @@ def train(train_datasets, val_datasets, model_file, model, backbone = None, chec
         if not isinstance(train_datasets[i][0], str) and not isinstance(train_datasets[i][0], xarray.DataArray):
             raise TypeError("x in dataset must be a string or xarray.DataArray")
         elif isinstance(train_datasets[i][0], str) and not os.path.exists(train_datasets[i][0]):
-            raise OSError(train_datasets[i] + " does not exist")
+            raise OSError(str(train_datasets[i][0]) + " does not exist")
         if not isinstance(train_datasets[i][1], str) and not isinstance(train_datasets[i][1], xarray.DataArray):
             raise TypeError("y in dataset must be a string or xarray.DataArray")
         elif isinstance(train_datasets[i][1], str) and not os.path.exists(train_datasets[i][1]):
-            raise OSError(train_datasets[i] + " does not exist")
+            raise OSError(str(train_datasets[i][1]) + " does not exist")
         if not isinstance(train_datasets[i][2], str) and not isinstance(train_datasets[i][2], list):
             raise TypeError("name in dataset must be a string or a list")
         else:
@@ -295,11 +402,11 @@ def train(train_datasets, val_datasets, model_file, model, backbone = None, chec
             if not isinstance(i[0], str) and not isinstance(i[0], xarray.DataArray):
                 raise TypeError("x in dataset must be a string or xarray.DataArray")
             elif isinstance(i[0], str) and not os.path.exists(i[0]):
-                raise OSError(i + " does not exist")
+                raise OSError(str(i[0]) + " does not exist")
             if not isinstance(i[1], str) and not isinstance(i[1], xarray.DataArray):
                 raise TypeError("y in dataset must be a string or xarray.DataArray")
             elif isinstance(i[1], str) and not os.path.exists(i[1]):
-                raise OSError(i + " does not exist")
+                raise OSError(str(i[1]) + " does not exist")
             if not isinstance(i[2], str) and not isinstance(i[2], list):
                 raise TypeError("name in dataset must be a string or a list")
     if not isinstance(model_file, str):
@@ -346,7 +453,10 @@ def train(train_datasets, val_datasets, model_file, model, backbone = None, chec
             lr = 1e-3
         else:
             raise TypeError("lr must be float")
-    if (not isinstance(num_workers, int) and num_workers != 'auto') or (isinstance(num_workers, int) and num_workers < 0):
+    if (
+        (not isinstance(num_workers, int) and num_workers != 'auto')
+        or (isinstance(num_workers, int) and num_workers < 0)
+    ):
         if isinstance(num_workers, type(None)):
             num_workers = 'auto'
         else:
@@ -362,33 +472,73 @@ def train(train_datasets, val_datasets, model_file, model, backbone = None, chec
     if cuda == False:
         warnings.warn('CUDA or MPS is not available. Training on CPU could be very slow.')
     
-    model = segmentation_train(train_datasets = train_datasets, val_datasets = val_datasets, model = model, backbone = backbone, checkpoint = checkpoint, weights = weights, model_file = model_file, epochs = epochs, batch_size = batch_size, augment = augment, repeat = repeat, classification = classification, num_classes = num_classes, y_nodata = y_nodata, less_metrics = less_metrics, lr = lr, num_workers = num_workers, **kwargs)
+    model = segmentation_train(
+        train_datasets=train_datasets, 
+        val_datasets=val_datasets, 
+        model=model, 
+        backbone=backbone, 
+        checkpoint=checkpoint, 
+        weights=weights, 
+        model_file=model_file, 
+        epochs=epochs, 
+        batch_size=batch_size, 
+        augment=augment, 
+        repeat=repeat, 
+        classification=classification, 
+        num_classes=num_classes, 
+        y_nodata=y_nodata, 
+        less_metrics=less_metrics, 
+        lr=lr, 
+        num_workers=num_workers, 
+        **kwargs
+    )
     return model
     
-def test(test_datasets, model, batch_size = 32, num_workers = 0):
+def test(test_datasets, model, batch_size=32, num_workers=0):
     """
     Tests segmentation model.
     
     Parameters
     ----------
     test_datasets : list or list of lists
-        Test data generated by generate_tiles() function. Each dataset is a list of 3 elements: training data (x): file path or xarray.DataArray, target variable (y): file path or xarray.DataArray, split_names: string or list of strings or 'all' if you need to use the whole dataset. You can provide a list of datasets to test model on multiple datasets.
+        Test data generated by generate_tiles() function. Each dataset is a list of 3 elements:
+        training data (x): file path or xarray.DataArray, target variable (y): file path or xarray.DataArray,
+        split_names: string or list of strings or 'all' if you need to use the whole dataset.
+        You can provide a list of datasets to test model on multiple datasets.
     model : torch.nn model or SklearnModel or path to a model file
-        Model to test. You can pass the model object returned by `train()` function or file (*.ckpt or *.joblib) where model is stored.
+        Model to test. You can pass the model object returned by `train()` function
+        or file (*.ckpt or *.joblib) where model is stored.
     batch_size : int (default = 32)
         Number of samples used in one iteration.
     num_workers: int or 'auto' (default = 0)
-        Number of parallel workers that will load the data. Set 'auto' to let RSP choose the optimal number of workers, set 0 to disable multiprocessing. Can increase training speed, but can also cause errors (e.g. pickling errors).
+        Number of parallel workers that will load the data.
+        Set 'auto' to let RSP choose the optimal number of workers, set 0 to disable multiprocessing.
+        Can increase training speed, but can also cause errors (e.g. pickling errors).
             
     Examples
     --------
-        >>> x_out, y_out = rsp.segmentation.generate_tiles(x, y, tile_size = 256, shuffle = True, split = [3, 1, 1], split_names = ['train', 'val', 'test'])
+        >>> x_out, y_out = rsp.segmentation.generate_tiles(
+        ...     x, 
+        ...     y, 
+        ...     tile_size=256, 
+        ...     shuffle=True, 
+        ...     split=[3, 1, 1], 
+        ...     split_names=['train', 'val', 'test']
+        ...     )
         >>> train_ds = [x_out, y_out[0], 'train']
         >>> val_ds = [x_out, y_out[0], 'val']
         >>> test_ds = [x_out, y_out[0], 'test']
-        >>> model = rsp.segmentation.train(train_ds, val_ds, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 10, batch_size = 32)
+        >>> model = rsp.segmentation.train(
+        ...     train_ds, 
+        ...     val_ds, 
+        ...     model='UperNet', 
+        ...     backbone='ConvNeXTV2', 
+        ...     model_file='/home/rsp_test/model/upernet.ckpt', 
+        ...     epochs=10, 
+        ...     batch_size=32
+        )
         ...
-        >>> rsp.segmentation.test(test_ds, model = model, batch_size = 32)
+        >>> rsp.segmentation.test(test_ds, model=model, batch_size=32)
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃        Test metric        ┃       DataLoader 0        ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -409,11 +559,11 @@ def test(test_datasets, model, batch_size = 32, num_workers = 0):
         if not isinstance(i[0], str) and not isinstance(i[0], xarray.DataArray):
             raise TypeError("x in dataset must be a string or xarray.DataArray")
         elif isinstance(i[0], str) and not os.path.exists(i[0]):
-            raise OSError(i + " does not exist")
+            raise OSError(i[0] + " does not exist")
         if not isinstance(i[1], str) and not isinstance(i[1], xarray.DataArray):
             raise TypeError("y in dataset must be a string or xarray.DataArray")
         elif isinstance(i[1], str) and not os.path.exists(i[1]):
-            raise OSError(i + " does not exist")
+            raise OSError(i[1] + " does not exist")
         if not isinstance(i[2], str) and not isinstance(i[2], list):
             raise TypeError("name in dataset must be a string or a list")
     if not isinstance(batch_size, int):
@@ -421,7 +571,10 @@ def test(test_datasets, model, batch_size = 32, num_workers = 0):
             batch_size = 32
         else:
             raise TypeError("batch_size must be an integer")
-    if (not isinstance(num_workers, int) and num_workers != 'auto') or (isinstance(num_workers, int) and num_workers < 0):
+    if (
+        (not isinstance(num_workers, int) and num_workers != 'auto')
+        or (isinstance(num_workers, int) and num_workers < 0)
+    ):
         if isinstance(num_workers, type(None)):
             num_workers = 'auto'
         else:
@@ -434,7 +587,16 @@ def test(test_datasets, model, batch_size = 32, num_workers = 0):
     segmentation_test(test_datasets = test_datasets, model = model, batch_size = batch_size, num_workers = num_workers)
     
  
-def generate_map(x, y, reference, model, output, batch_size = 32, num_workers = 0, nodata = None,):
+def generate_map(
+    x, 
+    y, 
+    reference, 
+    model, 
+    output, 
+    batch_size=32, 
+    num_workers=0, 
+    nodata=None
+):
     """
     Create map using pre-trained model.
     
@@ -445,24 +607,43 @@ def generate_map(x, y, reference, model, output, batch_size = 32, num_workers = 
     y : path as a string or xarray.DataArray
         Target variable data (y) generated by generate_tiles() function that was used to train the model.
     reference : path as a string
-        Raster that will be used as a reference raster to get size, transform and crs for a map. Use one of the rasters that were used for tile generation.
+        Raster that will be used as a reference raster to get size, transform and crs for a map.
+        Use one of the rasters that were used for tile generation.
     model : torch.nn model or SklearnModel or path to a model file
-        Pre-trained model to predict target values.  You can pass the model object returned by `train()` function or file (*.ckpt or *.joblib) where model is stored.
+        Pre-trained model to predict target values.
+        You can pass the model object returned by `train()` function or file (*.ckpt or *.joblib) where model is stored.
     output : path as a string
         Path where to write output map.
     batch_size : int (default = 32)
         Number of samples used in one iteration.
     num_workers: int or 'auto' (default = 0)
-        Number of parallel workers that will load the data. Set 'auto' to let RSP choose the optimal number of workers, set 0 to disable multiprocessing. Can increase training speed, but can also cause errors (e.g. pickling errors).
+        Number of parallel workers that will load the data.
+        Set 'auto' to let RSP choose the optimal number of workers, set 0 to disable multiprocessing.
+        Can increase training speed, but can also cause errors (e.g. pickling errors).
     nodata : int or float (optional)
         Nodata value. If not defined then nodata value of y dataset will be used.
     
     Examples
     --------
-        >>> x_out, y_out = rsp.segmentation.generate_tiles(x, y, tile_size = 256, shuffle = True, split = [3, 1, 1], split_names = ['train', 'val', 'test'])
+        >>> x_out, y_out = rsp.segmentation.generate_tiles(
+        ...     x, 
+        ...     y, 
+        ...     tile_size=256, 
+        ...     shuffle=True, 
+        ...     split=[3, 1, 1], 
+        ...     split_names=['train', 'val', 'test']
+        ...     )
         >>> train_ds = [x_out, y_out[0], 'train']
         >>> val_ds = [x_out, y_out[0], 'val']
-        >>> model = rsp.segmentation.train(train_ds, val_ds, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 10, batch_size = 32)
+        >>> model = rsp.segmentation.train(
+        ... train_ds, 
+        ... val_ds, 
+        ... model='UperNet', 
+        ... backbone='ConvNeXTV2', 
+        ... model_file='/home/rsp_test/model/upernet.ckpt', 
+        ... epochs=10, 
+        ... batch_size=32
+        ... )
         ...
         >>> reference = '/home/rsp_test/mosaics/landcover.tif'
         >>> output_map = '/home/rsp_test/prediction.tif'
@@ -480,14 +661,29 @@ def generate_map(x, y, reference, model, output, batch_size = 32, num_workers = 
         >>> # Train model on data from Montana
         >>> x_montana_files = glob('/home/rsp_test/mosaics/landsat_montana/*')
         >>> y_montana_files = '/home/rsp_test/mosaics/landcover_montana/landcover.tif'
-        >>> x_montana, y_montana = rsp.segmentation.generate_tiles(x_montana_files, y_montana_files, tile_size = 256, shuffle = True, split = [3, 1, 1], split_names = ['train', 'val', 'test'])
+        >>> x_montana, y_montana = rsp.segmentation.generate_tiles(
+        ...     x_montana_files, 
+        ...     y_montana_files, 
+        ...     tile_size=256, 
+        ...     shuffle=True, 
+        ...     split=[3, 1, 1], 
+        ...     split_names=['train', 'val', 'test']
+        ...     )
         >>> train_ds = [x_montana, y_montana[0], 'train']
         >>> val_ds = [x_montana, y_montana[0], 'val']
-        >>> model_montana = rsp.segmentation.train(train_ds, val_ds, model = 'UperNet', backbone = 'ConvNeXTV2', model_file = '/home/rsp_test/model/upernet.ckpt', epochs = 10, batch_size = 32)
+        >>> model_montana = rsp.segmentation.train(
+        ...     train_ds, 
+        ...     val_ds, 
+        ...     model='UperNet', 
+        ...     backbone='ConvNeXTV2', 
+        ...     model_file='/home/rsp_test/model/upernet.ckpt', 
+        ...     epochs=10, 
+        ...     batch_size=32
+        ...     )
         ...
         >>> # Use model to map landcover of Idaho
         >>> x_idaho_files = glob('/home/rsp_test/mosaics/landsat_idaho/*')
-        >>> x_idaho, _ = rsp.segmentation.generate_tiles(x_idaho_files, None, tile_size = 256)
+        >>> x_idaho, _ = rsp.segmentation.generate_tiles(x_idaho_files, None, tile_size=256)
         >>> reference = x_idaho_files[0]
         >>> output_map = '/home/rsp_test/prediction_idaho.tif'
         >>> rsp.segmentation.generate_map(x_idaho, y_montana, reference, model_montana, output_map)
@@ -513,7 +709,10 @@ def generate_map(x, y, reference, model, output, batch_size = 32, num_workers = 
             batch_size = 32
         else:
             raise TypeError("batch_size must be an integer")
-    if (not isinstance(num_workers, int) and num_workers != 'auto') or (isinstance(num_workers, int) and num_workers < 0):
+    if (
+        (not isinstance(num_workers, int) and num_workers != 'auto')
+        or (isinstance(num_workers, int) and num_workers < 0)
+    ):
         if isinstance(num_workers, type(None)):
             num_workers = 'auto'
         else:
@@ -525,5 +724,14 @@ def generate_map(x, y, reference, model, output, batch_size = 32, num_workers = 
     if cuda == False and superres == True:
         warnings.warn('CUDA or MPS is not available. Prediction on CPU could be very slow.')
     
-    predict_map_from_tiles(x = x, y = y, reference = reference, model = model, output = output, nodata = nodata, batch_size = batch_size, num_workers = num_workers)
+    predict_map_from_tiles(
+        x=x,
+        y=y,
+        reference=reference,
+        model=model,
+        output=output,
+        nodata=nodata,
+        batch_size=batch_size,
+        num_workers=num_workers,
+    )
 

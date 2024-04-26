@@ -10,14 +10,16 @@ from remote_sensing_processor.common.common_functions import persist
 
 
 def interp_patch(patch, scale):
-    return xarray.apply_ufunc(rescale, 
-                              patch.astype('float32'),
-                              input_core_dims = [['y', 'x']],
-                              output_core_dims  = [['y', 'x']], 
-                              exclude_dims = {'y', 'x'},
-                              dask = 'parallelized', 
-                              dask_gufunc_kwargs = {'output_sizes': {'y': patch.y.shape[0] * scale, 'x': patch.x.shape[0] * scale}},
-                              kwargs = {'scale': scale, 'mode': 'reflect', 'channel_axis': 0})
+    return xarray.apply_ufunc(
+        rescale, 
+        patch.astype('float32'),
+        input_core_dims=[['y', 'x']],
+        output_core_dims=[['y', 'x']], 
+        exclude_dims={'y', 'x'},
+        dask='parallelized', 
+        dask_gufunc_kwargs={'output_sizes': {'y': patch.y.shape[0] * scale, 'x': patch.x.shape[0] * scale}},
+        kwargs={'scale': scale, 'mode': 'reflect', 'channel_axis': 0},
+    )
 
 
 def get_patches(
@@ -55,9 +57,9 @@ def get_patches(
             upper_left_i = ii
             upper_left_j = jj
             window = get_crop_window(upper_left_i, upper_left_j, patch_size, 1)
-            stack.append(dset.isel(y = slice(window[0], window[2]), x = slice(window[1], window[3])))
+            stack.append(dset.isel(y=slice(window[0], window[2]), x=slice(window[1], window[3])))
             patch_count += 1
-    patches = xarray.concat(stack, 'chips', join = "override").chunk('auto')
+    patches = xarray.concat(stack, 'chips', join="override").chunk('auto')
     # Array shape, ignore unsuscriptable
     assert patch_count == nr_patches == patches.shape[0]
     return patches
@@ -66,9 +68,9 @@ def get_patches(
 def get_test_patches(
     dset_10,
     dset_20,
-    patch_size = 128,
-    border = 4,
-    interp = True
+    patch_size=128,
+    border=4,
+    interp=True
 ):
     """Used for inference. Creates patches of specific size in the whole image (10m and 20m)"""
 
@@ -76,8 +78,8 @@ def get_test_patches(
     border_20 = border // 2
 
     # Mirror the data at the borders to have the same dimensions as the input
-    dset_10 = dset_10.pad({'x': border, 'y': border}, mode = "symmetric")
-    dset_20 = dset_20.pad({'x': border_20, 'y': border_20}, mode = "symmetric")
+    dset_10 = dset_10.pad({'x': border, 'y': border}, mode="symmetric")
+    dset_20 = dset_20.pad({'x': border_20, 'y': border_20}, mode="symmetric")
     dset_10, dset_20 = persist(dset_10, dset_20)
 
     patches_along_i = (dset_20.shape[1] - 2 * border_20) // (patch_size_20 - 2 * border_20)
@@ -90,8 +92,8 @@ def get_test_patches(
 
     if interp:
         coef20 = int(image_10.shape[2] / image_20.shape[2]) 
-        rescale_p = partial(interp_patch, scale = coef20)
-        data20_interp = image_20.groupby('chips', squeeze = False).map(rescale_p)
+        rescale_p = partial(interp_patch, scale=coef20)
+        data20_interp = image_20.groupby('chips', squeeze=False).map(rescale_p)
     else:
         data20_interp = image_20
     image_10, data20_interp = persist(image_10, data20_interp)
@@ -102,9 +104,9 @@ def get_test_patches60(
     dset_10,
     dset_20,
     dset_60,
-    patch_size = 192,
-    border = 12,
-    interp = True
+    patch_size=192,
+    border=12,
+    interp=True
 ):
     """Used for inference. Creates patches of specific size in the whole image (10m, 20m and 60m)"""
 
@@ -114,9 +116,9 @@ def get_test_patches60(
     border_60 = border // 6
 
     # Mirror the data at the borders to have the same dimensions as the input
-    dset_10 = dset_10.pad({'x': border, 'y': border}, mode = "symmetric")
-    dset_20 = dset_20.pad({'x': border_20, 'y': border_20}, mode = "symmetric")
-    dset_60 = dset_60.pad({'x': border_60, 'y': border_60}, mode = "symmetric")
+    dset_10 = dset_10.pad({'x': border, 'y': border}, mode="symmetric")
+    dset_20 = dset_20.pad({'x': border_20, 'y': border_20}, mode="symmetric")
+    dset_60 = dset_60.pad({'x': border_60, 'y': border_60}, mode="symmetric")
     dset_10, dset_20, dset_60 = persist(dset_10, dset_20, dset_60)
 
     patches_along_i = (dset_60.shape[1] - 2 * border_60) // (patch_size_60 - 2 * border_60)
@@ -130,11 +132,11 @@ def get_test_patches60(
 
     if interp:
         coef20 = int(image_10.shape[2] / image_20.shape[2]) 
-        rescale_p = partial(interp_patch, scale = coef20)
-        data20_interp = image_20.groupby('chips', squeeze = False).map(rescale_p)
+        rescale_p = partial(interp_patch, scale=coef20)
+        data20_interp = image_20.groupby('chips', squeeze=False).map(rescale_p)
         coef60 = int(image_10.shape[2] / image_60.shape[2]) 
-        rescale_p = partial(interp_patch, scale = coef60)
-        data60_interp = image_60.groupby('chips', squeeze = False).map(rescale_p)
+        rescale_p = partial(interp_patch, scale=coef60)
+        data60_interp = image_60.groupby('chips', squeeze=False).map(rescale_p)
 
     else:
         data20_interp = image_20
@@ -145,9 +147,7 @@ def get_test_patches60(
     return image_10, data20_interp, data60_interp
 
 
-def get_crop_window(
-    upper_left_x, upper_left_y, patch_size, scale = 1
-):
+def get_crop_window(upper_left_x, upper_left_y, patch_size, scale=1):
     """From a x,y coordinate pair and patch size return a list ofpixel coordinates
     defining a window in an array. Optionally pass a scale factor."""
     crop_window = [
@@ -179,7 +179,10 @@ def recompose_images(a, border, ref):
         # Initialize image
         # print('Image size is: {}'.format(size))
         # TODO : uses compute because of notimplementederror: xarray can't set arrays with multiple array indices to dask yet
-        images = xarray.concat([xarray.full_like(ref[0], 0, dtype = 'float32') for i in range(a.shape[1])], dim = 'band').compute()
+        images = xarray.concat(
+            [xarray.full_like(ref[0], 0, dtype='float32') for i in range(a.shape[1])],
+            dim='band',
+        ).compute()
         current_patch = 0
         for y in range(0, y_tiles):
             ypoint = y * patch_size
@@ -190,7 +193,7 @@ def recompose_images(a, border, ref):
                 if xpoint > size[2] - patch_size:
                     xpoint = size[2] - patch_size
                 # TODO: not working with dask arrays, so had to load reference without chunking, can be memory-consuming.
-                area = images.isel(y = slice(ypoint, ypoint + patch_size), x = slice(xpoint, xpoint + patch_size))
+                area = images.isel(y=slice(ypoint, ypoint + patch_size), x=slice(xpoint, xpoint + patch_size))
                 images.loc[{'x': area.x, 'y': area.y}] = a[
                     current_patch,
                     :,

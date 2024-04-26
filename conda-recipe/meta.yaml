@@ -15,6 +15,7 @@ requirements:
   host:
     - dask
     - geopandas
+    - geocube
     - lightning
     - numpy >=1.17
     - pip
@@ -34,6 +35,7 @@ requirements:
   run:
     - dask
     - geopandas
+    - geocube
     - lightning
     - numpy >=1.17
     - pyproj
