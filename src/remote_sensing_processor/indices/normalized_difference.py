@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore", message="divide by zero")
 warnings.filterwarnings("ignore", message="invalid value encountered")
 
 def nd(name, b1, b2, folder=None):
-    with (rioxarray.open_rasterio(b1, chunks=True, lock=True) as band1):
+    with rioxarray.open_rasterio(b1, chunks=True, lock=True) as band1:
         with rioxarray.open_rasterio(b2, chunks=True, lock=True) as band2:
             if band1.shape != band2.shape:
                 raise RuntimeError('Datasets have different shapes')
