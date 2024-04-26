@@ -45,7 +45,7 @@ setuptools.setup(
         'tensorboard', 
         'transformers', 
         'timm', 
-        'xgboost'
+        'xgboost',
         'scikit-learn', 
         'scikit-image', 
         'rasterio', 
