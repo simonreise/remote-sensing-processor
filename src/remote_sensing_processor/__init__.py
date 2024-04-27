@@ -714,8 +714,8 @@ def rasterize(vector, reference_raster, value, output_file, nodata=0):
         Path to vector file that needs to be rasterized.
     reference_raster : path to reference raster as a string
         Path to a raster file to get shape, resolution and projection from.
-    value : int or float
-        A field to use for a burn-in value.
+    value : string
+        A field to use for a burn-in value. Field should be numeric.
     output_file : string
         Path to output file.
     nodata: int or float (default = 0)

@@ -1,35 +1,13 @@
 import warnings
 
 import rasterio as rio
-from shapely.geometry import Polygon, MultiPolygon
+import shapely
 from rasterio.enums import Resampling
 
 
 def convert_3D_2D(df):
-    '''
-    Takes a GeoSeries of 3D Multi/Polygons (has_z) and returns a list of 2D Multi/Polygons
-    '''
-    new_geo = []
-    for p in df.geometry:
-        try:
-            if p.has_z:
-                if p.geom_type == 'Polygon':
-                    lines = [xy[:2] for xy in list(p.exterior.coords)]
-                    new_p = Polygon(lines)
-                    new_geo.append(new_p)
-                elif p.geom_type == 'MultiPolygon':
-                    new_multi_p = []
-                    for ap in p:
-                        lines = [xy[:2] for xy in list(ap.exterior.coords)]
-                        new_p = Polygon(lines)
-                        new_multi_p.append(new_p)
-                    new_geo.append(MultiPolygon(new_multi_p))
-            else:
-                new_geo.append(p)
-        except:
-            new_geo.append(p)
-    
-    return new_geo
+    df.geometry = shapely.force_2d(df.geometry)
+    return df
 
  
 def get_resampling(resample):

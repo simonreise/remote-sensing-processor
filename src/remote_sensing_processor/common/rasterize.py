@@ -1,45 +1,40 @@
 import numpy as np
 
 import geopandas as gpd
-import rasterio as rio
-from rasterio import features
+import rioxarray
+from geocube.api.core import make_geocube
 
-from remote_sensing_processor.common.common_functions import convert_3D_2D
+from remote_sensing_processor.common.common_functions import convert_3D_2D, persist
 
 
 def rasterize_vector(vector, raster, burn_value, output_file, nodata):
-    # Read raster
-    with rio.open(raster) as b:
-        img = b.read()
-        meta = b.profile
-        shape = b.shape
-        transform = b.transform
-        crs = b.crs
-    # Read vector file
-    shapes = gpd.read_file(vector).to_crs(crs)
-    geoms = convert_3D_2D(shapes)
-    geom_value = ((geom,value) for geom, value in zip(geoms, shapes[burn_value]))
-    if len(shape) > 2:
-        shape = shape[-2:]
-    rasterized = features.rasterize(geom_value,
-                                    out_shape=shape,
-                                    transform=transform,
-                                    fill=nodata,
-                                    dtype=shapes[burn_value].dtype)
+    with rioxarray.open_rasterio(raster, chunks=True, lock=True) as tif:
+        # Read raster
+        vector = gpd.read_file(vector)
+        vector = convert_3D_2D(vector)
+        assert np.issubdtype(vector[burn_value].dtype, np.number)
+        rasterized = make_geocube(
+            vector,
+            measurements=[burn_value],
+            like=tif,
+            fill=nodata,
+        )
+        rasterized = persist(rasterized)
+        rasterized = rasterized[burn_value].chunk('auto')
+        rasterized = persist(rasterized)
+        # Because predictor = 2 works with float64 only when libtiff > 3.2.0 is installed
+        # and default libtiff in ubuntu is 3.2.0
+        if rasterized.dtype == 'float64':
+            rasterized = rasterized.astype('float32')
+            rasterized = persist(rasterized)
     # Write
-    with rio.open(
+    rasterized.rio.to_raster(
         output_file,
-        'w',
-        driver='GTiff',
-        height=img.shape[1],
-        width=img.shape[2],
-        count=img.shape[0],
-        dtype=shapes[burn_value].dtype,
         compress='deflate',
         PREDICTOR=2,
         ZLEVEL=9,
-        crs=crs,
-        transform=transform,
-        nodata=nodata
-    ) as outfile:
-        outfile.write(rasterized, 1)
+        BIGTIFF='IF_SAFER',
+        tiled=True,
+        NUM_THREADS='NUM_CPUS',
+        lock=True,
+    )
