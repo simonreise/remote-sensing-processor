@@ -152,7 +152,7 @@ def prepare_file(inp, crs, nodata, clip, match_hist, ref_hist):
     if clip != None:
         shape = gpd.read_file(clip).to_crs(crs)
         shape = convert_3D_2D(shape)
-        pathfile = pathfile.rio.clip(shape)
+        pathfile = pathfile.rio.clip(shape.geometry.values, shape.crs)
         pathfile = persist(pathfile)
     # Reading histogram if it is the first file
     if match_hist and isinstance(ref_hist, type(None)):
@@ -208,7 +208,7 @@ def mosaic_process(
             crs = final.rio.crs
         shape = gpd.read_file(clip).to_crs(crs)
         shape = convert_3D_2D(shape)
-        final = final.rio.clip(shape)
+        final = final.rio.clip(shape.geometry.values, shape.crs)
         final = persist(final)
     # Resampling to the same shape and resolution as another raster
     if reference_raster != None:

@@ -205,7 +205,7 @@ def s2postprocess(
         if shape != []:
             cloudmask = gpd.read_file(shape[0]).to_crs(img.rio.crs)
             cloudmask = convert_3D_2D(cloudmask)
-            img = img.rio.clip(cloudmask, invert=True)
+            img = img.rio.clip(cloudmask.geometry.values, cloudmask.crs, invert=True)
         # Masking clouds by scl mask and cloud proba
         sclpath = glob(path1 + r'/GRANULE/*/IMG_DATA/R20m/*SCL_20m.jp2')
         if sclpath != []:
@@ -257,7 +257,7 @@ def s2postprocess(
     if clip != None:
         shape = gpd.read_file(clip).to_crs(projection)
         shape = convert_3D_2D(shape)
-        img = img.rio.clip(shape)
+        img = img.rio.clip(shape.geometry.values, shape.crs)
         img = persist(img)
     # Normalization
     if normalize == True:

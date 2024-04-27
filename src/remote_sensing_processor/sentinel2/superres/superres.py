@@ -156,7 +156,7 @@ def get_clip(data60, clip):
     """
     shape = gpd.read_file(clip).to_crs(data60.rio.crs)
     shape = convert_3D_2D(shape)
-    data60 = data60.rio.clip(shape, all_touched = True)
+    data60 = data60.rio.clip(shape.geometry.values, shape.crs, all_touched = True)
     box = list(data60.rio.bounds())
     return data60, box
 
@@ -168,5 +168,5 @@ def clip_data(data, clip, box):
     shape = gpd.read_file(clip).to_crs(data.rio.crs)
     shape = convert_3D_2D(shape)
     data = data.rio.clip_box(box[0], box[1], box[2], box[3])
-    data = data.rio.clip(shape, all_touched=True, drop=False)
+    data = data.rio.clip(shape.geometry.values, shape.crs, all_touched=True, drop=False)
     return data

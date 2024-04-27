@@ -265,9 +265,9 @@ def landsat_proc(path,
     if clip != None:
         shape = gpd.read_file(clip).to_crs(projection)
         shape = convert_3D_2D(shape)
-        img = img.rio.clip(shape)
+        img = img.rio.clip(shape.geometry.values, shape.crs)
         if ((pansharpen == False) and (keep_pan_band == True)):
-            pan = pan.rio.clip(shape)
+            pan = pan.rio.clip(shape.geometry.values, shape.crs)
             pan = persist(pan)
         img = persist(img)
     # Because predictor = 2 works with float64 only when libtiff > 3.2.0 is installed and default libtiff in ubuntu is 3.2.0

@@ -48,7 +48,7 @@ setuptools.setup(
         'xgboost',
         'scikit-learn', 
         'scikit-image', 
-        'rasterio', 
+        'rasterio>=1.2',
         'rioxarray', 
         'pyproj', 
         'geopandas', 

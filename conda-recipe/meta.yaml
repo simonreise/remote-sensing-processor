@@ -22,7 +22,7 @@ requirements:
     - pyproj
     - python >=3.8
     - pytorch >=2.0
-    - rasterio
+    - rasterio >=1.2
     - rioxarray
     - scikit-image
     - scikit-learn
@@ -41,7 +41,7 @@ requirements:
     - pyproj
     - python >=3.8
     - pytorch >=2.0
-    - rasterio
+    - rasterio >=1.2
     - rioxarray
     - scikit-image
     - scikit-learn
