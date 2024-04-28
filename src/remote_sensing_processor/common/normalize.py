@@ -30,7 +30,7 @@ def normalize_file(input_file, output_file, minimum, maximum):
         ZLEVEL=9, 
         BIGTIFF='IF_SAFER', 
         tiled=True, 
-        NUM_THREADS='NUM_CPUS', 
+        NUM_THREADS='ALL_CPUS',
         lock=True,
     )
     

@@ -143,6 +143,6 @@ def predict_map_from_tiles(
         ZLEVEL=9, 
         BIGTIFF='IF_SAFER', 
         tiled=True, 
-        NUM_THREADS='NUM_CPUS', 
+        NUM_THREADS='ALL_CPUS',
         lock=True,
     )

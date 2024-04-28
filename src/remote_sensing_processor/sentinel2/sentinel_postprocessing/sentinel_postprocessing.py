@@ -282,7 +282,7 @@ def s2postprocess(
             ZLEVEL=9, 
             BIGTIFF='IF_SAFER', 
             tiled=True, 
-            NUM_THREADS='NUM_CPUS', 
+            NUM_THREADS='ALL_CPUS',
             compute=False, 
             lock=True,
         ))

@@ -35,6 +35,6 @@ def rasterize_vector(vector, raster, burn_value, output_file, nodata):
         ZLEVEL=9,
         BIGTIFF='IF_SAFER',
         tiled=True,
-        NUM_THREADS='NUM_CPUS',
+        NUM_THREADS='ALL_CPUS',
         lock=True,
     )
