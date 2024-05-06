@@ -3,9 +3,10 @@
 
 ----
 
-![AppVeyor](https://img.shields.io/appveyor/build/simonreise/remote-sensing-processor)
-![PyPI](https://img.shields.io/pypi/v/remote-sensing-processor)
-![Conda](https://img.shields.io/conda/v/moskovchenkomike/remote-sensing-processor)
+[![Build status](https://ci.appveyor.com/api/projects/status/usca6y014oakdtj2?svg=true)](https://ci.appveyor.com/project/simonreise/remote-sensing-processor)
+[![PyPI](https://img.shields.io/pypi/v/remote-sensing-processor)](https://pypi.org/project/remote-sensing-processor/)
+[![Conda](https://img.shields.io/conda/v/moskovchenkomike/remote-sensing-processor)](https://anaconda.org/moskovchenkomike/remote-sensing-processor)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.11091321.svg)](https://doi.org/10.5281/zenodo.11091321)
 
 RSP is a tool for geospatial raster data processing.
 
@@ -153,9 +154,11 @@ pip install .
 
 > :warning: This package is still in early development stage, so its API can change significantly, sometimes without backward compatibility. Consider this before updating the package.
 
-
 ## License
 See [LICENSE](LICENSE).
+
+## Citation
+If you use RSP in a scientific publication, we would appreciate citations: https://doi.org/10.5281/zenodo.11091321
 
 ## Credits
 RSP uses code from some other projects.
