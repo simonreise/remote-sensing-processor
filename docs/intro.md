@@ -64,6 +64,7 @@ If you are get such error while Sentinel-2 processing, try to run `sentinel2` wi
 Feel free to open new tickets at https://github.com/simonreise/remote-sensing-processor/issues anytime.
 
 ### How can I cite RSP?
+
 If you use RSP in a scientific publication, we would appreciate citations: https://doi.org/10.5281/zenodo.11091321
 
 ## License
