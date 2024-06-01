@@ -95,7 +95,7 @@ def s2postprocess_no_superres(
         with rioxarray.open_rasterio(i, chunks=True, lock=True) as tif:
             files.append(persist(tif))
     # If no upscaling needed then process different resolution bands separately
-    if upscale == None:
+    if upscale is None:
         bandoutnames = bnames10
         img = xarray.concat(files, dim=xarray.Variable('band', bandoutnames))
         outfiles.extend(s2postprocess(
@@ -117,7 +117,7 @@ def s2postprocess_no_superres(
                 band = band.rio.reproject_match(files[0], resampling=resample)
             files.append(band)
     # If no upscaling needed then process different resolution bands separately
-    if upscale == None:
+    if upscale is None:
         bandoutnames = bnames20
         img = xarray.concat(files, dim=xarray.Variable('band', bandoutnames))
         outfiles.extend(s2postprocess(
@@ -139,7 +139,7 @@ def s2postprocess_no_superres(
                 band = band.rio.reproject_match(files[0], resampling=resample)
             files.append(band)
     # If no upscaling needed then process different resolution bands separately
-    if upscale == None:
+    if upscale is None:
         bandoutnames = bnames60
         img = xarray.concat(files, dim=xarray.Variable('band', bandoutnames))
         outfiles.extend(s2postprocess(
@@ -179,7 +179,7 @@ def s2postprocess(
     bandoutnames
 ):
     try:
-        if img.rio.nodata == None:
+        if img.rio.nodata is None:
             nodata = 0
         else:
             nodata = img.rio.nodata
@@ -247,14 +247,14 @@ def s2postprocess(
             img = img.where(mask.squeeze() == 0, 0) # 0 - data, 1 - nodata
         img = persist(img)
     # Reprojection
-    if projection != None:
+    if projection is not None:
         img = img.rio.reproject(projection, resampling=Resampling.nearest)
         img = img.chunk('auto')
         img = persist(img)
     else:
         projection = img.rio.crs
     # Clipping
-    if clip != None:
+    if clip is not None:
         shape = gpd.read_file(clip).to_crs(projection)
         shape = convert_3D_2D(shape)
         img = img.rio.clip(shape.geometry.values, shape.crs)

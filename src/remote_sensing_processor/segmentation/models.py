@@ -29,7 +29,7 @@ import xgboost as xgb
 
 def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwargs):
     if model == 'BEiT':
-        if weights != None:
+        if weights is not None:
             model = transformers.BeitForSemanticSegmentation.from_pretrained(
                 weights,
                 ignore_mismatched_sizes=True,
@@ -48,7 +48,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
             )
             model = transformers.BeitForSemanticSegmentation(config)
     elif model == 'ConditionalDETR':
-        if weights != None:
+        if weights is not None:
             model = transformers.ConditionalDetrForSegmentation.from_pretrained(
                 weights,
                 ignore_mismatched_sizes=True,
@@ -64,7 +64,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
             )
             model = transformers.ConditionalDetrForSegmentation(config)        
     elif model == 'Data2Vec':
-        if weights != None:
+        if weights is not None:
             model = transformers.Data2VecVisionForSemanticSegmentation.from_pretrained(
                 weights,
                 ignore_mismatched_sizes=True,
@@ -83,7 +83,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
             )
             model =  transformers.Data2VecVisionForSemanticSegmentation(config)
     elif model == 'DETR':
-        if weights != None:
+        if weights is not None:
             model = transformers.DetrForSegmentation.from_pretrained(
                 weights,
                 ignore_mismatched_sizes=True,
@@ -99,7 +99,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
             )
             model = transformers.DetrForSegmentation(config)
     elif model == 'DPT':
-        if weights != None:
+        if weights is not None:
             model = transformers.DPTForSemanticSegmentation.from_pretrained(
                 weights,
                 ignore_mismatched_sizes=True,
@@ -117,7 +117,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
             )
             model = transformers.DPTForSemanticSegmentation(config)
     elif model == 'Mask2Former':
-        if weights != None:
+        if weights is not None:
             config = transformers.AutoConfig.from_pretrained(
                 weights,
                 num_labels=num_classes,
@@ -145,7 +145,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
             )
             model = transformers.Mask2FormerForUniversalSegmentation(config)
     elif model == 'MaskFormer':
-        if weights != None:
+        if weights is not None:
             config = transformers.AutoConfig.from_pretrained(
                 weights,
                 num_labels=num_classes,
@@ -173,7 +173,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
             )
             model = transformers.MaskFormerForInstanceSegmentation(config)
     elif model == 'MobileNetV2':
-        if weights != None:
+        if weights is not None:
             model = transformers.MobileNetV2ForSemanticSegmentation.from_pretrained(
                 weights,
                 ignore_mismatched_sizes=True,
@@ -191,7 +191,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
             )
             model = transformers.MobileNetV2ForSemanticSegmentation(config)
     elif model == 'MobileViT':
-        if weights != None:
+        if weights is not None:
             model = transformers.MobileViTForSemanticSegmentation.from_pretrained(
                 weights,
                 ignore_mismatched_sizes=True,
@@ -209,7 +209,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
             )
             model = transformers.MobileViTForSemanticSegmentation(config)
     elif model == 'MobileViTV2':
-        if weights != None:
+        if weights is not None:
             model = transformers.MobileViTV2ForSemanticSegmentation.from_pretrained(
                 weights,
                 ignore_mismatched_sizes=True,
@@ -227,7 +227,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
             )
             model = transformers.MobileViTV2ForSemanticSegmentation(config)
     elif model == 'OneFormer':
-        if weights != None:
+        if weights is not None:
             config = transformers.AutoConfig.from_pretrained(
                 weights,
                 num_labels=num_classes,
@@ -243,7 +243,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
                 config=config
             )
         else:
-            if bb == 'Swin' or bb == None:
+            if bb == 'Swin' or bb is None:
                 backbone = transformers.SwinConfig(
                     image_size=input_shape,
                     num_channels=input_dims,
@@ -289,7 +289,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
                 )
             model = transformers.OneFormerForUniversalSegmentation(config)
     elif model == 'SegFormer':
-        if weights != None:
+        if weights is not None:
             model = transformers.SegformerForSemanticSegmentation.from_pretrained(
                 weights,
                 ignore_mismatched_sizes=True,
@@ -306,7 +306,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
             )
             model = transformers.SegformerForSemanticSegmentation(config)
     elif model == 'UperNet':
-        if weights != None:
+        if weights is not None:
             config = transformers.AutoConfig.from_pretrained(
                 weights,
                 num_labels=num_classes,
@@ -333,7 +333,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
                     auxiliary_in_channels=1024,
                     **kwargs
                 )
-            elif bb == 'Swin' or bb == None:
+            elif bb == 'Swin' or bb is None:
                 backbone = transformers.SwinConfig(
                     image_size=input_shape,
                     num_channels=input_dims,
@@ -368,8 +368,8 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
                 )
             model = transformers.UperNetForSemanticSegmentation(config)
     elif model == 'DeepLabV3':
-        if bb == 'MobileNet_V3_Large' or bb == None:
-            if weights != None:
+        if bb == 'MobileNet_V3_Large' or bb is None:
+            if weights is not None:
                 weights = torchvision.models.segmentation.DeepLabV3_MobileNet_V3_Large_Weights.COCO_WITH_VOC_LABELS_V1
                 model = torchvision.models.segmentation.deeplabv3_mobilenet_v3_large(weights=weights, **kwargs)
                 model.classifier[4] = torch.nn.Conv2d(256, num_classes, kernel_size=1, stride=(1, 1))
@@ -378,7 +378,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
                 model = torchvision.models.segmentation.deeplabv3_mobilenet_v3_large(num_classes=num_classes, **kwargs)
             model.backbone['0'][0] = torch.nn.Conv2d(input_dims, 16, kernel_size=3, stride=(2, 2), padding=(1, 1), bias=False)
         elif bb == 'ResNet50':
-            if weights != None:
+            if weights is not None:
                 weights = torchvision.models.segmentation.DeepLabV3_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1
                 model = torchvision.models.segmentation.deeplabv3_resnet50(weights = weights, **kwargs)
                 model.classifier[4] = torch.nn.Conv2d(256, num_classes, kernel_size=1, stride=(1, 1))
@@ -386,7 +386,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
                 model = torchvision.models.segmentation.deeplabv3_resnet50(num_classes = num_classes, **kwargs)
             model.backbone.conv1 = torch.nn.Conv2d(input_dims, 64, kernel_size=7, stride=(2, 2), padding=(3, 3), bias=False)
         elif bb == 'ResNet101':
-            if weights != None:
+            if weights is not None:
                 weights = torchvision.models.segmentation.DeepLabV3_ResNet101_Weights.COCO_WITH_VOC_LABELS_V1
                 model = torchvision.models.segmentation.deeplabv3_resnet101(weights=weights, **kwargs)
                 model.classifier[4] = torch.nn.Conv2d(256, num_classes, kernel_size=1, stride=(1, 1))
@@ -394,8 +394,8 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
                 model = torchvision.models.segmentation.deeplabv3_resnet101(num_classes=num_classes, **kwargs)
             model.backbone.conv1 = torch.nn.Conv2d(input_dims, 64, kernel_size=7, stride=(2, 2), padding=(3, 3), bias=False)
     elif model == 'FCN':
-        if bb == 'ResNet50' or bb == None:
-            if weights != None:
+        if bb == 'ResNet50' or bb is None:
+            if weights is not None:
                 weights = torchvision.models.segmentation.FCN_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1
                 model = torchvision.models.segmentation.fcn_resnet50(weights=weights, **kwargs)
                 model.classifier[4] = torch.nn.Conv2d(512, num_classes, kernel_size=1, stride=(1, 1))
@@ -403,7 +403,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
                 model = torchvision.models.segmentation.fcn_resnet50(num_classes=num_classes, **kwargs)
             model.backbone.conv1 = torch.nn.Conv2d(input_dims, 64, kernel_size=7, stride=(2, 2), padding=(3, 3), bias=False)
         elif bb == 'ResNet101':
-            if weights != None:
+            if weights is not None:
                 weights = torchvision.models.segmentation.FCN_ResNet101_Weights.COCO_WITH_VOC_LABELS_V1
                 model = torchvision.models.segmentation.fcn_resnet101(weights = weights, **kwargs)
                 model.classifier[4] = torch.nn.Conv2d(512, num_classes, kernel_size=1, stride=(1, 1))
@@ -411,7 +411,7 @@ def load_model(model, bb, weights, input_shape, input_dims, num_classes, **kwarg
                 model = torchvision.models.segmentation.fcn_resnet101(num_classes = num_classes, **kwargs)
             model.backbone.conv1 = torch.nn.Conv2d(input_dims, 64, kernel_size=7, stride=(2, 2), padding=(3, 3), bias=False)
     elif model == 'LRASPP':
-        if weights != None:
+        if weights is not None:
             weights = torchvision.models.segmentation.LRASPP_MobileNet_V3_Large_Weights.COCO_WITH_VOC_LABELS_V1
             model = torchvision.models.segmentation.lraspp_mobilenet_v3_large(weights=weights, **kwargs)
             model.classifier.low_classifier = torch.nn.Conv2d(40, num_classes, kernel_size=1, stride=(1, 1))
@@ -427,7 +427,7 @@ def load_sklearn_model(model, bb, classification, epochs, **kwargs):
         if model == "Nearest Neighbors":
             clf = KNeighborsClassifier(n_jobs=-1, **kwargs)
         elif model == "Logistic Regression":
-            if bb == 'lbfgs' or bb == None:
+            if bb == 'lbfgs' or bb is None:
                 clf = LogisticRegression(solver='lbfgs', n_jobs=-1, warm_start=True, verbose=1, **kwargs)
             elif bb == 'liblinear':
                 clf = LogisticRegression(solver='liblinear', n_jobs=-1, warm_start=True, verbose=1, **kwargs)
@@ -448,7 +448,7 @@ def load_sklearn_model(model, bb, classification, epochs, **kwargs):
                     **kwargs
                 )
         elif model == "SVM":
-            if bb == 'rbf' or bb == None:
+            if bb == 'rbf' or bb is None:
                 clf = SVC(kernel='rbf', probability=True, verbose=True, **kwargs)
             elif bb == 'linear':
                 clf = SVC(kernel='linear', probability=True, verbose=True, **kwargs)
@@ -486,7 +486,7 @@ def load_sklearn_model(model, bb, classification, epochs, **kwargs):
         elif model == "ElasticNet":
             clf = ElasticNet(**kwargs)
         elif model == "SVM":
-            if bb == 'rbf' or bb == None:
+            if bb == 'rbf' or bb is None:
                 clf = SVR(kernel='rbf', verbose=True, **kwargs)
             elif bb == 'linear':
                 clf = SVR(kernel='linear', verbose=True, **kwargs)

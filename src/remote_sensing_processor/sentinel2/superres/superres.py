@@ -26,7 +26,7 @@ warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarni
 def superresolution(input_dir="/tmp/input/", clip=None):
     """
     This function takes the raster data at 10, 20, and 60 m resolutions and by applying
-    data_final method creates the input data for the the convolutional neural network.
+    data_final method creates the input data for the convolutional neural network.
     It returns 10 m resolution for all the bands in 20 and 60 m resolutions.
     """
     # Reading datasets
@@ -40,7 +40,7 @@ def superresolution(input_dir="/tmp/input/", clip=None):
     data10, data20, data60 = persist(data10, data20, data60)
     
     # Clipping
-    if clip != None:
+    if clip is not None:
         data60, box = get_clip(data60, clip)
         data10 = dask.delayed(clip_data)(data10, clip, box)
         data20 = dask.delayed(clip_data)(data20, clip, box)

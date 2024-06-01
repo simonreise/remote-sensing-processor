@@ -36,7 +36,7 @@ def predict_map_from_tiles(
         y_dataset = xarray.open_dataarray(y, engine='zarr', chunks='auto', mask_and_scale=False)
     elif isinstance(y, xarray.DataArray):
         y_dataset = y
-    if nodata == None:
+    if nodata is None:
         nodata = y_dataset.rio.nodata
     classes = y_dataset.classes
     # Creating empty array

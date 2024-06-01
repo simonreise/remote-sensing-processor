@@ -1,4 +1,6 @@
 import os
+import pathlib
+from typing import Any, List, Tuple, Union, Optional
 import numpy as np
 
 import xarray
@@ -11,20 +13,20 @@ from remote_sensing_processor.segmentation.mapping import predict_map_from_tiles
 
 
 def generate_tiles(
-    x, 
-    y, 
-    tile_size=128, 
-    classification=True, 
-    shuffle=False, 
-    split=[1], 
-    split_names=['train'], 
-    x_output=None, 
-    y_output=None, 
-    x_dtype=None, 
-    y_dtype=None, 
-    x_nodata=None, 
-    y_nodata=None,
-):
+    x: Union[str, pathlib.Path, List[Union[str, pathlib.Path]]],
+    y: Union[str, pathlib.Path, List[Union[str, pathlib.Path]], None],
+    tile_size: Optional[int] = 128,
+    classification: Optional[bool] = True,
+    shuffle: Optional[bool] = False,
+    split: Optional[List[Union[int, float]]] = [1],
+    split_names: Optional[List[str]] = ['train'],
+    x_output: Optional[Union[str, pathlib.Path]] = None,
+    y_output: Optional[Union[str, pathlib.Path, List[Union[str, pathlib.Path]]]] = None,
+    x_dtype: Optional[str] = None,
+    y_dtype: Optional[str] = None,
+    x_nodata: Optional[Union[int, float]] = None,
+    y_nodata: Optional[Union[int, float]] = None,
+) -> Tuple[xarray.DataArray, Union[xarray.DataArray, List[xarray.DataArray], None]]:
     """
     Cut rasters into tiles.
     
@@ -115,31 +117,31 @@ def generate_tiles(
         (8704, 6912)
     """
     # Type checking
-    if isinstance(x, str):
+    if isinstance(x, (str, pathlib.Path)):
         x = [x]
     elif isinstance(x, list):
         for i in x:
-            if not isinstance(i, str):
+            if not isinstance(i, (str, pathlib.Path)):
                 raise TypeError("x must be a string or a list of strings")
     else:
         raise TypeError("x must be a string or a list of strings")
     for i in x:
         if not os.path.exists(i):
             raise OSError(i + " does not exist")
-    if isinstance(y, str):
+    if isinstance(y, (str, pathlib.Path)):
         y = [y]
     elif isinstance(y, list):
         for i in y:
-            if not isinstance(i, str):
+            if not isinstance(i, (str, pathlib.Path)):
                 raise TypeError("y must be a string or a list of strings")
-    elif not isinstance(y, type(None)):
+    elif y is not None:
         raise TypeError("y must be a string or a list of strings")
     if isinstance(y, list):
         for i in y:
             if not os.path.exists(i):
                 raise OSError(i + " does not exist")
     if not isinstance(tile_size, int):
-        if isinstance(tile_size, type(None)):
+        if tile_size is None:
             tile_size = 128
         else:
             raise TypeError("tile_size must be an integer")
@@ -147,20 +149,20 @@ def generate_tiles(
         if tile_size <= 8:
             raise ValueError("tile_size must be > 8")
     if not isinstance(classification, bool):
-        if isinstance(classification, type(None)):
+        if classification is None:
             classification = True
         else:
             raise TypeError("classification must be boolean")
     if not isinstance(shuffle, bool):
-        if isinstance(shuffle, type(None)):
+        if shuffle is None:
             shuffle = False
         else:
             raise TypeError("shuffle must be boolean")
     if isinstance(split, list):
         for i in split:
-            if not isinstance(i, int) and not isinstance(i, float):
+            if not isinstance(i, (int, float)):
                 raise TypeError("split must be a list of ints or floats")
-    elif isinstance(split, type(None)):
+    elif split is None:
         split = [1]
     else:
         raise TypeError("split must be a list of ints or floats")
@@ -168,29 +170,29 @@ def generate_tiles(
         for i in split_names:
             if not isinstance(i, str):
                 raise TypeError("split_names must be a list of strings")
-    elif isinstance(split_names, type(None)):
+    elif split_names is None:
         split_names = ['train']
     else:
         raise TypeError("split_names must be a list of strings")
     assert len(split) == len(split_names)
-    if not isinstance(x_output, str) and not isinstance(x_output, type(None)):
-        raise TypeError("x_outputs must be a string")
-    if isinstance(y_output, str):
+    if not isinstance(x_output, (str, pathlib.Path)) and x_output is not None:
+        raise TypeError("x_output must be a string")
+    if isinstance(y_output, (str, pathlib.Path)):
         y_output = [y_output]
     if isinstance(y_output, list):
         assert len(y_output) == len(y)
         for i in y_output:
-            if not isinstance(i, str):
+            if not isinstance(i, (str, pathlib.Path)):
                 raise TypeError("y_output must be a string or a list of strings")
-    elif not isinstance(y_output, type(None)):
+    elif y_output is not None:
         raise TypeError("y_output must be a list of strings")
-    if not isinstance(x_dtype, type(None)):
+    if x_dtype is not None:
         np.dtype(x_dtype)
-    if not isinstance(y_dtype, type(None)):
+    if y_dtype is not None:
         np.dtype(y_dtype)
-    if not isinstance(x_nodata, int) and not isinstance(x_nodata, float) and not isinstance(x_nodata, type(None)):
+    if not isinstance(x_nodata, (int, float)) and x_nodata is not None:
         raise TypeError("x_nodata must be integer or float")
-    if not isinstance(y_nodata, int) and not isinstance(y_nodata, float) and not isinstance(y_nodata, type(None)):
+    if not isinstance(y_nodata, (int, float)) and y_nodata is not None:
         raise TypeError("y_nodata must be integer or float")
     
     x, y = get_ss_tiles(
@@ -212,23 +214,23 @@ def generate_tiles(
 
     
 def train(
-    train_datasets, 
-    val_datasets, 
-    model_file, 
-    model, 
-    backbone=None, 
-    checkpoint=None, 
-    weights=None, 
-    epochs=5, 
-    batch_size=32, 
-    repeat=1, 
-    augment=False, 
-    less_metrics=False, 
-    lr=1e-3, 
-    num_workers=0, 
-    classification=None, 
-    num_classes=None, 
-    y_nodata=None, 
+    train_datasets: List,
+    val_datasets: List,
+    model_file: Union[str, pathlib.Path],
+    model: str,
+    backbone: Optional[str] = None,
+    checkpoint: Optional[Union[str, pathlib.Path]] = None,
+    weights: Optional[str] = None,
+    epochs: Optional[int] = 5,
+    batch_size: Optional[int] = 32,
+    repeat: Optional[int] = 1,
+    augment: Optional[bool] = False,
+    less_metrics: Optional[bool] = False,
+    lr: Optional[float] = 1e-3,
+    num_workers: Optional[Union[int, str]] = 0,
+    classification: Optional[bool] = None,
+    num_classes: Optional[int] = None,
+    y_nodata: Optional[Union[int, float]] = None,
     **kwargs
 ):
     """
@@ -380,76 +382,79 @@ def train(
     for i in range(len(train_datasets)):
         if len(train_datasets[i]) != 3:
             raise ValueError("Every dataset must consist of x, y and names")
-        if not isinstance(train_datasets[i][0], str) and not isinstance(train_datasets[i][0], xarray.DataArray):
+        if not isinstance(train_datasets[i][0], (str, pathlib.Path, xarray.DataArray)):
             raise TypeError("x in dataset must be a string or xarray.DataArray")
-        elif isinstance(train_datasets[i][0], str) and not os.path.exists(train_datasets[i][0]):
+        elif isinstance(train_datasets[i][0], (str, pathlib.Path)) and not os.path.exists(train_datasets[i][0]):
             raise OSError(str(train_datasets[i][0]) + " does not exist")
-        if not isinstance(train_datasets[i][1], str) and not isinstance(train_datasets[i][1], xarray.DataArray):
+        if not isinstance(train_datasets[i][1], (str, pathlib.Path, xarray.DataArray)):
             raise TypeError("y in dataset must be a string or xarray.DataArray")
-        elif isinstance(train_datasets[i][1], str) and not os.path.exists(train_datasets[i][1]):
+        elif isinstance(train_datasets[i][1], (str, pathlib.Path)) and not os.path.exists(train_datasets[i][1]):
             raise OSError(str(train_datasets[i][1]) + " does not exist")
-        if not isinstance(train_datasets[i][2], str) and not isinstance(train_datasets[i][2], list):
+        if not isinstance(train_datasets[i][2], (str, list)):
             raise TypeError("name in dataset must be a string or a list")
         else:
             if train_datasets[i][2] != 'all' and isinstance(train_datasets[i][2], str):
                 train_datasets[i][2] = [train_datasets[i][2]]
-    if val_datasets != None:
+    if val_datasets is not None:
         if not isinstance(val_datasets[0], list):
             val_datasets = [val_datasets]
-        for i in val_datasets:
-            if len(i) != 3:
+        for i in range(len(val_datasets)):
+            if len(val_datasets[i]) != 3:
                 raise ValueError("Every dataset must consist of x, y and names")
-            if not isinstance(i[0], str) and not isinstance(i[0], xarray.DataArray):
+            if not isinstance(val_datasets[i][0], (str, pathlib.Path, xarray.DataArray)):
                 raise TypeError("x in dataset must be a string or xarray.DataArray")
-            elif isinstance(i[0], str) and not os.path.exists(i[0]):
-                raise OSError(str(i[0]) + " does not exist")
-            if not isinstance(i[1], str) and not isinstance(i[1], xarray.DataArray):
+            elif isinstance(val_datasets[i][0], (str, pathlib.Path)) and not os.path.exists(val_datasets[i][0]):
+                raise OSError(str(val_datasets[i][0]) + " does not exist")
+            if not isinstance(val_datasets[i][1], (str, pathlib.Path, xarray.DataArray)):
                 raise TypeError("y in dataset must be a string or xarray.DataArray")
-            elif isinstance(i[1], str) and not os.path.exists(i[1]):
-                raise OSError(str(i[1]) + " does not exist")
-            if not isinstance(i[2], str) and not isinstance(i[2], list):
+            elif isinstance(val_datasets[i][1], (str, pathlib.Path)) and not os.path.exists(val_datasets[i][1]):
+                raise OSError(str(val_datasets[i][1]) + " does not exist")
+            if not isinstance(val_datasets[i][2], (str, list)):
                 raise TypeError("name in dataset must be a string or a list")
-    if not isinstance(model_file, str):
+            else:
+                if val_datasets[i][2] != 'all' and isinstance(val_datasets[i][2], str):
+                    val_datasets[i][2] = [val_datasets[i][2]]
+    if not isinstance(model_file, (str, pathlib.Path)):
         raise TypeError("model_file must be a string")
     if not isinstance(model, str):
         raise TypeError("model must be a string")
-    if not isinstance(backbone, str) and not isinstance(backbone, type(None)):
+    if not isinstance(backbone, str) and backbone is not None:
         raise TypeError("backbone must be a string")
-    if not isinstance(checkpoint, str) and not isinstance(checkpoint, type(None)):
+    if not isinstance(checkpoint, (str, pathlib.Path)) and checkpoint is not None:
         raise TypeError("checkpoint must be a string")
-    elif isinstance(checkpoint, str) and not os.path.exists(checkpoint):
+    elif isinstance(checkpoint, (str, pathlib.Path)) and not os.path.exists(checkpoint):
         raise OSError(checkpoint + " does not exist")
-    if not isinstance(weights, str) and not isinstance(weights, type(None)):
+    if not isinstance(weights, str) and weights is not None:
         raise TypeError("weights must be a string")
     if not isinstance(epochs, int):
-        if isinstance(epochs, type(None)):
+        if epochs is None:
             epochs = 5
         else:
             raise TypeError("epochs must be an integer")
     if not isinstance(batch_size, int):
-        if isinstance(batch_size, type(None)):
+        if batch_size is None:
             batch_size = 32
         else:
             raise TypeError("batch_size must be an integer")
     if not isinstance(repeat, int):
-        if isinstance(repeat, type(None)):
+        if repeat is None:
             repeat = 1
         else:
             raise TypeError("repeat must be an integer")
     elif repeat < 1:
         raise ValueError("repeat must be >= 1")
     if not isinstance(augment, bool):
-        if isinstance(augment, type(None)):
+        if augment is None:
             augment = False
         else:
             raise TypeError("augment must be boolean")
     if not isinstance(less_metrics, bool):
-        if isinstance(less_metrics, type(None)):
+        if less_metrics is None:
             less_metrics = False
         else:
             raise TypeError("less_metrics must be boolean")
     if not isinstance(lr, float):
-        if isinstance(lr, type(None)):
+        if lr is None:
             lr = 1e-3
         else:
             raise TypeError("lr must be float")
@@ -457,15 +462,15 @@ def train(
         (not isinstance(num_workers, int) and num_workers != 'auto')
         or (isinstance(num_workers, int) and num_workers < 0)
     ):
-        if isinstance(num_workers, type(None)):
+        if num_workers is None:
             num_workers = 'auto'
         else:
             raise TypeError("num_workers must be non-negative integer or 'auto'")
-    if not isinstance(classification, bool) and not isinstance(classification, type(None)):
+    if not isinstance(classification, bool) and classification is not None:
         raise TypeError("classification must be boolean or None")
-    if not isinstance(num_classes, int) and not isinstance(num_classes, type(None)):
+    if not isinstance(num_classes, int) and num_classes is not None:
         raise TypeError("num_classes must be int or None")
-    if not isinstance(y_nodata, int) and not isinstance(y_nodata, float) and not isinstance(y_nodata, type(None)):
+    if not isinstance(y_nodata, (int, float)) and y_nodata is not None:
         raise TypeError("y_nodata must be int or float or None")
     
     cuda = cuda_test()
@@ -494,7 +499,12 @@ def train(
     )
     return model
     
-def test(test_datasets, model, batch_size=32, num_workers=0):
+def test(
+    test_datasets: List,
+    model,
+    batch_size: Optional[int] = 32,
+    num_workers: Optional[Union[int, str]] = 0,
+) -> None:
     """
     Tests segmentation model.
     
@@ -553,21 +563,24 @@ def test(test_datasets, model, batch_size=32, num_workers=0):
     # Type checking
     if not isinstance(test_datasets[0], list):
         test_datasets = [test_datasets]
-    for i in test_datasets:
-        if len(i) != 3:
+    for i in range(len(test_datasets)):
+        if len(test_datasets[i]) != 3:
             raise ValueError("Every dataset must consist of x, y and names")
-        if not isinstance(i[0], str) and not isinstance(i[0], xarray.DataArray):
+        if not isinstance(test_datasets[i][0], (str, pathlib.Path, xarray.DataArray)):
             raise TypeError("x in dataset must be a string or xarray.DataArray")
-        elif isinstance(i[0], str) and not os.path.exists(i[0]):
-            raise OSError(i[0] + " does not exist")
-        if not isinstance(i[1], str) and not isinstance(i[1], xarray.DataArray):
+        elif isinstance(test_datasets[i][0], (str, pathlib.Path)) and not os.path.exists(test_datasets[i][0]):
+            raise OSError(str(test_datasets[i][0]) + " does not exist")
+        if not isinstance(test_datasets[i][1], (str, pathlib.Path, xarray.DataArray)):
             raise TypeError("y in dataset must be a string or xarray.DataArray")
-        elif isinstance(i[1], str) and not os.path.exists(i[1]):
-            raise OSError(i[1] + " does not exist")
-        if not isinstance(i[2], str) and not isinstance(i[2], list):
+        elif isinstance(test_datasets[i][1], (str, pathlib.Path)) and not os.path.exists(test_datasets[i][1]):
+            raise OSError(str(test_datasets[i][1]) + " does not exist")
+        if not isinstance(test_datasets[i][2], (str, list)):
             raise TypeError("name in dataset must be a string or a list")
+        else:
+            if test_datasets[i][2] != 'all' and isinstance(test_datasets[i][2], str):
+                test_datasets[i][2] = [test_datasets[i][2]]
     if not isinstance(batch_size, int):
-        if isinstance(batch_size, type(None)):
+        if batch_size is None:
             batch_size = 32
         else:
             raise TypeError("batch_size must be an integer")
@@ -575,7 +588,7 @@ def test(test_datasets, model, batch_size=32, num_workers=0):
         (not isinstance(num_workers, int) and num_workers != 'auto')
         or (isinstance(num_workers, int) and num_workers < 0)
     ):
-        if isinstance(num_workers, type(None)):
+        if num_workers is None:
             num_workers = 'auto'
         else:
             raise TypeError("num_workers must be non-negative integer or 'auto'")
@@ -588,15 +601,15 @@ def test(test_datasets, model, batch_size=32, num_workers=0):
     
  
 def generate_map(
-    x, 
-    y, 
-    reference, 
-    model, 
-    output, 
-    batch_size=32, 
-    num_workers=0, 
-    nodata=None
-):
+    x: Union[str, pathlib.Path, xarray.DataArray],
+    y: Union[str, pathlib.Path, xarray.DataArray],
+    reference: Union[str, pathlib.Path],
+    model,
+    output: Union[str, pathlib.Path],
+    batch_size: Optional[int] = 32,
+    num_workers: Optional[Union[int, str]] = 0,
+    nodata: Optional[Union[int, float]] = None,
+) -> None:
     """
     Create map using pre-trained model.
     
@@ -690,22 +703,22 @@ def generate_map(
         Predicting: 100% #################### 372/372 [32:16, 1.6s/it]
     """
     # Type checking
-    if not isinstance(x, str) and not isinstance(x, xarray.DataArray):
+    if not isinstance(x, (str, pathlib.Path, xarray.DataArray)):
         raise TypeError("x must be a string or xarray.DataArray")
-    elif isinstance(x, str) and not os.path.exists(x):
+    elif isinstance(x, (str, pathlib.Path)) and not os.path.exists(x):
         raise OSError(x + " does not exist")
-    if not isinstance(y, str) and not isinstance(y, xarray.DataArray):
+    if not isinstance(y, (str, pathlib.Path, xarray.DataArray)):
         raise TypeError("y must be a string or xarray.DataArray")
-    elif isinstance(y, str) and not os.path.exists(y):
+    elif isinstance(y, (str, pathlib.Path)) and not os.path.exists(y):
         raise OSError(x + " does not exist")
-    if not isinstance(reference, str):
+    if not isinstance(reference, (str, pathlib.Path)):
         raise TypeError("reference must be a string")
     elif not os.path.exists(reference):
         raise OSError(reference + " does not exist")
-    if not isinstance(output, str):
+    if not isinstance(output, (str, pathlib.Path)):
         raise TypeError("output must be a string")
     if not isinstance(batch_size, int):
-        if isinstance(batch_size, type(None)):
+        if batch_size is None:
             batch_size = 32
         else:
             raise TypeError("batch_size must be an integer")
@@ -713,11 +726,11 @@ def generate_map(
         (not isinstance(num_workers, int) and num_workers != 'auto')
         or (isinstance(num_workers, int) and num_workers < 0)
     ):
-        if isinstance(num_workers, type(None)):
+        if num_workers is None:
             num_workers = 'auto'
         else:
             raise TypeError("num_workers must be non-negative integer or 'auto'")
-    if not isinstance(nodata, int) and not isinstance(nodata, float) and not isinstance(nodata, type(None)):
+    if not isinstance(nodata, (int, float)) and nodata is not None:
         raise TypeError("nodata must be integer or float")
     
     cuda = cuda_test()
@@ -734,4 +747,3 @@ def generate_map(
         batch_size=batch_size,
         num_workers=num_workers,
     )
-

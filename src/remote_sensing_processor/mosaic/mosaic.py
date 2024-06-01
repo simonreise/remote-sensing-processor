@@ -34,7 +34,7 @@ def mosaic_main(
 ):
     paths = []
     resample = get_resampling(resample)
-    if reference_raster != None:
+    if reference_raster is not None:
         with rio.open(reference_raster) as r:
             crs = r.crs
     if mb == True:
@@ -89,7 +89,6 @@ def proc_files(inputs,
     band, 
     match_hist
 ):
-    files = []
     ref_hist = None
     futures = []
     for inp in inputs:
@@ -137,19 +136,19 @@ def prepare_file(inp, crs, nodata, clip, match_hist, ref_hist):
     with rioxarray.open_rasterio(inp, chunks=True, lock=True) as tif:
         pathfile = persist(tif)
     # If nodata not defined then read nodata from first file or set to 0
-    if nodata == None:
-        if pathfile.rio.nodata == None:
+    if nodata is None:
+        if pathfile.rio.nodata is None:
             nodata = 0
         else:
             nodata = pathfile.rio.nodata
     pathfile.rio.write_nodata(nodata, inplace=True)
-    if crs == None:
+    if crs is None:
         crs = pathfile.rio.crs
     if pathfile.rio.crs != crs:
         #warnings.warn('File ' + pathfile.files[0] + ' have CRS ' + str(pathfile.crs) + ' which is different from ' + str(crs) + '. Reproject can be memory consuming. It is recommended to reproject all files to the same CRS before mosaicing.')
         pathfile = pathfile.rio.reproject(crs)
         pathfile = persist(pathfile)
-    if clip != None:
+    if clip is not None:
         shape = gpd.read_file(clip).to_crs(crs)
         shape = convert_3D_2D(shape)
         pathfile = pathfile.rio.clip(shape.geometry.values, shape.crs)
@@ -183,7 +182,7 @@ def mosaic_process(
     band,
 ):
     # Nodata check
-    if nodata == None:
+    if nodata is None:
         nodata = files[0].rio.nodata
     for file in files:
         assert file.rio.nodata == nodata
@@ -203,18 +202,18 @@ def mosaic_process(
         final = persist(final)
     files = None
     # Clipping mosaic with vector mask
-    if clip != None:
-        if crs == None:
+    if clip is not None:
+        if crs is None:
             crs = final.rio.crs
         shape = gpd.read_file(clip).to_crs(crs)
         shape = convert_3D_2D(shape)
         final = final.rio.clip(shape.geometry.values, shape.crs)
         final = persist(final)
     # Resampling to the same shape and resolution as another raster
-    if reference_raster != None:
+    if reference_raster is not None:
         with rioxarray.open_rasterio(reference_raster, chunks=True, lock=True) as tif:
             ref = tif.load()
-        final = final.rio.reproject_match(ref)
+        final = final.rio.reproject_match(ref, resampling=resample)
         final = persist(final)
     # Because predictor = 2 works with float64 only when libtiff > 3.2.0 is installed
     # and default libtiff in ubuntu is 3.2.0

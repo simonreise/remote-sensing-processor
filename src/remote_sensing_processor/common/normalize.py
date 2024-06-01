@@ -10,7 +10,7 @@ def normalize_file(input_file, output_file, minimum, maximum):
     with rioxarray.open_rasterio(input_file, chunks=True, lock=True) as img:
         nodata = img.rio.nodata
         # Setting min and max to min and max of dtype
-        if minimum == None or maximum == None:
+        if minimum is None or maximum is None:
             minimum = np.iinfo(img.dtype).min
             maximum = np.iinfo(img.dtype).max
         # Normalization

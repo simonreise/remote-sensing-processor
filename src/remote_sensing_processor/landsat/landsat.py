@@ -197,7 +197,7 @@ def landsat_proc(path,
     img = xarray.concat(files, dim=xarray.Variable('band', band_names))
     #img = xarray.concat([rioxarray.open_rasterio(i, chunks=True, lock=Lock("rio-read", client=client)) for i in bands], dim=xarray.Variable('band', band_names))
     try:
-        if img.rio.nodata == None:
+        if img.rio.nodata is None:
             nodata = 0
         else:
             nodata = img.rio.nodata
@@ -251,10 +251,10 @@ def landsat_proc(path,
                 img = xarray.concat([img, pan], dim='band')   
             img = persist(img)
     # Reprojecting
-    if projection != None:
+    if projection is not None:
         img = img.rio.reproject(projection, resampling=Resampling.nearest)
         img = img.chunk("auto")
-        if ((pansharpen == False) and (keep_pan_band == True)):
+        if (pansharpen == False) and (keep_pan_band == True):
             pan = pan.rio.reproject(projection, resampling=Resampling.nearest)
             pan = pan.chunk("auto")
             pan = persist(pan)
@@ -262,11 +262,11 @@ def landsat_proc(path,
     else:
         projection = img.rio.crs
     # Clipping
-    if clip != None:
+    if clip is not None:
         shape = gpd.read_file(clip).to_crs(projection)
         shape = convert_3D_2D(shape)
         img = img.rio.clip(shape.geometry.values, shape.crs)
-        if ((pansharpen == False) and (keep_pan_band == True)):
+        if (pansharpen == False) and (keep_pan_band == True):
             pan = pan.rio.clip(shape.geometry.values, shape.crs)
             pan = persist(pan)
         img = persist(img)
@@ -291,7 +291,7 @@ def landsat_proc(path,
             compute=False, 
             lock=True,
         ))
-    if ((pansharpen == False) and (keep_pan_band == True)):
+    if (pansharpen == False) and (keep_pan_band == True):
         pathres = path + pan['band'][0].item() + '.tif'
         outfiles.append(pathlib.Path(pathres))
         results.append(pan.rio.to_raster(

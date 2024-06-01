@@ -14,9 +14,9 @@ def get_type(path):
         'B1', 'B11', 'B12', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9'
     ]:
         t = 'Sentinel2_p' #sentinel2 preprocessed in RSP
-    elif re.search('T\d\d\w\w\w_', path) != None:
+    elif re.search('T\d\d\w\w\w_', path) is not None:
         t = 'Sentinel2_up' #sentinel2 without processing
-    elif re.search('MTD_MSIL1C.xml', path) != None:
+    elif re.search('MTD_MSIL1C.xml', path) is not None:
         t = 'Sentinel2_up' #sentinel2 without processing
     elif re.search('L\w\d\d', path):
         if re.search('L\w\d\d', path).group(0) in ['LM05', 'LM04', 'LM03', 'LM02', 'LM01']:

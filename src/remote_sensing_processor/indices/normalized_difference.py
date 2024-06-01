@@ -22,7 +22,7 @@ def nd(name, b1, b2, folder=None):
                     final = ((band1.astype('float32') - band2.astype('float32'))
                              / (band1.astype('float32') + band2.astype('float32')))
                 final = final.fillna(0)
-                if folder == None:
+                if folder is None:
                     savefolder = os.path.dirname(b1)
                 else:
                     savefolder = folder

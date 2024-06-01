@@ -4,7 +4,7 @@ from dask.distributed import LocalCluster
 
 
 def get_client(cluster):
-    if cluster == None:
+    if cluster is None:
         cluster = get_local()
     client = cluster.get_client()
     return client

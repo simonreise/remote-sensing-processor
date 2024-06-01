@@ -25,9 +25,9 @@ def get_ss_tiles(
     y_nodata
 ):
     x_names = [os.path.basename(i).split('.')[0] for i in x]
-    if y != None:
+    if y is not None:
         y_names = [os.path.basename(i).split('.')[0] for i in y]
-    if x_nodata == None:
+    if x_nodata is None:
         x_nodata = get_nodata(x)
     # Calculate border and tile_size
     border = int(round(tile_size * 0.0625))
@@ -43,20 +43,20 @@ def get_ss_tiles(
                 band = band.where(band.rio.nodata, x_nodata)
             files.append(band)
     x_img = xarray.concat(files, dim=xarray.Variable('band', x_names))
-    if x_dtype != None:
+    if x_dtype is not None:
         x_img = x_img.astype(x_dtype)
     x_img = persist(x_img)
     # Reading y files
-    if y != None:
+    if y is not None:
         files = []
         for i in y:
             with rioxarray.open_rasterio(i, chunks=True, lock=True) as tif:
                 band = persist(tif)
                 files.append(band)
         y_img = xarray.concat(files, dim=xarray.Variable('band', y_names))
-        if y_dtype != None:
+        if y_dtype is not None:
             y_img = y_img.astype(y_dtype)
-        if y_nodata == None:
+        if y_nodata is None:
             y_nodata = y_img.rio.nodata
         # Checking image shapes
         assert x_img.shape[1:] == y_img.shape[1:]
@@ -75,7 +75,7 @@ def get_ss_tiles(
         constant_values=x_nodata
     )
     x_img = persist(x_img)
-    if y != None:
+    if y is not None:
         y_img = y_img.pad(
             {'y': (0, shp_pad[0] - y_img.shape[1]), 'x': (0, shp_pad[1] - y_img.shape[2])}, 
             mode='constant', 
@@ -89,7 +89,7 @@ def get_ss_tiles(
     x2 = tile_size
     y2 = tile_size
     for i in range(0, int(shp_pad[0] / tile_size), 1):
-        for i in range(0, int(shp_pad[1] / tile_size), 1):
+        for j in range(0, int(shp_pad[1] / tile_size), 1):
             tiles.append((x1, y1, x2, y2))
             y1 += tile_size
             y2 += tile_size
@@ -107,7 +107,7 @@ def get_ss_tiles(
             x=slice(tiles[i][1], tiles[i][3])
         )
         if x_tile.mean().values.item() == x_nodata:
-            if y != None:
+            if y is not None:
                 y_tile = y_img.isel(
                     y=slice(tiles[i][0], tiles[i][2]), 
                     x=slice(tiles[i][1], tiles[i][3])
@@ -141,11 +141,11 @@ def get_ss_tiles(
         names=split_names
     )
     x_img.rio.write_nodata(x_nodata, inplace=True)
-    if x_output != None:
+    if x_output is not None:
         x_img.to_zarr(x_output, mode='w')
     # Cutting y data into chips and stacking
     y_data = []
-    if y != None:
+    if y is not None:
         for i in range(len(y_img)):
             y_var = y_img[i]
             if classification:
@@ -180,7 +180,7 @@ def get_ss_tiles(
                 num_classes=num_classes
             )
             y_var.rio.write_nodata(y_nodata, inplace=True)
-            if y_output != None:
+            if y_output is not None:
                 y_var.to_zarr(y_output[i], mode='w')
             y_data.append(y_var)
     else:

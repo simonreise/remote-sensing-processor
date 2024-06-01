@@ -9,7 +9,7 @@ def replace_val(input_file, output_file, new, old, nodata):
     # Read
     with rioxarray.open_rasterio(input_file, chunks=True, lock=True) as tif:
         img = tif
-        if old == None and nodata == True:
+        if old is None and nodata == True:
             old = img.rio.nodata
         # Replacing nodata value
         img = img.where(img != old, new)

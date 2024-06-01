@@ -84,18 +84,18 @@ def segmentation_train(
             num_workers=num_workers
         )
         # Reading parameters that are needed to build the model
-        if input_shape == None:
+        if input_shape is None:
             input_shape = dm.input_shape
-        if input_dims == None:
+        if input_dims is None:
             input_dims = dm.input_dims
-        if num_classes == None:
+        if num_classes is None:
             num_classes = dm.num_classes
-        if classification == None:
+        if classification is None:
             classification = dm.classification
-        if y_nodata == None:
+        if y_nodata is None:
             y_nodata = dm.y_nodata
         # Loading model
-        if checkpoint != None:
+        if checkpoint is not None:
             model = Model.load_from_checkpoint(
                 checkpoint, 
                 input_shape=input_shape, 
@@ -149,7 +149,7 @@ def segmentation_train(
         # Setting up persist manager
         # Loading train datasets
         x_train, y_train, classification, y_nodata, num_classes = sklearn_load_dataset(train_datasets)
-        if checkpoint != None:
+        if checkpoint is not None:
             model = joblib.load(checkpoint)
             if model.model_name in ["Random Forest", "Gradient Boosting"]:
                 model.model.n_estimators += 50
@@ -289,12 +289,12 @@ class ZarrDataset(torch.utils.data.Dataset):
         if not isinstance(self.y_dataset, type(None)):
             y = tv_tensors.Mask(self.y_dataset[self.indices[index]].data.compute())
             # Transform
-            if self.transform != None:
+            if self.transform is not None:
                 x, y = self.transform(x, y)
             return x, y
         else:
             # Transform
-            if self.transform != None:
+            if self.transform is not None:
                 x = self.transform(x)
             return x
 
