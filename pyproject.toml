@@ -79,6 +79,11 @@ tests = ["pytest", "pytest-dependency", "pystac-client", "planetary-computer", "
 [tool.setuptools.dynamic]
 version = {attr = "remote_sensing_processor.__version__"}
 
+[tool.pytest.ini_options]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+
 [tool.ruff]
 line-length = 120
 exclude = [

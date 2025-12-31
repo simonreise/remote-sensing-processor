@@ -3,7 +3,8 @@
 
 ----
 
-[![Build status](https://ci.appveyor.com/api/projects/status/usca6y014oakdtj2?svg=true)](https://ci.appveyor.com/project/simonreise/remote-sensing-processor)
+[![tests](https://github.com/simonreise/remote-sensing-processor/actions/workflows/tests.yml/badge.svg)](https://github.com/simonreise/remote-sensing-processor/actions/workflows/tests.yml)
+[![style](https://github.com/simonreise/remote-sensing-processor/actions/workflows/style.yml/badge.svg)](https://github.com/simonreise/remote-sensing-processor/actions/workflows/style.yml)
 [![PyPI](https://img.shields.io/pypi/v/remote-sensing-processor)](https://pypi.org/project/remote-sensing-processor/)
 [![Conda](https://img.shields.io/conda/v/moskovchenkomike/remote-sensing-processor)](https://anaconda.org/moskovchenkomike/remote-sensing-processor)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.11091321.svg)](https://doi.org/10.5281/zenodo.11091321)

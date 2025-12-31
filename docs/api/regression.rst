@@ -10,6 +10,7 @@ List of available NN models
 .. list-table:: Supported ML Models
    :widths: 25 50 25
    :header-rows: 1
+
    * - Model Name
      - Backbone
      - Reference
@@ -123,6 +124,7 @@ List of available Scikit-learn models
 .. list-table:: Supported Scikit-Learn Models
    :widths: 20 40 20 20
    :header-rows: 1
+
    * - Model Name
      - Kernel/solver
      - Warm start
@@ -270,6 +272,7 @@ List of available losses
 .. list-table:: Supported loss functions
    :widths: 50 50
    :header-rows: 1
+
    * - Loss
      - Reference
    * - mse
@@ -307,6 +310,7 @@ List of available metrics
 .. list-table:: Supported metrics
    :widths: 40 30 30
    :header-rows: 1
+
    * - Metric
      - Additional parameters
      - Reference
@@ -415,6 +419,7 @@ Supported augmentations
 .. list-table:: Supported augmentations
    :widths: 40 30 30
    :header-rows: 1
+
    * - Augmentation
      - Additional parameters
      - Reference
