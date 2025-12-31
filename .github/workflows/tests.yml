@@ -24,4 +24,4 @@ jobs:
       - name: Install dependencies
         run: pip install .[tests]
       - name: Test with PyTest
-        run: pytest -m "not slow"
+        run: pytest tests/ -m "not slow"

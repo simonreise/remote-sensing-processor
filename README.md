@@ -47,11 +47,11 @@ Calculate:
 - Curvature
 - Hillshade
 
-## Mosaic
+### Mosaic
 
 - Generating mosaics from several single-band or multi-band rasters 
 
-## Machine learning
+### Machine learning
 
 - Generate ML-ready datasets from your custom geospatial data - cut data into tiles, split to train / validation / test subdatasets, random shuffle the data
 - Train both Deep Learning and classical ML models, including custom models
@@ -60,7 +60,7 @@ Calculate:
 - Use trained ML models to make predictions and generate maps out of them
 - Estimate band importance for the modeling
 
-### Semantic segmentation
+#### Semantic segmentation
 
 Semantic segmentation module supports models from:
 - HuggingFace Transformers
@@ -71,7 +71,7 @@ Semantic segmentation module supports models from:
 - XGBoost
 - Custom SKlearn-like models
 
-### Regression
+#### Regression
 
 Semantic segmentation module supports models from:
 - HuggingFace Transformers
