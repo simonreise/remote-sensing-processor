@@ -1,324 +1,124 @@
-import os
-import collections
-import joblib
+"""General segmentation functions and classes."""
+
+from pydantic import BaseModel, NonNegativeFloat, NonNegativeInt, PositiveInt, TypeAdapter
+from typing import Any, Literal, Optional, Union
+
 import warnings
+from pathlib import Path
+
+from skimage import feature
 
 import numpy as np
-import xarray
-import dask
 
-import sklearn.metrics
-import torch
-import torchvision
-from torchvision.transforms import v2
-from torchvision import tv_tensors
-import torchmetrics
-import transformers
 import lightning as l
+import torch
+from lightning.pytorch.loggers import CSVLogger, TensorBoardLogger
+from torchvision import tv_tensors
+from torchvision.transforms import v2
 
-from remote_sensing_processor.common.common_functions import persist
-
-from remote_sensing_processor.segmentation.models import load_model, load_sklearn_model
-
-
-# These warnings usually appear on sanity check if a loaded tile is empty
-warnings.filterwarnings("ignore", message="No positive samples in targets")
-warnings.filterwarnings("ignore", message="exists and is not empty")
-warnings.filterwarnings("ignore", message="could not find the monitored key in the returned metrics")
-warnings.filterwarnings("ignore", message="Skipping val loop")
-
-dask.config.set(scheduler='synchronous')
+from remote_sensing_processor.common.common_functions import read_json
+from remote_sensing_processor.common.types import SKLModel, TorchNNModel, TorchTransform
 
 
-def segmentation_train(
-    train_datasets, 
-    val_datasets, 
-    model, 
-    backbone, 
-    checkpoint, 
-    weights, 
-    model_file, 
-    epochs, 
-    batch_size, 
-    augment, 
-    repeat, 
-    classification, 
-    num_classes, 
-    y_nodata, 
-    less_metrics, 
-    lr, 
-    num_workers, 
-    **kwargs
-):
-    input_shape = None
-    input_dims = None
-    # Deep learning pytorch models
-    if model in [
-        'BEiT', 
-        'ConditionalDETR', 
-        'Data2Vec', 
-        'DETR', 
-        'DPT', 
-        'Mask2Former', 
-        'MaskFormer', 
-        'MobileNetV2', 
-        'MobileViT', 
-        'MobileViTV2', 
-        'OneFormer', 
-        'SegFormer', 
-        'UperNet', 
-        'DeepLabV3', 
-        'FCN', 
-        'LRASPP'
-    ]:
-        # Checking if file extention is right
-        if os.path.splitext(model_file)[1] != '.ckpt':
-            raise ValueError("Wrong model file format: .ckpt file extention expected for " + model)
-        # Setting up data module
-        dm = SegDataModule(
-            train_datasets=train_datasets, 
-            val_datasets=val_datasets, 
-            repeat=repeat, 
-            augment=augment, 
-            batch_size=batch_size, 
-            num_workers=num_workers
-        )
-        # Reading parameters that are needed to build the model
-        if input_shape is None:
-            input_shape = dm.input_shape
-        if input_dims is None:
-            input_dims = dm.input_dims
-        if num_classes is None:
-            num_classes = dm.num_classes
-        if classification is None:
-            classification = dm.classification
-        if y_nodata is None:
-            y_nodata = dm.y_nodata
-        # Loading model
-        if checkpoint is not None:
-            model = Model.load_from_checkpoint(
-                checkpoint, 
-                input_shape=input_shape, 
-                input_dims=input_dims, 
-                num_classes=num_classes, 
-                classification=classification, 
-                y_nodata=y_nodata, 
-                lr=lr
-            )
-        else:
-            model = Model(
-                model, 
-                backbone, 
-                weights, 
-                input_shape, 
-                input_dims, 
-                num_classes, 
-                classification, 
-                y_nodata, 
-                less_metrics, 
-                lr, 
-                **kwargs
-            )
-        # Setting up trainer
-        checkpoint_callback = l.pytorch.callbacks.ModelCheckpoint(
+class Epochs(BaseModel):
+    """Basic class to configure epochs and early stopping."""
+
+    max_epochs: NonNegativeInt
+    early_stopping: bool
+    min_delta: Optional[NonNegativeFloat] = None
+    patience: Optional[PositiveInt] = None
+
+
+def setup_trainer(model_file: Path, epochs: Optional[dict], val: bool, precision: Optional[str]) -> l.Trainer:
+    """Set up a Lightning trainer."""
+    monitor = "val_loss" if val else "train_loss"
+
+    # Set up default epochs value if it is None
+    if epochs is None:
+        epochs = {"max_epochs": 5, "early_stopping": True}
+    epochs = TypeAdapter(Epochs).validate_python(epochs)
+
+    # Setting up trainer
+    callbacks = []
+    callbacks.append(
+        l.pytorch.callbacks.ModelCheckpoint(
             save_top_k=1,
-            monitor="val_loss" if not isinstance(val_datasets, type(None)) else "train_loss",
+            monitor=monitor,
             mode="min",
-            dirpath=os.path.dirname(model_file),
-            filename=os.path.basename(os.path.splitext(model_file)[0]),
-            enable_version_counter=False
+            dirpath=model_file.parent,
+            filename=model_file.stem,
+            enable_version_counter=False,
+        ),
+    )
+
+    if epochs.early_stopping:
+        early_stopping_params = {}
+        if epochs.min_delta is not None:
+            early_stopping_params["min_delta"] = epochs.min_delta
+        if epochs.patience is not None:
+            early_stopping_params["patience"] = epochs.patience
+        callbacks.append(
+            l.pytorch.callbacks.early_stopping.EarlyStopping(monitor=monitor, mode="min", **early_stopping_params),
         )
-        tb_logger = l.pytorch.loggers.TensorBoardLogger(
-            save_dir=os.path.join(os.path.dirname(model_file), 'logs' , 'tensorboard')
-        )
-        csv_logger = l.pytorch.loggers.CSVLogger(
-            save_dir=os.path.join(os.path.dirname(model_file), 'logs' , 'csv')
-        )
-        trainer = l.Trainer(
-            max_epochs=epochs, 
-            callbacks=[checkpoint_callback], 
-            logger=[tb_logger, csv_logger],
-        )
-        # Training
-        trainer.fit(model, dm)
-    # Sklearn ML models
-    elif model in ["Nearest Neighbors", "Logistic Regression", "SVM", "Gaussian Process", "Decision Tree", "Random Forest", "Gradient Boosting", "Multilayer Perceptron", "AdaBoost", "Naive Bayes", "QDA", "Ridge", "Lasso", "ElasticNet", "XGBoost", "XGB Random Forest"]:
-        # Checking if file extention is right
-        if os.path.splitext(model_file)[1] != '.joblib':
-            raise ValueError("Wrong model file format: .joblib file extention expected for " + model)
-        # Setting up persist manager
-        # Loading train datasets
-        x_train, y_train, classification, y_nodata, num_classes = sklearn_load_dataset(train_datasets)
-        if checkpoint is not None:
-            model = joblib.load(checkpoint)
-            if model.model_name in ["Random Forest", "Gradient Boosting"]:
-                model.model.n_estimators += 50
-        else:
-            model = SklearnModel(
-                model, 
-                backbone, 
-                classification, 
-                epochs, 
-                y_nodata, 
-                num_classes, 
-                **kwargs
-            )
-        model.fit(x_train, y_train)
-        del x_train
-        del y_train
-        # Validation
-        if not isinstance(val_datasets, type(None)):
-            x_val, y_val, _, _, _ = sklearn_load_dataset(val_datasets)
-            model.test(x_val, y_val)
-        try:
-            joblib.dump(model, model_file, compress = 9)
-        except:
-            warnings.warn('Error while saving model, check if enough free space is available.')
-    else:
-        raise ValueError("Wrong model name. Check spelling or read a documentation and choose a supported model")
-    return model
 
-    
-def segmentation_test(test_datasets, model, batch_size, num_workers):
-    for ds in test_datasets:
-        if len(ds) != 3:
-            raise ValueError("Every dataset must consist of x, y and names")  
-    # Loading model
-    if isinstance(model, str):
-        if '.ckpt' in model:
-            model = Model.load_from_checkpoint(model)
-        elif '.joblib' in model:
-            model = joblib.load(model)
-    # Neural networks
-    if model.model_name in [
-        'BEiT', 
-        'ConditionalDETR', 
-        'Data2Vec', 
-        'DETR', 
-        'DPT', 
-        'Mask2Former', 
-        'MaskFormer', 
-        'MobileNetV2', 
-        'MobileViT', 
-        'MobileViTV2', 
-        'OneFormer', 
-        'SegFormer', 
-        'UperNet', 
-        'DeepLabV3', 
-        'FCN', 
-        'LRASPP'
-    ]:
-        dm = SegDataModule(
-            test_datasets=test_datasets, 
-            batch_size=batch_size, 
-            num_workers=num_workers
-        )
-        trainer = l.Trainer()
-        trainer.test(model, dm)
-    # Sklearn models
-    elif model.model_name in [
-        "Nearest Neighbors", 
-        "Logistic Regression", 
-        "SVM", 
-        "Gaussian Process", 
-        "Decision Tree", 
-        "Random Forest", 
-        "Gradient Boosting", 
-        "Multilayer Perceptron", 
-        "AdaBoost", 
-        "Naive Bayes", 
-        "QDA", 
-        "Ridge", 
-        "Lasso", 
-        "ElasticNet", 
-        "XGBoost", 
-        "XGB Random Forest"
-    ]:
-        classification = model.classification
-        # Loading test datasets
-        x_test, y_test, _, _, _ = sklearn_load_dataset(test_datasets)
-        model.test(x_test, y_test)
-    else:
-        raise ValueError("Wrong model name. Check spelling or read a documentation and choose a supported model")
+    tb_logger = TensorBoardLogger(save_dir=model_file.parent / "logs" / "tensorboard", name=model_file.stem)
+    csv_logger = CSVLogger(save_dir=model_file.parent / "logs" / "csv", name=model_file.stem)
+
+    trainer = l.Trainer(
+        max_epochs=epochs.max_epochs,
+        callbacks=callbacks,
+        logger=[tb_logger, csv_logger],
+        precision=precision,
+    )
+
+    if not val:
+        trainer.limit_val_batches = 0  # Don't run validation loop during training
+        trainer.num_sanity_val_steps = 0  # Don't run sanity check before training
+    return trainer
 
 
-class ZarrDataset(torch.utils.data.Dataset):
-    def __init__(self, x, y, names, transform):
-        # Reading x dataset
-        if isinstance(x, str):
-            self.x_dataset = xarray.open_dataarray(x, engine='zarr', chunks='auto', mask_and_scale=False)
-        elif isinstance(x, xarray.DataArray):
-            self.x_dataset = x
-        # Getting tiles and samples
-        self.tiles = self.x_dataset.tiles
-        self.border = self.x_dataset.border
-        samples = []
-        for i in range(len(self.x_dataset.names)):
-            if names == 'all' or self.x_dataset.names[i] in names:
-                samples.extend(self.x_dataset.samples[i])
-        self.samples = samples
-        # Getting indices of samples
-        indices = []
-        for k, v in enumerate([x for xs in self.x_dataset.samples for x in xs]):
-            if v in samples:
-                indices.append(k)
-        self.indices = indices
-        # Getting len
-        self.dataset_len = len(self.samples)
-        if not isinstance(y, type(None)):
-            # Reading y dataset
-            if isinstance(y, str):
-                self.y_dataset = xarray.open_dataarray(y, engine='zarr', chunks='auto', mask_and_scale=False)
-            elif isinstance(y, xarray.DataArray):
-                self.y_dataset = y
-        else:
-            self.y_dataset = None
-        # Setting up transform
-        self.transform = transform
-        self.is_persisted = False
+class Dataset:
+    """Basic dataset class."""
 
-    def __getitem__(self, index):
-        # Persist is in getitem because if it is in init then multiprocessing is not working
-        # because datasets are too big to pickle
-        if self.is_persisted == False:
-            self.x_dataset = persist(self.x_dataset)
-            if not isinstance(self.y_dataset, type(None)):
-                self.y_dataset = persist(self.y_dataset)
-            self.is_persisted = True
-        x = tv_tensors.Image(self.x_dataset[self.indices[index]].data.astype('float32').compute())
-        if not isinstance(self.y_dataset, type(None)):
-            y = tv_tensors.Mask(self.y_dataset[self.indices[index]].data.compute())
-            # Transform
-            if self.transform is not None:
-                x, y = self.transform(x, y)
-            return x, y
-        else:
-            # Transform
-            if self.transform is not None:
-                x = self.transform(x)
-            return x
+    def __init__(self, dataset: BaseModel) -> None:
+        path = dataset.path
+        self.reference = path / "ref.tif"
 
-    def __len__(self):
-        return self.dataset_len
+        # Loading metadata
+        self.meta = read_json(path / "meta.json")
 
-    def __del__(self):
-        self.x_dataset.close()
-        if not isinstance(self.y_dataset, type(None)):
-            self.y_dataset.close()
-            
+        # Getting the subdatasets we need
+        self.files = []
+        length = []
+        for name in self.meta["samples"]:
+            if dataset.sub == "all" or name in dataset.sub:
+                self.files.append((path / name))
+                length.append(len(self.meta["samples"][name]))
+        self.meta["len"] = length
 
-class SegDataModule(l.LightningDataModule):
+        # Setting up common parameters
+        self.input_shape = self.meta["tile_size"]
+        self.border = self.meta["border"]
+        self.input_dims = self.meta["x"]["bands"]
+        self.variables = self.meta["x"]["variables"]
+        self.x_nodata = self.meta["x"]["nodata"]
+
+
+class DataModule(l.LightningDataModule):
+    """Basic RSP datamodule."""
+
     def __init__(
-        self, 
-        train_datasets=None, 
-        val_datasets=None, 
-        test_datasets=None, 
-        pred_dataset=None, 
-        repeat=1, 
-        augment=False, 
-        batch_size=32, 
-        num_workers='auto'
-    ):
+        self,
+        train_datasets: Optional[list[BaseModel]] = None,
+        val_datasets: Optional[list[BaseModel]] = None,
+        test_datasets: Optional[list[BaseModel]] = None,
+        pred_dataset: Optional[BaseModel] = None,
+        repeat: Optional[int] = 1,
+        augment: Optional[Union[bool, tuple[Union[str, TorchTransform]]]] = False,
+        batch_size: Optional[int] = 32,
+        num_workers: Optional[Union[int, Literal["auto"]]] = "auto",
+        bbox: Optional[bool] = False,
+    ) -> None:
         super().__init__()
         # Setting up datasets
         self.train_datasets = train_datasets
@@ -327,551 +127,419 @@ class SegDataModule(l.LightningDataModule):
         self.pred_dataset = pred_dataset
         self.repeat = repeat
         self.batch_size = batch_size
-        # Configuring multiporcessing
-        if num_workers != 0 and num_workers != 'auto' and num_workers > torch.multiprocessing.cpu_count():
-            warnings.warn("'num_workers' is " + num_workers + ", but you have only "
-                          + torch.multiprocessing.cpu_count() + "CPU cores. Setting 'num_workers' to 'auto'")
-            num_workers = 'auto'
-        if num_workers == 'auto':
+        self.reference = None
+        # Configuring multiprocessing
+        if num_workers != 0 and num_workers != "auto" and num_workers > torch.multiprocessing.cpu_count():
+            warnings.warn(
+                "'num_workers' is "
+                + str(num_workers)
+                + ", but you have only "
+                + str(torch.multiprocessing.cpu_count())
+                + "CPU cores. Setting 'num_workers' to 'auto'",
+                stacklevel=1,
+            )
+            num_workers = "auto"
+        if num_workers == "auto":
             cpus = torch.multiprocessing.cpu_count()
             gpus = max(torch.cuda.device_count(), 1)
-            self.workers = max(1 , cpus // gpus - 1)
-            self.pw = True
+            self.workers = max(1, cpus // gpus - 1)
         elif num_workers != 0:
             self.workers = num_workers
-            self.pw = True
         else:
             self.workers = 0
-            self.pw = False
         # Parameters that are needed to build the model
         self.input_shape = None
+        self.border = None
         self.input_dims = None
-        self.num_classes = None
-        self.classification = None
+        self.variables = None
         self.x_nodata = None
         self.y_nodata = None
-        self.classes = None
+        self.y_dtype = None
         # Dataset check
         if self.train_datasets:
-            self.dataset_check(self.train_datasets)
+            self.train_datasets = self.dataset_check(self.train_datasets)
         if self.val_datasets:
-            self.dataset_check(self.val_datasets)
+            self.val_datasets = self.dataset_check(self.val_datasets)
         if self.test_datasets:
-            self.dataset_check(self.test_datasets)
+            self.test_datasets = self.dataset_check(self.test_datasets)
         if self.pred_dataset:
-            self.dataset_check([[self.pred_dataset, None, 'all']])
+            self.pred_dataset = self.dataset_check([self.pred_dataset])
         # Setting up transform
-        if augment == True:
-            self.transform = v2.Compose([
-                v2.RandomResizedCrop(size=(self.input_shape, self.input_shape), antialias=True),
-                v2.RandomHorizontalFlip(p=0.5),
-                # Removed because of nans
-                #v2.RandomRotation(45, fill={tv_tensors.Image: self.x_nodata.item(), tv_tensors.Mask: self.y_nodata.item()}),
-                #v2.ElasticTransform(fill={tv_tensors.Image: self.x_nodata.item(), tv_tensors.Mask: self.y_nodata.item()}),
-            ])
-        else:
-            self.transform = None
-    
-    def dataset_check(self, datasets):
-        for ds in datasets:
-            if isinstance(ds[0], str):
-                x_dataset = xarray.open_dataarray(ds[0], engine='zarr', mask_and_scale=False)
-            elif isinstance(ds[0], xarray.DataArray):
-                x_dataset = ds[0]
-            input_shape = x_dataset.shape[2]
-            input_dims = x_dataset.shape[1]
-            x_nodata = x_dataset.rio.nodata
-            if not isinstance(ds[1], type(None)):
-                if isinstance(ds[1], str):
-                    y_dataset = xarray.open_dataarray(ds[1], engine='zarr', mask_and_scale=False)
-                elif isinstance(ds[1], xarray.DataArray):
-                    y_dataset = ds[1]
-                y_nodata = y_dataset.rio.nodata
-                classification = y_dataset.classification
-                classes = y_dataset.classes
-                num_classes = y_dataset.num_classes
-                assert y_dataset.shape[1] == input_shape
-                assert x_dataset.tiles == y_dataset.tiles
-                assert x_dataset.samples == y_dataset.samples
-                assert x_dataset.border == y_dataset.border
-            else:
-                y_nodata = None
-                classification = None
-                classes = None
-                num_classes = None
-            if self.input_shape is not None:
-                assert input_shape == self.input_shape
-            elif input_shape is not None:
-                self.input_shape = input_shape
-            if self.input_dims is not None:
-                assert input_dims == self.input_dims
-            elif input_dims is not None:
-                self.input_dims = input_dims
-            if self.x_nodata is not None:
-                assert x_nodata == self.x_nodata
-            elif x_nodata is not None:
-                self.x_nodata = x_nodata
-            if self.y_nodata is not None:
-                assert y_nodata == self.y_nodata
-            elif y_nodata is not None:
-                self.y_nodata = y_nodata
-            if self.classification is not None:
-                assert classification == self.classification
-            elif classification is not None:
-                self.classification = classification
-            if self.classes is not None:
-                assert classes == self.classes
-            elif classes is not None:
-                self.classes = classes
-            if self.num_classes is not None:
-                assert num_classes == self.num_classes
-            elif num_classes is not None:
-                self.num_classes = num_classes
+        self.transform = self.setup_transform(augment, bbox)
 
-    def setup(self, stage):
-        if stage == 'fit':
-            datasets = []
-            for ds in self.train_datasets:
-                for j in range(self.repeat):
-                    datasets.append(ZarrDataset(ds[0], ds[1], ds[2], transform=self.transform))
-            self.ds_train = torch.utils.data.ConcatDataset(datasets)
-            if not isinstance(self.val_datasets, type(None)):
-                datasets = []
-                for ds in self.val_datasets:
-                    datasets.append(ZarrDataset(ds[0], ds[1], ds[2], transform=None))
-                self.ds_val = torch.utils.data.ConcatDataset(datasets)
+    def setup_transform(
+        self,
+        augment: Optional[Union[bool, tuple[Union[str, TorchTransform]]]],
+        bbox: Optional[bool],
+    ) -> Optional[v2.Compose]:
+        """Setup data augmentation."""
+        valid_transforms = [
+            "ScaleJitter",
+            "RandomResizedCrop",
+            "RandomIoUCrop",
+            "RandomHorizontalFlip",
+            "RandomVerticalFlip",
+            "RandomZoomOut",
+            "RandomRotation",
+            "RandomAffine",
+            "RandomPerspective",
+            "ElasticTransform",
+            "GaussianBlur",
+        ]
+        if augment is True:
+            augment = ("RandomResizedCrop", "RandomHorizontalFlip")
+        transforms = []
+        if augment is not False:
+            for t in augment:
+                if isinstance(t, str):
+                    if t not in valid_transforms:
+                        raise ValueError(t + " is not a valid transform")
+                    if t == "ScaleJitter":
+                        transforms.append(v2.ScaleJitter(target_size=(self.input_shape, self.input_shape)))
+                    elif t == "RandomResizedCrop":
+                        transforms.append(
+                            v2.RandomResizedCrop(size=(self.input_shape, self.input_shape), antialias=True),
+                        )
+                    elif t == "RandomIoUCrop":
+                        transforms.append(v2.RandomIoUCrop())
+                    elif t == "RandomHorizontalFlip":
+                        transforms.append(v2.RandomHorizontalFlip(p=0.5))
+                    elif t == "RandomVerticalFlip":
+                        transforms.append(v2.RandomVerticalFlip(p=0.5))
+                    elif t == "RandomZoomOut":
+                        transforms.append(
+                            v2.RandomZoomOut(fill={tv_tensors.Image: self.x_nodata, tv_tensors.Mask: self.y_nodata}),
+                        )
+                    elif t == "RandomRotation":
+                        transforms.append(
+                            v2.RandomRotation(
+                                90,
+                                fill={tv_tensors.Image: self.x_nodata, tv_tensors.Mask: self.y_nodata},
+                            ),
+                        )
+                    elif t == "RandomAffine":
+                        transforms.append(
+                            v2.RandomAffine(
+                                degrees=90,
+                                translate=(0.5, 0.5),
+                                shear=0.5,
+                                fill={tv_tensors.Image: self.x_nodata, tv_tensors.Mask: self.y_nodata},
+                            ),
+                        )
+                    elif t == "RandomPerspective":
+                        transforms.append(
+                            v2.RandomPerspective(
+                                fill={tv_tensors.Image: self.x_nodata, tv_tensors.Mask: self.y_nodata},
+                            ),
+                        )
+                    elif t == "ElasticTransform":
+                        transforms.append(
+                            v2.ElasticTransform(fill={tv_tensors.Image: self.x_nodata, tv_tensors.Mask: self.y_nodata}),
+                        )
+                    elif t == "GaussianBlur":
+                        transforms.append(v2.GaussianBlur(kernel_size=(5, 9)))
+                else:
+                    transforms.append(t)
+
+            # Fixing if size has changed or bboxes became invalid after transforms
+            transforms.append(v2.Resize(size=(self.input_shape, self.input_shape), antialias=True))
+            if bbox:
+                transforms.append(v2.SanitizeBoundingBoxes())
+            transforms.append(v2.ToPureTensor())
+
+            return v2.Compose(transforms)
+        return None
+
+    def dataset_check(self, datasets: Any) -> Any:
+        """Basic dataset check function. Should be extended in child classes."""
+        return datasets
+
+    def assert_common(self, ds: list[Dataset]) -> None:
+        """Assert if common values are the same in every dataset."""
+        # Checking data values
+        if not all(d.input_shape == ds[0].input_shape for d in ds):
+            raise ValueError("input shapes of input datasets are different")
+        self.input_shape = ds[0].input_shape
+
+        if not all(d.border == ds[0].border for d in ds):
+            raise ValueError("borders of input datasets are different")
+        self.border = ds[0].border
+
+        if not all(d.input_dims == ds[0].input_dims for d in ds):
+            raise ValueError("input dims of input datasets are different")
+        self.input_dims = ds[0].input_dims
+
+        if not all(d.variables == ds[0].variables for d in ds):
+            raise ValueError("input dims of input datasets are different")
+        self.variables = ds[0].variables
+
+        if not all(d.x_nodata == ds[0].x_nodata for d in ds):
+            raise ValueError("x nodatas of input datasets are different")
+        self.x_nodata = ds[0].x_nodata
+
+    def setup(self, stage: str) -> None:
+        """Setup function."""
+        if stage == "fit":
+            self.ds_train = self.setup_datasets(self.train_datasets)
+            if self.val_datasets is not None:
+                self.ds_val = self.setup_datasets(self.val_datasets)
             else:
                 self.ds_val = None
-        if stage == 'test':
-            datasets = []
-            for ds in self.test_datasets:
-                datasets.append(ZarrDataset(ds[0], ds[1], ds[2], transform=None))
-            self.ds_test = torch.utils.data.ConcatDataset(datasets)
-        if stage == 'predict':
-            self.ds_pred = ZarrDataset(self.pred_dataset, None, 'all', transform=None)
-        
-    def train_dataloader(self):
-        return torch.utils.data.DataLoader(
-            self.ds_train, 
-            batch_size=self.batch_size, 
-            shuffle=True, 
-            pin_memory=True, 
-            num_workers=self.workers, 
-            persistent_workers=self.pw
-        )
-        #return DataLoader2(self.ds_train, reading_service=self.rs)
+        if stage == "test":
+            self.ds_test = self.setup_datasets(self.test_datasets)
+        if stage == "predict":
+            self.ds_pred = self.setup_datasets(self.pred_dataset)
+            if "y" in self.ds_pred.column_names:
+                self.ds_pred = self.ds_pred.remove_columns("y")
 
-    def val_dataloader(self):
-        if not isinstance(self.ds_val, type(None)):
+    def setup_datasets(self, ds: Any) -> Any:
+        """Basic setup dataset function. Should be extended in child classes."""
+        return ds
+
+    def train_dataloader(self) -> torch.utils.data.DataLoader:
+        """Train dataloader."""
+        return torch.utils.data.DataLoader(
+            self.ds_train,
+            batch_size=self.batch_size,
+            pin_memory=True,
+            num_workers=self.workers,
+            persistent_workers=self.workers > 0,
+        )
+
+    def val_dataloader(self) -> Optional[torch.utils.data.DataLoader]:
+        """Validation dataloader."""
+        if self.ds_val is not None:
             return torch.utils.data.DataLoader(
-                self.ds_val, 
-                batch_size=self.batch_size, 
-                pin_memory=True, 
-                num_workers=self.workers, 
-                persistent_workers=self.pw
+                self.ds_val,
+                batch_size=self.batch_size,
+                pin_memory=True,
+                num_workers=self.workers,
+                persistent_workers=self.workers > 0,
             )
-            #return DataLoader2(self.ds_val, reading_service=self.rs)
-        else:
-            return None
+        return None
 
-    def test_dataloader(self):
+    def test_dataloader(self) -> torch.utils.data.DataLoader:
+        """Test dataloader."""
         return torch.utils.data.DataLoader(
-            self.ds_test, 
-            batch_size=self.batch_size, 
-            pin_memory=True, 
-            num_workers=self.workers, 
-            persistent_workers=self.pw
+            self.ds_test,
+            batch_size=self.batch_size,
+            pin_memory=True,
+            num_workers=self.workers,
+            persistent_workers=self.workers > 0,
         )
-        #return DataLoader2(self.ds_test, reading_service=self.rs)
 
-    def predict_dataloader(self):
+    def predict_dataloader(self) -> torch.utils.data.DataLoader:
+        """Prediction dataloader."""
         return torch.utils.data.DataLoader(
-            self.ds_pred, 
-            batch_size=self.batch_size, 
-            pin_memory=True, 
-            num_workers=self.workers, 
-            persistent_workers=self.pw
+            self.ds_pred,
+            batch_size=self.batch_size,
+            pin_memory=True,
+            num_workers=self.workers,
+            persistent_workers=self.workers > 0,
         )
-        #return DataLoader2(self.ds_pred, reading_service=self.rs)
 
 
 class Model(l.LightningModule):
+    """Basic RSP Torch-based model class."""
+
     def __init__(
         self,
-        model,
-        backbone,
-        weights,
-        input_shape,
-        input_dims,
-        num_classes,
-        classification,
-        y_nodata,
-        less_metrics,
-        lr,
-        **kwargs
-    ):
+        model: Union[str, TorchNNModel],
+        input_shape: int,
+        input_dims: int,
+        y_nodata: Optional[Union[int, float]],
+        lr: Optional[float],
+        precision: Optional[str],
+        scheduler_opt: Literal["val_loss", "train_loss"],
+        overwrite_loss: bool = False,
+    ) -> None:
         super().__init__()
         self.save_hyperparameters()
-        
-        self.model_name = model
-        self.model = load_model(model, backbone, weights, input_shape, input_dims, num_classes, **kwargs)
-        self.classification = classification
-        self.less_metrics = less_metrics
-        self.num_classes = num_classes
+
+        if isinstance(model, str):
+            self.model_name = model
+        else:
+            self.model_name = "Custom_Torch"
+        self.input_shape = input_shape
+        self.input_dims = input_dims
         self.y_nodata = y_nodata
-        if classification:
-            self.loss_fn = torch.nn.CrossEntropyLoss(ignore_index=int(y_nodata))
         self.lr = lr
-        torch.autograd.set_detect_anomaly(True)
-    
-    def forward(self, x):
-        if isinstance(self.model, transformers.OneFormerForUniversalSegmentation):
-            # Oneformer also requires tokenized tasks as inputs, task is semantic
-            t = torch.tensor([[49406,   518, 10549,   533, 29119,  1550, 49407,     0,     0,     0,
-                 0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-                 0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-                 0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-                 0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-                 0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-                 0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-                 0,     0,     0,     0,     0,     0,     0]], device=self.device)
-            t = torch.cat([t] * x.shape[0], dim=0)
-            pred = self.model(x, t)
-        else: 
-            pred = self.model(x)
-        return pred
-    
-    def training_step(self, batch, batch_idx):
-        x, y = batch
-        pred = self.forward(x)
-        y = self.ytype(y)
-        pred = self.process_output(pred, x)
-        #print(torch.unique(torch.isnan(pred)))
-        #print(y.min(), y.max())
-        #print(pred.min(), pred.max())
-        if self.classification:
-            loss = self.loss_fn(pred, y)
-        else:
-            loss = self.mse_loss(pred.squeeze(), y.squeeze(), ignore_index=self.y_nodata)
-        self.log_all(y, pred, loss, 'train')
+        self.precision = precision
+        self.scheduler_opt = scheduler_opt
+        # If loss is not set, use default loss in Transformers, if set then use the user-defined loss
+        self.overwrite_loss = overwrite_loss
+        # torch.autograd.set_detect_anomaly(True)
+
+    def forward(self, batch: Any) -> Any:
+        """Basic forward function of a model. Should be extended in child classes."""
+        return batch, batch, 0, 0
+
+    def training_step(self, batch: dict, batch_idx: Optional[int]) -> torch.Tensor:
+        """Training step."""
+        y, pred, loss, _ = self.forward(batch)
+        if loss is None:
+            raise ValueError("unable to compute loss")
+        self.log_all(y, pred, loss, "train")
         return loss
-        
-    def validation_step(self, batch, batch_idx):
-        x, y = batch
-        pred = self.forward(x)
-        y = self.ytype(y)
-        pred = self.process_output(pred, x)
-        if self.classification:
-            loss = self.loss_fn(pred, y)
-        else:
-            loss = self.mse_loss(pred.squeeze(), y.squeeze(), ignore_index=self.y_nodata)
-        self.log_all(y, pred, loss, 'val')
-    
-    def test_step(self, batch, batch_idx):
-        x, y = batch
-        pred = self.forward(x)
-        y = self.ytype(y)
-        pred = self.process_output(pred, x)
-        if self.classification:
-            loss = self.loss_fn(pred, y)
-        else:
-            loss = self.mse_loss(pred.squeeze(), y.squeeze(), ignore_index=self.y_nodata)
-        self.log_all(y, pred, loss, 'test')
-    
-    def log_all(self, y, pred, loss, stage):
-        self.log(stage + '_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
-        if self.classification:
-            # Acc average is micro because most of papers use micro and sklearn uses micro
-            self.log(stage + '_acc', torchmetrics.functional.classification.multiclass_accuracy(
-                pred, 
-                y, 
-                num_classes=self.num_classes, 
-                average='micro', 
-                ignore_index=int(self.y_nodata)
-            ), on_step=True, on_epoch=True, prog_bar=True)
-            self.log(stage + '_auroc', torchmetrics.functional.classification.multiclass_auroc(
-                pred, 
-                y, 
-                num_classes=self.num_classes, 
-                average='macro', 
-                ignore_index=int(self.y_nodata)
-            ), on_step=True, on_epoch=True, prog_bar=True)
-            # TODO: these metrics somehow make detr freeze after first steps, hope this is temporary fix
-            if not self.less_metrics:
-                self.log(stage + '_precision', torchmetrics.functional.classification.multiclass_precision(
-                    pred, 
-                    y, 
-                    num_classes=self.num_classes, 
-                    average='macro', 
-                    ignore_index=int(self.y_nodata)
-                ), on_step=True, on_epoch=True)
-                self.log(stage + '_recall', torchmetrics.functional.classification.multiclass_recall(
-                    pred, 
-                    y, 
-                    num_classes=self.num_classes, 
-                    average='macro',
-                    ignore_index=int(self.y_nodata)
-                ), on_step=True, on_epoch=True)
-                self.log(stage + '_iou', torchmetrics.functional.classification.multiclass_jaccard_index(
-                    pred, 
-                    y, 
-                    num_classes=self.num_classes, 
-                    average='macro', 
-                    ignore_index=int(self.y_nodata)
-                ), on_step=True, on_epoch=True, prog_bar=True)
-        else:
-            filtered = torch.where(
-                torch.reshape(y, (y.shape[0], -1)) != self.y_nodata, True, False
-            ).nonzero().flatten().tolist()
-            self.log(stage + '_r2', torchmetrics.functional.r2_score(
-                torch.reshape(torch.squeeze(pred), (pred.shape[0], -1))[filtered], 
-                torch.reshape(y, (y.shape[0], -1))[filtered]
-            ), on_step=True, on_epoch=True, prog_bar=True)
-    
-    def predict_step(self, batch, batch_idx, dataloader_idx=0):
-        x = batch
-        pred = self.forward(x)
-        pred = self.process_output(pred, x)
-        if self.classification:
-            pred = pred.argmax(dim = 1)
-        else:
-            pred = pred.squeeze()
-        return pred
-    
-    def process_output(self, pred, x):
-        if (
-            isinstance(pred, transformers.modeling_outputs.SemanticSegmenterOutput) 
-            or isinstance(pred, transformers.models.clipseg.modeling_clipseg.CLIPSegImageSegmentationOutput)
-        ):
-            pred = pred.logits
-            if pred.shape[2:4] != x.shape[2:4]:
-                pred = torch.nn.functional.interpolate(
-                    pred,
-                    size=x.shape[2:4],
-                    mode="bilinear",
-                    align_corners=False,
-                )
-        elif (
-            isinstance(pred, transformers.models.conditional_detr.modeling_conditional_detr.ConditionalDetrSegmentationOutput) 
-            or isinstance(pred, transformers.models.detr.modeling_detr.DetrSegmentationOutput)
-        ):
-            class_queries_logits = pred.logits  # [batch_size, num_queries, num_classes+1]
-            masks_queries_logits = pred.pred_masks  # [batch_size, num_queries, height, width]
-            
-            # Remove the null class `[..., :-1]`
-            # Detr treats 0 as separate class, conditionaldetr treats it as nullclass
-            if isinstance(pred, transformers.models.detr.modeling_detr.DetrSegmentationOutput):
-                masks_classes = class_queries_logits.softmax(dim = -1)[..., :-1]
-            else:
-                masks_classes = class_queries_logits.softmax(dim=-1)
-            masks_probs = masks_queries_logits.sigmoid()  # [batch_size, num_queries, height, width]
 
-            # Semantic segmentation logits of shape (batch_size, num_classes, height, width)
-            pred = torch.einsum("bqc, bqhw -> bchw", masks_classes, masks_probs)
+    def validation_step(self, batch: dict, batch_idx: Optional[int]) -> None:
+        """Validation step."""
+        y, pred, loss, _ = self.forward(batch)
+        if loss is None:
+            raise ValueError("unable to compute loss")
+        self.log_all(y, pred, loss, "val")
 
-            if pred.shape[2:4] != x.shape[2:4]:
-                pred = torch.nn.functional.interpolate(
-                    pred,
-                    size=x.shape[2:4],
-                    mode="bilinear",
-                    align_corners=False,
-                )
-        elif (
-            isinstance(pred, transformers.models.mask2former.modeling_mask2former.Mask2FormerForUniversalSegmentationOutput) 
-            or isinstance(pred, transformers.models.maskformer.modeling_maskformer.MaskFormerForInstanceSegmentationOutput)
-        ):
-            class_queries_logits = pred.class_queries_logits  # [batch_size, num_queries, num_classes+1]
-            masks_queries_logits = pred.masks_queries_logits  # [batch_size, num_queries, height, width]
-            masks_classes = class_queries_logits.softmax(dim=-1)[..., :-1]
-            masks_probs = masks_queries_logits.sigmoid()  # [batch_size, num_queries, height, width]
-            
-            # Semantic segmentation logits of shape (batch_size, num_classes, height, width)
-            pred = torch.einsum("bqc, bqhw -> bchw", masks_classes, masks_probs)
-            if pred.shape[2:4] != x.shape[2:4]:
-                pred = torch.nn.functional.interpolate(
-                    pred,
-                    size=x.shape[2:4],
-                    mode="bilinear",
-                    align_corners=False,
-                )
-        elif isinstance(pred, transformers.models.oneformer.modeling_oneformer.OneFormerForUniversalSegmentationOutput):
-            class_queries_logits = pred.class_queries_logits  # [batch_size, num_queries, num_classes+1]
-            masks_queries_logits = pred.masks_queries_logits  # [batch_size, num_queries, height, width]
-            masks_classes = class_queries_logits.softmax(dim=-1)[..., :-1]
-            masks_probs = masks_queries_logits.sigmoid()  # [batch_size, num_queries, height, width]
+    def test_step(self, batch: dict, batch_idx: Optional[int]) -> None:
+        """Test step."""
+        y, pred, loss, _ = self.forward(batch)
+        if loss is None:
+            raise ValueError("unable to compute loss")
+        self.log_all(y, pred, loss, "test")
 
-            # Semantic segmentation logits of shape (batch_size, num_classes, height, width)
-            pred = torch.einsum("bqc, bqhw -> bchw", masks_classes, masks_probs)
-            if pred.shape[2:4] != x.shape[2:4]:
-                pred = torch.nn.functional.interpolate(
-                    pred,
-                    size=x.shape[2:4],
-                    mode="bilinear",
-                    align_corners=False,
-                )        
-        elif isinstance(pred, collections.OrderedDict):
-            pred = pred['out']
-        return pred
-    
-    def ytype(self, y):
-        if self.classification:
-            y = y.long()
-        else:
-            y = y.float()
-        return y
-    
-    def mse_loss(self, pred, target, ignore_index=0.0, reduction='mean'):
-        mask = target == ignore_index
-        out = (pred[~mask] - target[~mask])**2
-        if reduction == "mean":
-            return out.mean()
-        elif reduction == "None":
-            return out
-    
-    def configure_optimizers(self):
+    def predict_step(
+        self,
+        batch: dict,
+        batch_idx: Optional[int],
+        dataloader_idx: Optional[int] = 0,
+    ) -> tuple[torch.Tensor, int]:
+        """Prediction step."""
+        _, pred, _, key = self.forward(batch)
+        pred = self.post_process_predict(pred)
+        return pred, key
+
+    def configure_optimizers(self) -> dict:
+        """Configuring optimizers and LR schedulers."""
         optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr)
-        return optimizer
-        
-        
+        scheduler = {
+            "scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(
+                optimizer,
+                mode="min",
+                factor=0.1,
+                patience=5,
+            ),
+            "monitor": self.scheduler_opt,
+            "interval": "epoch",
+            "frequency": 1,
+        }
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": scheduler,
+        }
+
+    def on_load_checkpoint(self, checkpoint: dict) -> None:
+        """
+        Ignore mismatches at the checkpoint loading stage.
+
+        Copied from https://github.com/Lightning-AI/pytorch-lightning/issues/4690#issuecomment-731152036
+        """
+        state_dict = checkpoint["state_dict"]
+        model_state_dict = self.state_dict()
+        is_changed = False
+        for k in state_dict:
+            if k in model_state_dict:
+                if state_dict[k].shape != model_state_dict[k].shape:
+                    warnings.warn(
+                        f"Skip loading parameter: {k}, "
+                        f"required shape: {model_state_dict[k].shape}, "
+                        f"loaded shape: {state_dict[k].shape}",
+                        stacklevel=2,
+                    )
+                    state_dict[k] = model_state_dict[k]
+                    is_changed = True
+            else:
+                warnings.warn(f"Dropping parameter {k}", stacklevel=2)
+                is_changed = True
+
+        if is_changed:
+            checkpoint.pop("optimizer_states", None)
+
+
 class SklearnModel:
-    def __init__(self, model, backbone, classification, epochs, y_nodata, num_classes, **kwargs):
-        self.classification = classification
-        self.model_name = model
-        self.model = load_sklearn_model(model, backbone, classification, epochs, **kwargs)
+    """Basic RSP Sklearn-based model class."""
+
+    def __init__(self, model: Union[str, SKLModel], generate_features: Optional[bool], y_nodata: Optional[int]) -> None:
+        if isinstance(model, str):
+            self.model_name = model
+        else:
+            self.model_name = "Custom_Sklearn"
+        self.generate_features = generate_features
         self.y_nodata = y_nodata
-        self.num_classes = num_classes
-    
-    def fit(self, x, y):
-        self.model.fit(x, y)
-        self.test(x, y)
-    
-    def test(self, x, y):
-        if self.classification:
-            pred = self.model.predict_proba(x)
-            # TODO: find a way to implement macro average accuracy
-            print('Accuracy: ', torchmetrics.functional.classification.multiclass_accuracy(
-                torch.Tensor(pred), 
-                torch.Tensor(y.data.compute()).long(), 
-                num_classes=self.num_classes, 
-                average='micro', 
-                ignore_index=int(self.y_nodata),
-            ).item())
-            print('Precision: ', torchmetrics.functional.classification.multiclass_precision(
-                torch.Tensor(pred), 
-                torch.Tensor(y.data.compute()).long(), 
-                num_classes=self.num_classes, 
-                average='macro', 
-                ignore_index=int(self.y_nodata),
-            ).item())
-            print('Recall: ', torchmetrics.functional.classification.multiclass_recall(
-                torch.Tensor(pred), 
-                torch.Tensor(y.data.compute()).long(), 
-                num_classes=self.num_classes, 
-                average='macro', 
-                ignore_index=int(self.y_nodata),
-            ).item())
-            print('ROC_AUC: ', torchmetrics.functional.classification.multiclass_auroc(
-                torch.Tensor(pred), 
-                torch.Tensor(y.data.compute()).long(), 
-                num_classes=self.num_classes, 
-                average='macro', 
-                ignore_index=int(self.y_nodata),
-            ).item())
-            print('IOU: ', torchmetrics.functional.classification.multiclass_jaccard_index(
-                torch.Tensor(pred), 
-                torch.Tensor(y.data.compute()).long(), 
-                num_classes=self.num_classes, 
-                average='macro', 
-                ignore_index=int(self.y_nodata),
-            ).item())
+
+    def fit(self, x: Any, y: Any) -> None:
+        """Basic fit class. Should be extended in child classes."""
+        pass
+
+    def test(self, x: Any, y: Any) -> None:
+        """Basic test class. Should be extended in child classes."""
+        pass
+
+    def predict(self, x: Any) -> Any:
+        """Basic prediction class. Should be extended in child classes."""
+        return x
+
+
+def sklearn_load_dataset(
+    dm: DataModule,
+    stage: str,
+    generate_features: bool,
+) -> tuple[np.ndarray, np.ndarray, list[int]]:
+    """Convert HF dataset to numpy arrays for Sklearn models."""
+    y_nodata = dm.y_nodata
+
+    def sklearn_process_tile(tile: dict) -> dict:
+        x = tile["x"]
+        y = tile.get("y")
+        if generate_features:
+            x = feature.multiscale_basic_features(
+                x,
+                intensity=True,
+                edges=True,
+                texture=True,
+                channel_axis=0,
+            )
         else:
-            filtered = np.where(y.data.compute() != self.y_nodata, True, False).nonzero()[0].tolist()
-            pred = self.model.predict(x)
-            print('R2: ', torchmetrics.functional.r2_score(
-                torch.Tensor(pred[filtered]), 
-                torch.Tensor(y[filtered].data.compute()).float(),
-            ).item())
-            print('MSE: ', torchmetrics.functional.mean_squared_error(
-                torch.Tensor(pred[filtered]), 
-                torch.Tensor(y[filtered].data.compute()).float(),
-            ).item())
-    
-    def predict(self, x):
-        pred = self.model.predict(x)
-        return pred
-        
-    
-def sklearn_load_dataset(ds):
-    x_stack = None
-    y_stack = None
-    classification = None
-    y_nodata = None
-    num_classes = None
-    for d in ds:
-        x = d[0]
-        y = d[1]
-        names = d[2]
-        # Reading x dataset
-        if isinstance(x, str):
-            x_dataset = xarray.open_dataarray(x, engine='zarr', chunks='auto', mask_and_scale=False)
+            x = np.moveaxis(x, 0, -1)
+        x = x.reshape((-1, x.shape[-1]))
+        if y is not None:
+            y = y.squeeze().ravel()
+            if y_nodata is not None:
+                mask = y != y_nodata
+                x = x[mask]
+                y = y[mask]
+                # Indexes should start from 0
+                y = y - 1
+        out = {"key": tile["key"].item(), "x": x}
+        if y is not None:
+            out["y"] = y
+        return out
+
+    if stage == "train":
+        dm.ds_train.set_format("numpy")
+        dm.ds_train = dm.ds_train.map(sklearn_process_tile, keep_in_memory=True)
+        x = np.concatenate(dm.ds_train["x"], axis=0)
+        y = np.concatenate(dm.ds_train["y"], axis=0) if "y" in dm.ds_train.features else None
+        keys = list(dm.ds_train["key"])
+    elif stage == "val":
+        if dm.ds_val is not None:
+            dm.ds_val.set_format("numpy")
+            dm.ds_val = dm.ds_val.map(sklearn_process_tile, keep_in_memory=True)
+            x = np.concatenate(dm.ds_val["x"], axis=0)
+            y = np.concatenate(dm.ds_val["y"], axis=0) if "y" in dm.ds_val.features else None
+            keys = list(dm.ds_val["key"])
         else:
-            x_dataset = x
-        x_dataset = persist(x_dataset)
-        # Reading y dataset
-        if not isinstance(y, type(None)):
-            if isinstance(y, str):
-                y_dataset = xarray.open_dataarray(y, engine='zarr', chunks='auto', mask_and_scale=False)
-            else:
-                y_dataset = y
-            y_dataset = persist(y_dataset)
-            assert y_dataset.tiles == x_dataset.tiles
-            if isinstance(classification, type(None)):
-                classification = y_dataset.classification
-            else:
-                assert classification == y_dataset.classification
-            if isinstance(y_nodata, type(None)):
-                y_nodata = y_dataset.rio.nodata
-            else:
-                assert y_nodata == y_dataset.rio.nodata
-            if isinstance(num_classes, type(None)):
-                num_classes = y_dataset.num_classes
-            else:
-                assert num_classes == y_dataset.num_classes
-        # Checking samples
-        samples = []
-        for i in range(len(x_dataset.names)):
-            if names == 'all':
-                samples.extend(x_dataset.samples[i])
-            elif x_dataset.names[i] in names:
-                samples.extend(x_dataset.samples[i])
-        if not isinstance(y, type(None)):
-            y_samples = []
-            for i in range(len(y_dataset.names)):
-                if names == 'all':
-                    y_samples.extend(y_dataset.samples[i])
-                if y_dataset.names[i] in names:
-                    y_samples.extend(y_dataset.samples[i])
-            assert y_samples == samples
-        # Getting indices of samples
-        indices = []
-        for k, v in enumerate([x for xs in x_dataset.samples for x in xs]):
-            if v in samples:
-                indices.append(k)
-        # Reading dataset
-        for index in indices:
-            if isinstance(x_stack, type(None)):
-                x_stack = x_dataset[index].astype('float32').stack(data=('y', 'x'))
-            else:
-                x_stack = xarray.concat([x_stack, x_dataset[index].astype('float32').stack(data=('y', 'x'))], dim='data')
-                x_stack = x_stack.transpose('data', 'band')
-                x_stack = persist(x_stack)
-            if not isinstance(y, type(None)):
-                if isinstance(y_stack, type(None)):
-                    y_stack = y_dataset[index].stack(data=('y', 'x'))
-                else:
-                    y_stack = xarray.concat([y_stack, y_dataset[index].stack(data=('y', 'x'))], dim='data')
-                y_stack = persist(y_stack)
-    if not isinstance(y, type(None)):
-        return x_stack, y_stack, classification, y_nodata, num_classes
+            raise ValueError("trying to perform validation while val dataset is not set")
+    elif stage == "test":
+        dm.ds_test.set_format("numpy")
+        dm.ds_test = dm.ds_test.map(sklearn_process_tile, keep_in_memory=True)
+        x = np.concatenate(dm.ds_test["x"], axis=0)
+        y = np.concatenate(dm.ds_test["y"], axis=0) if "y" in dm.ds_test.features else None
+        keys = list(dm.ds_test["key"])
+    elif stage == "predict":
+        dm.ds_pred.set_format("numpy")
+        dm.ds_pred = dm.ds_pred.map(sklearn_process_tile, keep_in_memory=True)
+        x = np.concatenate(dm.ds_pred["x"], axis=0)
+        y = np.concatenate(dm.ds_pred["y"], axis=0) if "y" in dm.ds_pred.features else None
+        keys = list(dm.ds_pred["key"])
     else:
-        return x_stack
+        raise ValueError("Invalid stage")
+    return x, y, keys

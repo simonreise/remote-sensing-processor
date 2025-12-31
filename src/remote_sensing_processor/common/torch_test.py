@@ -1,8 +1,8 @@
+"""Torch testing functions."""
+
 import torch
 
 
-def cuda_test():
-    if not torch.cuda.is_available() and not torch.backends.mps.is_available():
-        return False
-    else:
-        return True
+def cuda_test() -> bool:
+    """Test if CUDA is available."""
+    return torch.cuda.is_available() or torch.backends.mps.is_available()

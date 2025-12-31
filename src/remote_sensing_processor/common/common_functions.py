@@ -1,75 +1,101 @@
+"""Common functions."""
+
+from typing import Any
+
+import json
 import warnings
+from pathlib import Path
 
-import rasterio as rio
-import shapely
-from rasterio.enums import Resampling
+import requests
 
-
-def convert_3D_2D(df):
-    df.geometry = shapely.force_2d(df.geometry)
-    return df
-
- 
-def get_resampling(resample):
-    if resample == 'bilinear':
-        resample = Resampling.bilinear
-    elif resample == 'cubic':
-        resample = Resampling.cubic
-    elif resample == 'cubic_spline':
-        resample = Resampling.cubic_spline
-    elif resample == 'lanczos':
-        resample = Resampling.lanczos
-    elif resample == 'average':
-        resample = Resampling.average
-    elif resample == 'mode':
-        resample = Resampling.mode
-    elif resample == 'max':
-        resample = Resampling.max
-    elif resample == 'min':
-        resample = Resampling.min
-    elif resample == 'med':
-        resample = Resampling.med
-    elif resample == 'q1':
-        resample = Resampling.q1
-    elif resample == 'q3':
-        resample = Resampling.q3
-    elif resample == 'sum':
-        resample = Resampling.sum
-    elif resample == 'rms':
-        resample = Resampling.rms
-    elif resample == 'nearest':
-        resample = Resampling.nearest
-    else:
-        resample = Resampling.nearest
-    return resample
+import numpy as np
 
 
-def get_first_proj(img):
-    with rio.open(img) as im:
-        projection = im.crs
-    return projection
-    
-    
-def persist(*inputs):
-    """
-    This function tries to persist array if it is not too big to fit in memory.
-    """
-    enough_memory = True
+def persist(*inputs: Any) -> Any:
+    """This function tries to persist an array if it is not too big to fit in memory."""
     results = []
     # Trying to persist dataset in memory (it makes processing much faster)
     for i in inputs:
-        if enough_memory == True:
-            try:
-                results.append(i.persist())
-            except:
-                warnings.warn("Dataset does not fit in memory. Processing can be much slower.")
-                enough_memory = False
-                results = inputs
-                break
-        else:
+        try:
+            results.append(i.persist())
+        except Exception:
+            warnings.warn("Dataset does not fit in memory. Processing can be much slower.", stacklevel=2)
             results = inputs
+            break
     # Return array instead of tuple if it consists of one element
     results = tuple(results)
     if len(results) == 1:
         results = results[0]
     return results
+
+
+def create_path(path: Path) -> None:
+    """Create a folder or a parent folder if input is a file."""
+    if path is not None and (path.is_dir() or len(path.suffixes) == 0):
+        create_folder(path, clean=False)
+    else:
+        create_folder(path.parent, clean=False)
+
+
+def create_folder(folder: Path, clean: bool = True) -> None:
+    """Create a folder or clean an existing one."""
+    if not folder.exists():
+        folder.mkdir(parents=True)
+    else:
+        if clean:
+            clean_folder(folder)
+
+
+def clean_folder(folder: Path) -> None:
+    """Clean a folder."""
+    for root, dirs, files in folder.walk(top_down=False):
+        for name in files:
+            (root / name).unlink()
+        for name in dirs:
+            (root / name).rmdir()
+
+
+def delete(file: Path) -> None:
+    """Delete a file or a dir."""
+    if file.is_file():
+        file.unlink()
+    if file.is_dir():
+        clean_folder(file)
+        file.rmdir()
+
+
+def read_json(file: Path) -> Any:
+    """Read JSON from a file."""
+    with file.open("r") as json_file:
+        return json.load(json_file)
+
+
+class NpEncoder(json.JSONEncoder):
+    """Encode numpy arrays or values as JSON."""
+
+    def default(self, obj: Any) -> Any:
+        """Default behavior."""
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, np.dtype):
+            return obj.name
+        return super(NpEncoder, self).default(obj)
+
+
+def write_json(obj: Any, file: Path) -> None:
+    """Write an object to a JSON file."""
+    with file.open("w") as json_file:
+        json.dump(obj, json_file, cls=NpEncoder)
+
+
+def ping(url: str) -> bool:
+    """Ping a URL."""
+    try:
+        response = requests.head(url, timeout=10)
+        return bool(response.ok)
+    except Exception:
+        return False

@@ -1,56 +1,87 @@
-{% set data = load_setup_py_data() %}
+{% set pyproject = load_file_data('pyproject.toml') %}
 
 package:
   name: remote-sensing-processor
-  version: {{ data.get('version') }}
+  version: {{ pyproject.get('version') }}
 
 source:
   path: ./..
 
 requirements:
   build:
-    - python >=3.8
+    - python >=3.12
     - cython
     - numpy >=1.17
   host:
+    - bottleneck
     - dask
+    - datasets >=4.3.0
     - geopandas
     - geocube
-    - lightning
-    - numpy >=1.17
+    - geotiepoints
+    - huggingface_hub
+    - libgdal
+    - lightning >=2.2
+    - numpy >=2
+    - odc-geo >=0.4.3
     - pip
-    - pyproj
-    - python >=3.8
-    - pytorch >=2.0
-    - rasterio >=1.2
-    - rioxarray
-    - scikit-image
-    - scikit-learn
+    - pydantic
+    - pystac
+    - python >=3.12
+    - python-geotiepoints
+    - pytorch >=2.2
+    - rasterio >=1.4.4
+    - rioxarray >=0.20
+    - satpy
+    - scikit-image >=0.18
+    - scikit-learn >=1.0
+    - segmentation-models-pytorch >=0.5.0
+    - shap
+    - spyndex
+    - stactools
     - tensorboard
     - timm
-    - torchvision
-    - transformers
+    - torchgeo
+    - torchmetrics >=1.8.1
+    - torchvision >=0.17
+    - transformers >=4.56.0
+    - xarray-spatial
+    - xbatcher
     - xgboost
-    - zarr
   run:
+    - bottleneck
     - dask
+    - datasets >=4.3.0
     - geopandas
     - geocube
-    - lightning
-    - numpy >=1.17
-    - pyproj
-    - python >=3.8
-    - pytorch >=2.0
-    - rasterio >=1.2
-    - rioxarray
-    - scikit-image
-    - scikit-learn
+    - huggingface_hub
+    - libgdal
+    - lightning >=2.2
+    - numpy >=2
+    - odc-geo >=0.4.3
+    - pydantic
+    - pystac
+    - python >=3.12
+    - python-geotiepoints
+    - pytorch >=2.2
+    - rasterio >=1.4.4
+    - rioxarray >=0.20
+    - satpy
+    - scikit-image >=0.18
+    - scikit-learn >=1.0
+    - segmentation-models-pytorch >=0.5.0
+    - shap
+    - spyndex
+    - stactools
     - tensorboard
     - timm
-    - torchvision
-    - transformers
+    - torchgeo
+    - torchmetrics >=1.8.1
+    - torchvision >=0.17
+    - transformers >=4.56.0
+    - xarray-spatial
+    - xbatcher
     - xgboost
-    - zarr
     
 build:
     noarch: python
@@ -59,17 +90,14 @@ test:
   imports:
     - remote_sensing_processor
     - remote_sensing_processor.common
-    - remote_sensing_processor.imagery_types
+    - remote_sensing_processor.dem
+    - remote_sensing_processor.imagery
     - remote_sensing_processor.indices
     - remote_sensing_processor.landsat
     - remote_sensing_processor.mosaic
-    - remote_sensing_processor.segmentation
+    - remote_sensing_processor.semantic
+    - remote_sensing_processor.regression
     - remote_sensing_processor.sentinel2
-    - remote_sensing_processor.sentinel2.sen2cor
-    - remote_sensing_processor.sentinel2.sentinel_postprocessing
-    - remote_sensing_processor.sentinel2.superres
-    - remote_sensing_processor.sentinel2.superres.weights
-    - remote_sensing_processor.unzip
 
 
 about:

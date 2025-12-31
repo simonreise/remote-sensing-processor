@@ -1,0 +1,68 @@
+name: "Bug Report"
+description: Submit a bug report to help us improve RSP
+labels: [ "bug" ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+
+        Before you submit your bug report:
+
+          - If it is your first time submitting, be sure to check our [bug report guidelines](https://github.com/simonreise/remote-sensing-processor/blob/main/CONTRIBUTING.md#reporting-a-bug)
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Please provide a clear and concise description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: system-info
+    attributes:
+      label: System Info
+      description: Which RSP version, Python, OS are you using?
+      placeholder: rsp version, platform, python version, ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: |
+        Please provide a code sample that reproduces the problem you ran into. It can be a Colab link or just a code snippet.
+        If you have code snippets, error messages, stack traces please provide them here as well.
+        If the bug requires any additional files to reproduce, please upload those or provide a download link.
+      placeholder: |
+        1. Download any Landsat 8 scene from https://earthexplorer.usgs.gov/
+        2. Run the following code to reproduce the error
+
+        ```python
+        import remote_sensing_processor as rsp
+
+        ds = rsp.landsat("/path/to/landsat/file.tar", pansharpen=True)
+        ...
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: who-can-help
+    attributes:
+      label: Who can help?
+      description: Your issue will be replied to more quickly if you can figure out the right person to tag with @
+      placeholder: "@simonreise"
+    validations:
+      required: true
+
+
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this bug! 
+        Remote Sensing Processor is an open-source project maintained by its users. 
+        If you want to contribute a pull request to fix this bug, we'll be happy to review it. 
+        If not, we'll try to fix it as long as we can reproduce it.

@@ -1,0 +1,1 @@
+"""Common functions module."""

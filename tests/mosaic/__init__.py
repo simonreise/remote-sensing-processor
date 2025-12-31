@@ -1,0 +1,1 @@
+"""Mosaic creation testing module."""

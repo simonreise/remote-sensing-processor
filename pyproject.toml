@@ -1,7 +1,197 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel",
-	"cython"
-]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "remote-sensing-processor"
+dynamic = ["version"]
+authors = [
+  { name="Mikhail Moskovchenko", email="moskovchenkomike@gmail.com"},
+]
+description = "RSP is a tool for geospatial raster data processing and machine learning"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.12"
+dependencies = [
+	# Basic packages
+	"pydantic",
+	"numpy>=2",
+    "dask",
+	"xbatcher>=0.3",
+	# Geospatial
+	"rasterio>=1.4.4",
+	"rioxarray>=0.20",
+	"xarray-spatial",
+	"geocube",
+	"odc-geo>=0.4.3",
+	"geopandas",
+	"pystac",
+	"stactools",
+	"spyndex",
+	# Satpy
+	"satpy[msi_safe]>=0.59.0",
+	"bottleneck",
+	"python-geotiepoints",
+	# Machine learning
+	"torch>=2.2",
+    "torchvision>=0.17",
+    "lightning>=2.2",
+	"torchmetrics>=1.8.1",
+    "tensorboard",
+    "transformers>=4.56.0",
+	"segmentation-models-pytorch>=0.5.0",
+	"torchgeo",
+    "datasets>=4.3.0",
+    "huggingface-hub",
+	"timm",
+    "shap",
+	"scikit-learn>=1.0",
+	"scikit-image>=0.18",
+	"xgboost",
+]
+keywords = [
+	"remote sensing",
+	"deep learning",
+	"machine learning",
+	"satellite imagery",
+	"earth observation",
+	"geospatial",
+]
+classifiers = [
+	"Programming Language :: Python :: 3",
+	"Intended Audience :: Science/Research",
+	"License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+	"Operating System :: OS Independent",
+	"Environment :: GPU :: NVIDIA CUDA",
+	"Topic :: Scientific/Engineering :: GIS",
+]
+
+[project.urls]
+Homepage = "https://github.com/simonreise/remote-sensing-processor"
+Issues = "https://github.com/simonreise/remote-sensing-processor/issues"
+Source = "https://github.com/simonreise/remote-sensing-processor"
+Documentation = "https://remote-sensing-processor.readthedocs.io"
+
+[project.optional-dependencies]
+docs = ["myst-parser", "sphinx-rtd-theme", "sphinxcontrib-napoleon", "matplotlib"]
+tests = ["pytest", "pytest-dependency", "pystac-client", "planetary-computer", "ruff"]
+
+[tool.setuptools.dynamic]
+version = {attr = "remote_sensing_processor.__version__"}
+
+[tool.ruff]
+line-length = 120
+exclude = [
+	"docs/*",
+	"src/remote_sensing_processor/imagery/sentinel2/dataset.py", # TODO: Remove when Sentinel-2 get rewritten
+]
+
+[tool.ruff.format]
+docstring-code-format = true
+quote-style = "double"
+
+[tool.ruff.lint]
+select = [
+	# Pyflakes
+	"F",
+	# Pycodestyle
+	"E",
+	"W",
+	# Isort for imports sorting
+	"I",
+	# PEP-8 naming
+	"N",
+	# Pydocstyle to check docstrings
+	"D",
+	# Flake8 Bugbear to find bugs
+	"B",
+	# Flake8 Bandit to find security issues
+	"S",
+	# Flake8 Builtins to prevent builtins shadowing
+	"A",
+	# Flake8 Quotes
+	"Q",
+	# Flake8 Use Pathlib
+	"PTH",
+	# Flake8 Commas
+	"COM",
+	# Flake8 Comprehensions
+	"C4",
+	# Flake8 Import Conventions
+	"ICN",
+	# Flake8 Implicit String Concat
+	"ISC",
+	# Flake8 Simplify to simplify too complex code
+	"SIM",
+	 # Flake8 Tidy Imports to prevent relative imports
+	"TID",
+	# Flake8 Type Checking
+	"TC",
+	# Flake8 Return
+	"RET",
+	# Flake8 Pytest Style
+	"PT",
+	# Flake8 Annotations
+	"ANN",
+	# Specific Ruff lint rules
+	"RUF",
+]
+ignore = ["D401", "D404", "S311", "ANN401"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
+known-first-party = ["src"]
+section-order = [
+	"future",
+	"typing",
+	"standard-library",
+	"third-party",
+	"array",
+	"spatial",
+	"stac",
+	"ml",
+	"sklearn",
+	"first-party",
+	"local-folder",
+]
+
+[tool.ruff.lint.isort.sections]
+"typing" = ["typing", "typing_extensions", "pydantic", "pydantic_core"]
+"array" = ["numpy", "xarray", "dask"]
+"stac" = ["pystac", "stactools", "antimeridian"]
+"spatial" = ["rasterio", "rioxarray", "xrspatial", "geocube", "odc", "geopandas", "shapely", "spyndex", "satpy"]
+"ml" = [
+	"torch",
+	"torchvision",
+	"lightning",
+	"torchmetrics",
+	"transformers",
+	"segmentation_models_pytorch",
+	"torchgeo",
+	"datasets",
+	"huggingface_hub",
+    "shap",
+]
+"sklearn" = ["sklearn", "xgboost"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = [
+    "I001",
+	"RUF022",
+]
+"tests/**" = [
+	"S101",
+]
+"!tests/**/*.py" = ["PT"]
+
+[tool.ruff.lint.flake8-import-conventions.aliases]
+xarray = "xr"
+"dask.array" = "da"
+rasterio = "rio"
+rioxarray = "rxr"
+geopandas = "gpd"
+lightning = "l"
+"torch.nn" = "nn"

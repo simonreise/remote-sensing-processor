@@ -1,2 +1,0 @@
-include src/remote_sensing_processor/sentinel2/superres/weights/*.pt
-include logo_wide.png

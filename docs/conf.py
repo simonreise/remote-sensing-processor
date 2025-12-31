@@ -20,7 +20,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "Remote Sensing Processor"
-copyright = "2022-2024, Mikhail Moskovchenko"
+copyright = "2022-2025, Mikhail Moskovchenko"
 author = "Mikhail Moskovchenko"
 
 # The short X.Y version
@@ -48,12 +48,12 @@ release = version
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'myst_parser',
+    "myst_parser",
     "matplotlib.sphinxext.plot_directive",
     "sphinx.ext.autodoc",
     "sphinx.ext.doctest",
     "sphinx.ext.napoleon",
-    "sphinx.ext.viewcode"
+    "sphinx.ext.viewcode",
 ]
 
 
@@ -76,7 +76,7 @@ master_doc = "index"
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = 'en'
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -150,7 +150,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "RSP.tex", "Remote Sensing Processor Documentation", "Mikhail Moskovchenko", "manual")
+    (master_doc, "RSP.tex", "Remote Sensing Processor Documentation", "Mikhail Moskovchenko", "manual"),
 ]
 
 
@@ -169,13 +169,13 @@ man_pages = [(master_doc, "RSP", "Remote Sensing Processor Documentation", [auth
 texinfo_documents = [
     (
         master_doc,
-        "RSP", 
+        "RSP",
         "Remote Sensing Processor Documentation",
         author,
         "Remote Sensing Processor",
         "RSP is a tool for geospatial raster data processing.",
         "Miscellaneous",
-    )
+    ),
 ]
 
 

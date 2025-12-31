@@ -1,438 +1,320 @@
-from glob import glob
-import os
-import warnings
+"""Mosaic rasters."""
 
-import numpy as np
-from skimage.exposure import match_histograms
+from pydantic import PositiveInt, validate_call
+from typing import Optional, Union
+
 import dask
-import xarray
+import dask.array as da
+import xarray as xr
 
-import geopandas as gpd
 import rasterio as rio
-import rasterio.fill
-import rioxarray
-from rioxarray.merge import merge_arrays
+import rioxarray as rxr
+from rioxarray.merge import merge_datasets
 
-from remote_sensing_processor.common.common_functions import convert_3D_2D, get_resampling, persist
+from pystac import Item
 
-from remote_sensing_processor.imagery_types.types import get_type
+from remote_sensing_processor.common.common_functions import create_folder, persist
+from remote_sensing_processor.common.common_raster import (
+    check_dtype,
+    clipf,
+    load_dataset,
+    prepare_nodata,
+    reproject,
+    reproject_match,
+    write_dataset,
+)
+from remote_sensing_processor.common.dataset import is_multiband, read_dataset
+from remote_sensing_processor.common.fill import fillnodata
+from remote_sensing_processor.common.match_hist import histogram_match
+from remote_sensing_processor.common.types import CRS, DirectoryPath, FilePath, NewPath, PystacItem
+from remote_sensing_processor.mosaic.dataset import postprocess_mosaic_dataset
 
 
-def mosaic_main(
-    inputs, 
-    output_dir, 
-    fill_nodata, 
-    fill_distance, 
-    clip, 
-    crs, 
-    nodata, 
-    reference_raster, 
-    resample, 
-    match_hist, 
-    mb, 
-    keep_all_channels,
-):
-    paths = []
-    resample = get_resampling(resample)
+@validate_call
+def mosaic(
+    inputs: list[Union[FilePath, DirectoryPath, PystacItem]],
+    output_dir: Union[DirectoryPath, NewPath],
+    fill_nodata: Optional[bool] = False,
+    fill_distance: Optional[PositiveInt] = 250,
+    clip: Optional[FilePath] = None,
+    crs: Optional[CRS] = None,
+    nodata: Optional[Union[int, float]] = None,
+    reference_raster: Optional[Union[FilePath, DirectoryPath, PystacItem]] = None,
+    resample: Optional[str] = "average",
+    nodata_order: Optional[bool] = False,
+    match_hist: Optional[bool] = False,
+    keep_all_channels: Optional[bool] = True,
+    write_stac: Optional[bool] = True,
+) -> Union[DirectoryPath, NewPath]:
+    """
+    Creates mosaic from several rasters.
+
+    Parameters
+    ----------
+    inputs : list of strings or list of STAC Items
+        List of pathes to rasters to be merged or to folders where multiband imagery data is stored or to STAC Items
+        in order from images that should be on top to images that should be on bottom.
+    output_dir: path to output directory as a string
+        Path where mosaic raster or rasters will be saved.
+    fill_nodata : bool (default = False)
+        Is filling the gaps in the raster needed.
+    fill_distance : int (default = 250)
+        Fill distance for `fill_nodata` function.
+    clip : string (optional)
+        Path to a vector file to be used to crop the image.
+    crs : string (optional)
+        CRS in which output data should be.
+    nodata : int or float (default = None)
+        Nodata value. If not set, then is read from inputs.
+    reference_raster : string or STAC Item (optional)
+        Reference raster is needed to bring output mosaic raster to the same resolution and projection
+        as another data source.
+        It is useful when you need to use data from different sources together.
+    resample : resampling method from rasterio as a string (default = 'average')
+        Resampling method that will be used to reproject and reshape to a reference raster shape.
+        You can read more about resampling methods
+        `here <https://rasterio.readthedocs.io/en/latest/topics/resampling.html>`_.
+        Use 'nearest' if you want to keep only the same values that exist in the input raster.
+    nodata_order : bool (default = False)
+        Is it needed to merge images in order from images with less nodata on top (they are usually clear)
+        to images with more nodata values on bottom (they are usually the most distorted and cloudy).
+    match_hist : bool (default = False)
+        Is it needed to match histograms of merged images. Improve mosaic uniformity, but change the original data.
+    keep_all_channels : bool (default = True)
+        Is needed only when you are merging images that have different number of channels
+        (e.g., Landsat images from different generations).
+        If True, all bands are processed, if False, only bands that are present in all input images are processed
+        and others are omitted.
+    write_stac : bool (default = True)
+        If True, then output metadata is saved to a STAC file.
+
+    Returns
+    -------
+    pathlib.Path
+        Path to mosaic rasters.
+
+    Examples
+    --------
+        >>> # Mosaic multiple Sentinel 2 multi-band products
+        >>> import remote_sensing_processor as rsp
+        >>> input_sentinels = [
+        ...     "/home/rsp_test/sentinels/Sentinel1/meta.json",
+        ...     "/home/rsp_test/sentinels/Sentinel2/meta.json",
+        ...     "/home/rsp_test/sentinels/Sentinel3/meta.json",
+        ...     "/home/rsp_test/sentinels/Sentinel4/meta.json",
+        ...     "/home/rsp_test/sentinels/Sentinel5/meta.json",
+        ...     "/home/rsp_test/sentinels/Sentinel6/meta.json",
+        ... ]
+        >>> border = "/home/rsp_test/border.gpkg"
+        >>> mosaic_sentinel = rsp.mosaic(
+        ...     inputs=input_sentinels,
+        ...     output_dir="/home/rsp_test/mosaics/sentinel/",
+        ...     clip=border,
+        ...     crs="EPSG:4326",
+        ...     nodata_order=True,
+        ... )
+        Processing completed
+        >>> print(mosaic_sentinel)
+        '/home/rsp_test/mosaics/sentinel/S2A_MSIL2A_20210821T064626_N0209_R063_T42VWR_20210821T064626_mosaic.json'
+
+        >>> from glob import glob
+        >>> # Mosaic multiple DEM files and matching it with a reference raster (Sentinel band)
+        >>> lcs = glob("/home/rsp_test/landcover/*.tif")
+        >>> print(lcs)
+        ['/home/rsp_test/landcover/ESA_WorldCover_10m_2020_v100_N60E075_Map.tif',
+         '/home/rsp_test/landcover/ESA_WorldCover_10m_2020_v100_N63E072_Map.tif',
+         '/home/rsp_test/landcover/ESA_WorldCover_10m_2020_v100_N63E075_Map.tif']
+        >>> mosaic_landcover = rsp.mosaic(
+        ...     inputs=lcs,
+        ...     output_dir="/home/rsp_test/mosaics/landcover/",
+        ...     clip=border,
+        ...     reference_raster="/home/rsp_test/mosaics/sentinel/B1.tif",
+        ...     nodata=-1,
+        ... )
+        Processing completed
+        >>> print(mosaic_landcover)
+        '/home/rsp_test/mosaics/landcover/ESA_WorldCover_10m_2020_v100_N60E075_Map_mosaic.json'
+    """
+    # Reading datasets
+    datasets = [read_dataset(i) for i in inputs]
+    mb = is_multiband(datasets[0])
+
+    # If datasets are single-band, then we should give the same name to their assets
+    if not mb:
+        bname = next(iter(datasets[0].assets.keys())) + "_mosaic"
+        for i in range(len(datasets)):
+            datasets[i].assets[bname] = datasets[i].assets.pop(next(iter(datasets[i].assets.keys())))
+            datasets[i].assets[bname].ext.eo.bands[0].name = bname
+
+    # Getting nodata value
+    if nodata is None:
+        nodata = get_nodata(datasets, nodata)
+
+    # Sorting in nodata order
+    if nodata_order:
+        datasets = order(datasets, nodata, clip)
+
+    # Reading reference raster dataset
     if reference_raster is not None:
-        with rio.open(reference_raster) as r:
-            crs = r.crs
-    if mb == True:
-        bands = get_bands(inputs, keep_all_channels)
-        for b in bands:
-            # Opening files
-            band = b['name']
-            path = proc_files(
-                inputs=b['bands'], 
-                output_dir=output_dir, 
-                fill_nodata=fill_nodata, 
-                fill_distance=fill_distance, 
-                clip=clip, 
-                crs=crs, 
-                nodata=nodata, 
-                reference_raster=reference_raster, 
-                resample=resample, 
-                band=band, 
-                match_hist=match_hist,
-            )
-            paths.append(path)
-            print('Processing band ' + band + ' is completed')
-    else:
-        band = os.path.basename(inputs[0])[:-4]+'_mosaic'
-        path = proc_files(
-            inputs=inputs, 
-            output_dir=output_dir, 
-            fill_nodata=fill_nodata, 
-            fill_distance=fill_distance, 
-            clip=clip, 
-            crs=crs, 
-            nodata=nodata, 
-            reference_raster=reference_raster, 
-            resample=resample, 
-            band=band, 
-            match_hist=match_hist,
-        )
-        paths.append(path)
-        print('Processing completed')
-    return paths
-    
-    
-def proc_files(inputs, 
-    output_dir, 
-    fill_nodata, 
-    fill_distance, 
-    clip, 
-    crs, 
-    nodata, 
-    reference_raster, 
-    resample, 
-    band, 
-    match_hist
-):
-    ref_hist = None
+        reference_raster = read_dataset(reference_raster)
+        crs = rio.crs.CRS.from_user_input(reference_raster.ext.proj.code)
+
+    # Getting only the bands we need
+    bands = get_bands(datasets, keep_all_channels)
+
+    # Creating an output folder if not exists
+    create_folder(output_dir, clean=False)
+
+    # Step 1. Pre-process the data
     futures = []
-    for inp in inputs:
-        # If histogram matching is needed then we need the histogram of
-        # the first file to process other files, so we cannot do it in parallel
-        if match_hist and isinstance(ref_hist, type(None)):
-            first, ref_hist = prepare_file(
-                inp=inp, 
-                crs=crs, 
-                nodata=nodata, 
-                clip=clip, 
-                match_hist=match_hist, 
-                ref_hist=ref_hist,
-            )
-        else:
-            futures.append(dask.delayed(prepare_file)(
-                inp=inp, 
-                crs=crs, 
-                nodata=nodata, 
-                clip=clip, 
-                match_hist=match_hist, 
-                ref_hist=ref_hist,
-            ))
-    files = dask.compute(*futures)
-    files = list(files)
-    # Adding first file
-    if match_hist:
-        files.insert(0, first)
-    path = mosaic_process(
-        files=files, 
-        output_dir=output_dir, 
-        fill_nodata=fill_nodata, 
-        fill_distance=fill_distance, 
-        clip=clip, 
-        crs=crs, 
-        nodata=nodata, 
-        reference_raster=reference_raster, 
-        resample=resample, 
-        band=band,
-    )
-    return path
-
-
-def prepare_file(inp, crs, nodata, clip, match_hist, ref_hist):
-    with rioxarray.open_rasterio(inp, chunks=True, lock=True) as tif:
-        pathfile = persist(tif)
-    # If nodata not defined then read nodata from first file or set to 0
-    if nodata is None:
-        if pathfile.rio.nodata is None:
-            nodata = 0
-        else:
-            nodata = pathfile.rio.nodata
-    pathfile.rio.write_nodata(nodata, inplace=True)
-    if crs is None:
-        crs = pathfile.rio.crs
-    if pathfile.rio.crs != crs:
-        #warnings.warn('File ' + pathfile.files[0] + ' have CRS ' + str(pathfile.crs) + ' which is different from ' + str(crs) + '. Reproject can be memory consuming. It is recommended to reproject all files to the same CRS before mosaicing.')
-        pathfile = pathfile.rio.reproject(crs)
-        pathfile = persist(pathfile)
-    if clip is not None:
-        shape = gpd.read_file(clip).to_crs(crs)
-        shape = convert_3D_2D(shape)
-        pathfile = pathfile.rio.clip(shape.geometry.values, shape.crs)
-        pathfile = persist(pathfile)
-    # Reading histogram if it is the first file
-    if match_hist and isinstance(ref_hist, type(None)):
-        mean = pathfile.where(pathfile != nodata).mean().item()
-        ref_hist = pathfile.where(pathfile != nodata, mean)
-        pathfile = persist(pathfile)
-        return pathfile, ref_hist
-    # Histogram matching
-    elif match_hist:
-        mean = pathfile.where(pathfile != nodata).mean().item()
-        filled = pathfile.where(pathfile != nodata, mean)
-        matched = match_histograms(filled.data, ref_hist.data)
-        pathfile = pathfile.where(pathfile == nodata, matched)
-        pathfile = persist(pathfile)
-    return pathfile
-
-
-def mosaic_process(
-    files, 
-    output_dir, 
-    fill_nodata, 
-    fill_distance, 
-    clip, 
-    crs, 
-    nodata, 
-    reference_raster, 
-    resample, 
-    band,
-):
-    # Nodata check
-    if nodata is None:
-        nodata = files[0].rio.nodata
-    for file in files:
-        assert file.rio.nodata == nodata
-    # Merging files
-    final = merge_arrays(files, method='first', nodata=nodata)
-    final = persist(final)
-    # Filling nodata
-    if fill_nodata == True:
-        final = xarray.apply_ufunc(
-            rio.fill.fillnodata, 
-            final, 
-            xarray.where(final == nodata, 0, 1), 
-            dask='parallelized', 
-            keep_attrs='override', 
-            kwargs={'max_search_distance': fill_distance},
+    for dataset in datasets:
+        futures.append(
+            dask.delayed(initial_process_dataset)(
+                dataset=dataset,
+                bands=bands,
+                clip=clip,
+                crs=crs,
+                nodata=nodata,
+            ),
         )
-        final = persist(final)
-    files = None
-    # Clipping mosaic with vector mask
-    if clip is not None:
-        if crs is None:
-            crs = final.rio.crs
-        shape = gpd.read_file(clip).to_crs(crs)
-        shape = convert_3D_2D(shape)
-        final = final.rio.clip(shape.geometry.values, shape.crs)
-        final = persist(final)
+    files = list(dask.compute(*futures))
+
+    # Step 2: If histogram matching is needed, apply it
+    if match_hist:
+        hist_match_futures = []
+        # Apply histogram matching to the rest of the files in parallel
+        for file in files[1:]:
+            hist_match_futures.append(histogram_match(file, files[0], nodata))
+
+        files[1:] = list(dask.compute(*hist_match_futures))
+
+    # Merging files
+    final = merge_datasets(files, method="first", nodata=nodata).chunk("auto")
+    final = persist(final)
+
     # Resampling to the same shape and resolution as another raster
     if reference_raster is not None:
-        with rioxarray.open_rasterio(reference_raster, chunks=True, lock=True) as tif:
-            ref = tif.load()
-        final = final.rio.reproject_match(ref, resampling=resample)
-        final = persist(final)
-    # Because predictor = 2 works with float64 only when libtiff > 3.2.0 is installed
-    # and default libtiff in ubuntu is 3.2.0
-    if final.dtype == 'float64':
-        final = final.astype('float32')
-    final.rio.to_raster(
-        os.path.join(output_dir, band + '.tif'), 
-        compress='deflate', 
-        PREDICTOR=2, 
-        ZLEVEL=9, 
-        BIGTIFF='IF_SAFER', 
-        tiled=True, 
-        NUM_THREADS='ALL_CPUS',
-        lock=True,
-    )
-    return output_dir + band + '.tif'
+        ref = load_dataset(reference_raster)
+        final = reproject_match(final, ref, resample)
+
+    # Clipping mosaic with vector mask
+    if clip is not None:
+        final = clipf(final, clip)
+
+    # Filling nodata
+    if fill_nodata:
+        mask = xr.ones_like(final)
+        # nodata -> 0, data -> 1
+        mask = mask.where(final != nodata, 0)
+        # outside -> 1
+        for band in mask:
+            mask[band] = mask[band].rio.write_nodata(1)
+        mask = clipf(mask, clip)
+        # Fill nodata
+        final = fillnodata(final, mask, fill_distance, nodata)
+
+    final = check_dtype(final)
+
+    # Creating final STAC dataset
+    stac, json_path = postprocess_mosaic_dataset(datasets, final, output_dir, bands)
+
+    # Write
+    write_dataset(final, stac, json_path)
+
+    if write_stac:
+        # Writing JSON metadata file
+        stac.save_object(dest_href=json_path.as_posix())
+        return json_path
+    return output_dir
 
 
-def get_bands(paths, keep_all_channels):
-    sets = []
-    for path in paths:
-        im_type = get_type(path)
-        if im_type == 'Sentinel2_up':
-            path = path + 'GRANULE/'
-            path = glob(path + '*')[0]
-            path = path + '/IMG_DATA/'
-            if os.path.isdir(path + 'R10m/'):
-                bands = glob(path + 'R10m/*B*.jp2') + glob(path + 'R20m/*B*.jp2') + glob(path + 'R60m/*B*.jp2')
-            else:
-                bands = glob(path + '*B*.jp2')
-        else:
-            bands = glob(path + '*.*[!(zip|tar|tar.gz|aux.xml)*]')
-        sets.append([bands, im_type])
-    # Getting imagery type and bands list
-    unique_types = set(x[1] for x in sets)
-    if (
-        (unique_types.issubset(['Landsat8_up_l1', 'Landsat7_up_l1', 'Landsat5_up_l1', 'Landsat1_up_l1'])) 
-        or (unique_types.issubset(['Landsat8_up_l2', 'Landsat7_up_l2', 'Landsat5_up_l2', 'Landsat1_up_l2'])) 
-        or (unique_types.issubset(['Landsat8_p', 'Landsat7_p', 'Landsat5_p', 'Landsat1_p']))
-    ):
-        b1 = {'name': 'B1', 'bands': []} #coastal/aerosol
-        b2 = {'name': 'B2', 'bands': []} #blue
-        b3 = {'name': 'B3', 'bands': []} #green
-        b4 = {'name': 'B4', 'bands': []} #red
-        b5 = {'name': 'B5', 'bands': []} #nir1
-        b6 = {'name': 'B6', 'bands': []} #swir1
-        b7 = {'name': 'B7', 'bands': []} #swir2
-        b8 = {'name': 'B8', 'bands': []} #pan
-        b9 = {'name': 'B9', 'bands': []} #cirrus
-        b10 = {'name': 'B10', 'bands': []} #t1
-        b11 = {'name': 'B11', 'bands': []} #t2
-        for s in sets:
-            bands = s[0]
-            lsver = s[1]
-            bands = [band for band in bands if '_GM_' not in band]
-            for band in bands:
-                if ('B1.' in band) or ('B01' in band):
-                    if 'Landsat8' in lsver:
-                        b1['bands'].append(band)
-                    elif 'Landsat7' in lsver:
-                        b2['bands'].append(band)
-                    elif 'Landsat5' in lsver:
-                        b2['bands'].append(band)
-                    elif 'Landsat1' in lsver:
-                        b3['bands'].append(band)
-                elif ('B2' in band) or ('B02' in band):
-                    if 'Landsat8' in lsver:
-                        b2['bands'].append(band)
-                    elif 'Landsat7' in lsver:
-                        b3['bands'].append(band)
-                    elif 'Landsat5' in lsver:
-                        b3['bands'].append(band)
-                    elif 'Landsat1' in lsver:
-                        b4['bands'].append(band)
-                elif ('B3' in band) or ('B03' in band):
-                    if 'Landsat8' in lsver:
-                        b3['bands'].append(band)
-                    elif 'Landsat7' in lsver:
-                        b4['bands'].append(band)
-                    elif 'Landsat5' in lsver:
-                        b4['bands'].append(band)
-                    elif 'Landsat1' in lsver:
-                        b5['bands'].append(band)
-                elif ('B4' in band) or ('B04' in band):
-                    if 'Landsat8' in lsver:
-                        b4['bands'].append(band)
-                    elif 'Landsat7' in lsver:
-                        b5['bands'].append(band)
-                    elif 'Landsat5' in lsver:
-                        b5['bands'].append(band)
-                    elif 'Landsat1' in lsver:
-                        b5['bands'].append(band)
-                elif ('B5' in band) or ('B05' in band):
-                    if 'Landsat8' in lsver:
-                        b5['bands'].append(band)
-                    elif 'Landsat7' in lsver:
-                        b6['bands'].append(band)
-                    elif 'Landsat5' in lsver:
-                        b6['bands'].append(band)
-                elif ('B6' in band) or ('B06' in band):
-                    if 'Landsat8' in lsver:
-                        b6['bands'].append(band)
-                    elif 'Landsat7' in lsver:
-                        if 'VCID_1' in band:
-                            b10['bands'].append(band)
-                        elif 'VCID_2' in band:
-                            b11['bands'].append(band)
-                    elif 'Landsat5' in lsver:
-                        b10['bands'].append(band)
-                elif ('B7' in band) or ('B07' in band):
-                    if 'Landsat8' in lsver:
-                        b7['bands'].append(band)
-                    elif 'Landsat7' in lsver:
-                        b7['bands'].append(band)
-                    elif 'Landsat5' in lsver:
-                        b7['bands'].append(band)
-                elif ('B8' in band) or ('B08' in band):
-                    if 'Landsat8' in lsver:
-                        b8['bands'].append(band)
-                    elif 'Landsat7' in lsver:
-                        b8['bands'].append(band)
-                elif ('B9' in band) or ('B09' in band):
-                    if 'Landsat8' in lsver:
-                        b9['bands'].append(band)
-                elif ('B10' in band):
-                    if 'Landsat8' in lsver:
-                        b10['bands'].append(band)
-                elif ('B11' in band):
-                    if 'Landsat8' in lsver:
-                        b11['bands'].append(band)
-        bands = [b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11]
-    elif unique_types.issubset(['Sentinel2_up', 'Sentinel2_p']):
-        b1 = {'name': 'B1', 'bands': []}
-        b2 = {'name': 'B2', 'bands': []}
-        b3 = {'name': 'B3', 'bands': []}
-        b4 = {'name': 'B4', 'bands': []}
-        b5 = {'name': 'B5', 'bands': []}
-        b6 = {'name': 'B6', 'bands': []}
-        b7 = {'name': 'B7', 'bands': []}
-        b8 = {'name': 'B8', 'bands': []}
-        b8a = {'name': 'B8A', 'bands': []}
-        b9 = {'name': 'B9', 'bands': []}
-        b10 = {'name': 'B10', 'bands': []}
-        b11 = {'name': 'B11', 'bands': []}
-        b12 = {'name': 'B12', 'bands': []}
-        for s in sets:
-            bands = s[0]
-            sver = s[1]
-            for band in bands:
-                if ('B01' in band) or ('B01_60m' in band) or ('B1.tif' in band):
-                    b1['bands'].append(band)
-                elif ('B02' in band) or ('B02_10m' in band) or ('B2.tif' in band):
-                    b2['bands'].append(band)
-                elif ('B03' in band) or ('B03_10m' in band) or ('B3.tif' in band):
-                    b3['bands'].append(band)
-                elif ('B04' in band) or ('B04_10m' in band) or ('B4.tif' in band):
-                    b4['bands'].append(band)
-                elif ('B05' in band) or ('B05_20m' in band) or ('B5.tif' in band):
-                    b5['bands'].append(band)
-                elif ('B06' in band) or ('B06_20m' in band) or ('B6.tif' in band):
-                    b6['bands'].append(band)
-                elif ('B07' in band) or ('B07_20m' in band) or ('B7.tif' in band):
-                    b7['bands'].append(band)
-                elif ('B08' in band) or ('B08_10m' in band) or ('B8.tif' in band):
-                    b8['bands'].append(band)
-                elif ('B8A' in band) or ('B8A_20m' in band) or ('B8A.tif' in band):
-                    b8a['bands'].append(band)
-                elif ('B09' in band) or ('B09_60m' in band) or ('B9.tif' in band):
-                    b9['bands'].append(band)
-                elif ('B10' in band) or ('B10_60m' in band) or ('B10.tif' in band):
-                    b10['bands'].append(band)
-                elif ('B11' in band) or ('B11_20m' in band) or ('B11.tif' in band):
-                    b11['bands'].append(band)
-                elif ('B12' in band) or ('B12_20m' in band) or ('B12.tif' in band):
-                    b12['bands'].append(band)
-        bands = [b1, b2, b3, b4, b5, b6, b7, b8, b8a, b9, b10, b11, b12]
+def initial_process_dataset(
+    dataset: Item,
+    bands: list[str],
+    clip: Optional[FilePath] = None,
+    crs: Optional[CRS] = None,
+    nodata: Optional[Union[int, float]] = None,
+) -> xr.Dataset:
+    """Prepare a single dataset for mosaicking, without histogram matching."""
+    img = load_dataset(dataset, bands, clip)
+
+    img, nodata = prepare_nodata(img, nodata=nodata)
+
+    if crs is not None:
+        img = reproject(img, crs)
+    if clip is not None:
+        img = clipf(img, clip)
+    img = check_dtype(img)
+
+    # Adding empty data arrays for bands that are absent in the current dataset
+    for band in bands:
+        if band not in dataset.assets:
+            img[band] = img[next(iter(img.keys()))]
+            img[band].data = da.full_like(img[band], nodata)
+    return persist(img)
+
+
+def get_bands(datasets: list[Item], keep_all_channels: bool) -> list[str]:
+    """Read band names.
+
+    If keep_all_channels == True then will read all the names,
+    if False then will read only the bands that are present in every dataset.
+    """
+    band_lists = []
+    for dataset in datasets:
+        band_lists.append(list(dataset.assets.keys()))
+    if keep_all_channels:
+        final_bands = list({x for xs in band_lists for x in xs})
     else:
-        allbands = []
-        for s in sets:
-            bands = s[0]
-            for band in bands:
-                band = os.path.basename(band)
-                allbands.append(band)
-        allbands = list(set(bands))
         final_bands = []
-        for bandname in allbands:
-            thisband = {'name': bandname, 'bands': []}
-            for s in sets:
-                bands = s[0]
-                for band in bands:
-                    if bandname in band:
-                        thisband['bands'].append(band)
-            final_bands.append(thisband)
-        bands = final_bands
-    final_bands = []
-    for i in bands:
-        if (
-            (len(i['bands']) != 0)
-            and (((len(i['bands']) == len(paths)) and (keep_all_channels == False)) or (keep_all_channels == True))
-        ):
-            final_bands.append(i)
+        for lst in band_lists:
+            for i in lst:
+                n = 0
+                for ll in band_lists:
+                    if i in ll:
+                        n += 1
+                if n == len(band_lists):
+                    final_bands.append(i)
     return final_bands
-    
 
-def order(dirs):
+
+def get_nodata(datasets: list[Item], nodata: Optional[Union[int, float]] = None) -> Union[int, float]:
+    """Get nodata from multiple datasets."""
+    for ds in datasets:
+        bands = list(ds.assets.keys())
+        for band in bands:
+            with rxr.open_rasterio(ds.assets[band].href, chunks=True, lock=True) as img:
+                if nodata is None:
+                    nodata = img.rio.nodata
+                else:
+                    if nodata != img.rio.nodata:
+                        raise ValueError("Nodata value of " + ds.id + " is different from the other files.")
+    return nodata
+
+
+def order(
+    datasets: list[Item],
+    nodata: Optional[Union[int, float]] = None,
+    clip: Optional[FilePath] = None,
+) -> list[Item]:
+    """Sort datasets in order from least nodata to most nodata."""
     zeros = []
-    for path in dirs:
-        path = glob(path + '*.tif')[0]
-        with rio.open(path) as bnd:
-            img = bnd.read(1)
-        try:
-            zeros.append(np.count_nonzero(img==0))
-        except:
-            zeros.append(0)
-    zerosdict = dict(zip(dirs, zeros))
+    for ds in datasets:
+        band = next(iter(ds.assets.keys()))
+        with rxr.open_rasterio(ds.assets[band].href, chunks=True, lock=True) as img:
+            if nodata is None:
+                nodata = img.rio.nodata
+            if nodata is not None:
+                try:
+                    img = (img == nodata).astype("uint8")  # nodata-1 data-0
+                    img = img.rio.write_nodata(0)
+                    if clip is not None:
+                        img = clipf(img, clip)  # nodata-1 data-0 outside_nodata-0
+                    zeros.append((da.count_nonzero(img) / img.size).compute())
+                except Exception:
+                    zeros.append(0.0)
+            else:
+                zeros.append(0.0)
+    zerosdict = dict(zip(datasets, zeros, strict=True))
     sortedzeros = dict(sorted(zerosdict.items(), key=lambda item: item[1], reverse=False))
-    order = list(sortedzeros.keys())
-    return order
-    
-    
-def ismultiband(inp):
-    return os.path.isdir(inp)
+    return list(sortedzeros.keys())

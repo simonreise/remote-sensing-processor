@@ -1,0 +1,50 @@
+name: "Feature request"
+description: Submit a proposal/request for a new RSP feature
+labels: [ "feature" ]
+body:
+  - type: textarea
+    id: feature-request
+    attributes:
+      label: Feature request
+      description: |
+        A clear and concise description of the feature proposal.
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: |
+        Please outline the motivation for the proposal. Is your feature request related to a problem? e.g., I'm always frustrated when [...]. If this is related to another GitHub issue, please link here too.
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation
+      description: |
+        If you've thought about how to implement this feature, describe your proposed solution.
+
+  - type: textarea
+    id: contribution
+    attributes:
+      label: Your contribution
+      description: |
+        Is there any way that you could help, e.g. by submitting a PR? Make sure to read the CONTRIBUTING.MD [readme](https://github.com/simonreise/remote-sensing-processor/blob/main/CONTRIBUTING.md)
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional information
+      description: |
+        Any additional information that might be relevant to the proposed feature.
+
+  - type: markdown
+    attributes:
+      value: >
+        Thanks for suggesting this awesome new feature!
+        Remote Sensing Processor is an open-source project maintained by its users. 
+        If you want to contribute a pull request to implement this feature, we'll be happy to review it. 
+        If not, we'll try to implement your feature when we get a chance.

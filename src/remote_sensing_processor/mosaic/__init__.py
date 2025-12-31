@@ -1,0 +1,1 @@
+"""Mosaic creation module."""

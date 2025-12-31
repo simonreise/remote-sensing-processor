@@ -1,0 +1,63 @@
+# RSP modules
+common:
+  - changed-files:
+      - any-glob-to-any-file: 'src/remote_sensing_processor/common/**'
+dem:
+  - changed-files:
+      - any-glob-to-any-file: 'src/remote_sensing_processor/dem/**'
+imagery:
+  - changed-files:
+      - any-glob-to-any-file: 'src/remote_sensing_processor/imagery/**'
+indices:
+  - changed-files:
+      - any-glob-to-any-file: 'src/remote_sensing_processor/indices/**'
+mosaic:
+  - changed-files:
+      - any-glob-to-any-file: 'src/remote_sensing_processor/mosaic/**'
+instance:
+  - changed-files:
+      - any-glob-to-any-file: 'src/remote_sensing_processor/segmentation/instance/**'
+object:
+  - changed-files:
+      - any-glob-to-any-file: 'src/remote_sensing_processor/segmentation/object_detection/**'
+panoptic:
+  - changed-files:
+      - any-glob-to-any-file: 'src/remote_sensing_processor/segmentation/panoptic/**'
+regression:
+  - changed-files:
+      - any-glob-to-any-file: 'src/remote_sensing_processor/segmentation/regression/**'
+semantic:
+  - changed-files:
+      - any-glob-to-any-file: 'src/remote_sensing_processor/segmentation/semantic/**'
+unsupervised:
+  - changed-files:
+      - any-glob-to-any-file: 'src/remote_sensing_processor/segmentation/unsupervised/**'
+losses:
+  - changed-files:
+      - any-glob-to-any-file: 'src/remote_sensing_processor/segmentation/**/losses.py'
+metrics:
+  - changed-files:
+      - any-glob-to-any-file: 'src/remote_sensing_processor/segmentation/**/metrics.py'
+models:
+  - changed-files:
+      - any-glob-to-any-file: 'src/remote_sensing_processor/segmentation/**/models.py'
+
+# Other
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pyproject.toml'
+          - '.github/dependabot.yml'
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+          - '*.md'
+          - '.github/*.md'
+          - '.readthedocs.yaml'
+          - '*.rst'
+testing:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tests/**'
+          - '.github/workflows/**'
