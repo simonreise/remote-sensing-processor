@@ -170,6 +170,7 @@ def band_importance(
         canopyheight_norm: 0.0005
         dem_norm: 0.0741
     """
+    dataset["predict"] = True
     if "sub" not in dataset:
         dataset["sub"] = "all"
 
@@ -236,7 +237,6 @@ def band_importance(
             print(f"{var}: {global_channel_importance[i]:.4f}")
 
     # Sklearn models
-    # Not implemented yet!!!
     elif model.model_name in sklearn_models:
         x_pred, _, _ = sklearn_load_dataset(dm, "predict", model.generate_features)
 

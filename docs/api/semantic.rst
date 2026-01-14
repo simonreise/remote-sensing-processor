@@ -1,7 +1,7 @@
 Semantic segmentation
 =====================
 .. automodule:: remote_sensing_processor.semantic
-   :members: generate_tiles, train, test, generate_map, band_importance
+   :members: generate_tiles, train, test, generate_map, band_importance, confusion_matrix
    :show-inheritance:
    
 List of available NN models

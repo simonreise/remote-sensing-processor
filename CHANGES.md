@@ -15,6 +15,7 @@
 - Now user can define the augmentations that will be applied to train dataset, including custom augmentations
 - Now basic multiscale features can be generated to improve the modeling quality of Sklearn-based models
 - Added `band_importance` functions that use SHAP to estimate band importance for the modeling
+- Added `confusion_matrix` function that calculate confusion matrix for semantic segmentation models
 
 ### Other major changes
 - Added `process` function that can clip, reproject, reproject match and change dtype of a single raster
