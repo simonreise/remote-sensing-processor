@@ -101,6 +101,8 @@ With `semantic.generate_map` you can create map from predictions of pre-trained 
 
 With `semantic.band_importance` you can estimate importance of different bands for the modeling.
 
+With `semantic.confusion_matrix` you can calculate a confusion matrix for a modeling result.
+
 #### Regression
 
 With `regression` module you can train regression model and use it for predictions.

@@ -59,6 +59,7 @@ Calculate:
 - Estimate model performance with different metrics (custom metrics are supported too) and save the logs
 - Use trained ML models to make predictions and generate maps out of them
 - Estimate band importance for the modeling
+- - Calculate a confusion matrix
 
 #### Semantic segmentation
 
