@@ -100,7 +100,7 @@ class SemanticSegmentationDataModule(DataModule, SemanticSegmentationMetrics):
         test_datasets: Optional[ListOfDict] = None,
         pred_dataset: Optional[dict] = None,
         repeat: Optional[int] = 1,
-        augment: Optional[Union[bool, tuple[Union[str, TorchTransform]]]] = False,
+        augment: Optional[Union[bool, tuple[Union[str, TorchTransform], ...]]] = False,
         batch_size: Optional[int] = 32,
         num_workers: Optional[Union[int, Literal["auto"]]] = "auto",
     ) -> None:
@@ -342,7 +342,7 @@ def train(
     metrics: Optional[ListOfDict] = None,
     batch_size: Optional[PositiveInt] = 32,
     repeat: Optional[PositiveInt] = 1,
-    augment: Optional[Union[bool, tuple[Union[str, TorchTransform]]]] = False,
+    augment: Optional[Union[bool, tuple[Union[str, TorchTransform], ...]]] = False,
     lr: Optional[float] = 1e-3,
     generate_features: Optional[bool] = False,
     num_workers: Optional[Union[NonNegativeInt, Literal["auto"]]] = 0,
