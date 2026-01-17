@@ -136,6 +136,8 @@ def generate_map(
     dataset["predict"] = True
     if "sub" not in dataset:
         dataset["sub"] = "all"
+    if reference_dataset is not None and "sub" not in reference_dataset:
+        reference_dataset["sub"] = "all"
 
     # Setting datamodule
     dm = RegressionDataModule(pred_dataset=dataset, batch_size=batch_size, num_workers=num_workers)
