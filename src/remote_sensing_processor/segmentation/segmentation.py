@@ -269,8 +269,8 @@ class DataModule(l.LightningDataModule):
             raise ValueError("input dims of input datasets are different")
         self.input_dims = ds[0].input_dims
 
-        if not all(d.variables == ds[0].variables for d in ds):
-            raise ValueError("input dims of input datasets are different")
+        if not all(len(d.variables) == len(ds[0].variables) for d in ds):
+            raise ValueError("numbers of predictors in input datasets are different")
         self.variables = ds[0].variables
 
         if not all(d.x_nodata == ds[0].x_nodata for d in ds):
