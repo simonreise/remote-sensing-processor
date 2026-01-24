@@ -237,6 +237,14 @@ def generate_tiles(
 
     write_json(data, output / "meta.json")
 
+    # Calculating optimal batch size
+    # Target size is 256MB
+    target_size = 256 * 1024 * 1024
+    x_channels = x_img.shape[0]
+    y_channels = len(y_img) if y_img is not None else 0
+    bytes_per_sample = (x_channels + y_channels) * (tile_size ** 2) * 4
+    writer_batch_size = max(1, int(target_size / bytes_per_sample))
+
     for name in split:
         # Generate features
         feat = {
@@ -272,6 +280,7 @@ def generate_tiles(
             cache_dir=(output / ".cache").as_posix(),
             fingerprint=unique_id,
             gen_kwargs={"samples": samples, "name": name},
+            writer_batch_size=writer_batch_size,
         )
 
         # Save dataset

@@ -89,16 +89,17 @@ def prepare_raster_sm(
     ref: xr.DataArray,
     name: str,
     y_nodata: Optional[Union[int, float]],
-) -> xr.Dataset:
+) -> xr.DataArray:
     """Prepare raster segmentation map."""
     stac = read_dataset(path)
     ds = load_dataset(stac)
-    if ds.shape[0] != 1:
-        raise ValueError("Looks like you are trying to use multiband raster as a target variable")
     ds, y_nodata = fix_nodata(ds, y_nodata)
     ds = reproject_match(ds, ref)
+    ds = ds.squeeze().to_array("band")
+    if ds.shape[0] != 1:
+        raise ValueError("Looks like you are trying to use multiband raster as a target variable")
     ds.name = name
-    return ds
+    return ds.squeeze()
 
 
 def add_prefixes(datasets: list[xr.Dataset]) -> list[xr.Dataset]:
