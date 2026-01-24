@@ -20,7 +20,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "Remote Sensing Processor"
-copyright = "2022-2025, Mikhail Moskovchenko"
+copyright = "2022-2026, Mikhail Moskovchenko"
 author = "Mikhail Moskovchenko"
 
 # The short X.Y version
@@ -198,6 +198,7 @@ epub_exclude_files = ["search.html"]
 
 
 # -- Extension configuration -------------------------------------------------
+autodoc_typehints = "none"
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = False
