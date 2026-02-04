@@ -38,7 +38,7 @@ dependencies = [
     "lightning>=2.2",
 	"torchmetrics>=1.8.1",
     "tensorboard",
-    "transformers>=4.56.0",
+    "transformers>=5.0.0",
 	"segmentation-models-pytorch>=0.5.0",
 	"torchgeo",
     "datasets>=4.3.0",
