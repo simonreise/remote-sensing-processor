@@ -1,5 +1,3 @@
-Raster normalization
+Rasterization
 =====================
-.. automodule:: remote_sensing_processor
-   :members: rasterize
-   :show-inheritance:
+.. autofunction:: remote_sensing_processor.rasterize

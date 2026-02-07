@@ -1,5 +1,3 @@
-Raster processing
+Clipping data values
 =====================
-.. automodule:: remote_sensing_processor
-   :members: clip_values
-   :show-inheritance:
+.. autofunction:: remote_sensing_processor.clip_values

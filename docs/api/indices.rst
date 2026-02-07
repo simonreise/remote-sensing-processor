@@ -1,5 +1,3 @@
 Vegetation indices
 ==================
-.. automodule:: remote_sensing_processor
-   :members: calculate_index
-   :show-inheritance:
+.. autofunction:: remote_sensing_processor.calculate_index

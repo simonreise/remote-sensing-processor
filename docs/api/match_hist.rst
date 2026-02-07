@@ -1,5 +1,3 @@
-Raster normalization
+Histogram matching
 =====================
-.. automodule:: remote_sensing_processor
-   :members: match_hist
-   :show-inheritance:
+.. autofunction:: remote_sensing_processor.match_hist

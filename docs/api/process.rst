@@ -1,5 +1,3 @@
 Raster processing
 =====================
-.. automodule:: remote_sensing_processor
-   :members: process
-   :show-inheritance:
+.. autofunction:: remote_sensing_processor.process

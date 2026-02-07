@@ -1,5 +1,5 @@
-Raster normalization
+Replacing data values
 =====================
-.. automodule:: remote_sensing_processor
-   :members: replace_value, replace_nodata
-   :show-inheritance:
+.. autofunction:: remote_sensing_processor.replace_value
+
+.. autofunction:: remote_sensing_processor.replace_nodata
