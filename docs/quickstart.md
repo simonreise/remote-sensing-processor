@@ -11,16 +11,16 @@ Then we prepare data to semantic segmentation model training. We use Sentinel-2 
 ## Importing RSP
 
 Here we import Remote Sensing Processor
-```
-import remote_sensing_processor as rsp
+```pycon
+>>> import remote_sensing_processor as rsp
 ```
 
 ## Sentinel-2 preprocessing
 
 We have 6 Sentinel-2 images that cover our region of interest.
-```
+```pycon
 >>> from glob import glob
->>> sentinel2_imgs = glob('/home/rsp_test/sentinels/*.zip')
+>>> sentinel2_imgs = glob("/home/rsp_test/sentinels/*.zip")
 >>> print(sentinel2_imgs)
 ['/home/rsp_test/sentinels/S2A_MSIL2A_T42VWR_A032192_20210821T064626.zip',
  '/home/rsp_test/sentinels/S2A_MSIL2A_T42WXS_A032192_20210821T064626.zip',
@@ -53,7 +53,7 @@ By default `upscale` is `superres` and `cloud_mask` is `True`, so the function w
 
 Machine learning models usually work best with normalized data, so we need to set `normalize` parameter to `True`.
 
-```
+```pycon
 >>> output_sentinels = rsp.sentinel2(sentinel2_imgs, normalize=True)
 Preprocessing of /home/rsp_test/sentinels/S2A_MSIL2A_T42VWR_A032192_20210821T064626.zip completed
 Preprocessing of /home/rsp_test/sentinels/S2A_MSIL2A_T42WXS_A032192_20210821T064626.zip completed
@@ -75,27 +75,27 @@ Function returns list of STAC files that contain metadata for preprocessed image
 ## Merging Sentinel-2 images
 
 In this stage preprocessed Sentinel-2 images are being merged into one mosaic. This function can merge not only single-band images, but also multi-band imagery like Sentinel-2. `fill_nodata` argument makes RSP also fill the gaps in the final mosaic, `clip` argument is a path to a file with a border of our region of interest that is used to clip data, `crs` is a CRS we need, and `nodata_order` is to merge images in order from images with less nodata values on top (they are usually clear) to images with most nodata on bottom (they are usually most distorted and cloudy).
-```
->>> border = '/home/rsp_test/border.gpkg'
+```pycon
+>>> border = "/home/rsp_test/border.gpkg"
 >>> mosaic_sentinel = rsp.mosaic(
 ... 	output_sentinels, 
-... 	'/home/rsp_test/mosaics/sentinel/', 
+... 	"/home/rsp_test/mosaics/sentinel/", 
 ... 	fill_nodata=True,
 ... 	clip=border, 
-... 	crs='EPSG:4326', 
+... 	crs="EPSG:4326", 
 ... 	nodata_order=True,
 ... )
 Processing completed
 >>> print(mosaic_sentinel)
-'/home/rsp_test/mosaics/sentinel/S2A_MSIL2A_T42VWR_A032192_20210821T064626_mosaic.json',
+'/home/rsp_test/mosaics/sentinel/S2A_MSIL2A_T42VWR_A032192_20210821T064626_mosaic.json'
 ```
 The function returns a STAC file with mosaic metadata.
 
 ## Calculating NDVI for sentinel-2 mosaic
 
 Normalized difference function can automatically select bands for calculating NDVI based on Sentinel-2 image, we can just give it index name and a folder where bands are stored.
-```
->>> ndvi = rsp.calculate_index('NDVI', mosaic_sentinel)
+```pycon
+>>> ndvi = rsp.calculate_index("NDVI", mosaic_sentinel)
 >>> print(ndvi)
 '/home/rsp_test/mosaics/sentinel/NDVI.json'
 ```
@@ -103,8 +103,8 @@ Normalized difference function can automatically select bands for calculating ND
 ## Merging DEM images
 
 We also need to merge ASTER GDEM images into one mosaic.
-```
->>> dems = glob('/home/rsp_test/dem/*.tif')
+```pycon
+>>> dems = glob("/home/rsp_test/dem/*.tif")
 >>> print(dems)
 ['/home/rsp_test/aster_gdem/N63E069_FABDEM_V1-0.tif',
  '/home/rsp_test/aster_gdem/N63E070_FABDEM_V1-0.tif',
@@ -113,12 +113,12 @@ We also need to merge ASTER GDEM images into one mosaic.
  '/home/rsp_test/aster_gdem/N64E070_FABDEM_V1-0.tif']
 ```
 For machine learning we need our data sources to have the same CRS and the same resolution. We can match different rasters by setting `reference_raster` parameter. Here we set one of the Sentinel band mosaics as a reference raster.
-```
+```pycon
 >>> mosaic_dem = rsp.mosaic(
 ... 	dems, 
-... 	'/home/rsp_test/mosaics/dem/', 
+... 	"/home/rsp_test/mosaics/dem/", 
 ... 	clip=border, 
-... 	reference_raster='/home/rsp_test/mosaics/sentinel/B1.tif', 
+... 	reference_raster="/home/rsp_test/mosaics/sentinel/B1.tif", 
 ... 	nodata=0,
 ... )
 Processing completed
@@ -129,18 +129,18 @@ Processing completed
 ## Normalizing DEM mosaics
 
 Data normalization usually can significantly improve convergence time and accuracy of neural networks, so we will normalize our data. Min/Max normalization will convert data values to range from 0 to 1. We need to set `minimum` value that will be 0 in normalized data and `maximum` value that will be 1. We know that heights in our DEM are higher than 100 m and lower than 1000 m, so we will set these values as minimum and maximum.
-```
+```pycon
 >>> dem = rsp.normalize.min_max(
 ... 	mosaic_dem, 
 ... 	minimum=100, 
-...     1000,
+...     maximum=1000,
 ... )
 ```
 
 ### Calculating slope from DEM
 
 Sometimes generating additional variables can improve modeling results. Let's calculate slope from our DEM and normalize it.
-```
+```pycon
 >>> slope = "/home/rsp_test/dem/slope.tif"
 >>> slope = rsp.dem.slope(
 ...     mosaic_dem,
@@ -156,7 +156,7 @@ The goal of this tutorial is to create a model that predict land cover classes (
 We have a custom landcover map that we want to use to train a model. We need to rasterize it. `generate_tiles` function can automatically rasterize vector data. Vector files usually contain several attributes. We want to vectorize `type` attribute, so we set `"value": "type"`.
 
 Here we define x data (that will be used by CNN as input training data) and y data (that will be used as target variable).
-```
+```pycon
 >>> x = mosaic_sentinel + dem + slope
 >>> landcover_shp = "/home/rsp_test/landcover/types.shp"
 >>> y = {"name": "landcover", "path": landcover_shp, "value": "type"}
@@ -164,7 +164,7 @@ Here we define x data (that will be used by CNN as input training data) and y da
 We will cut Sentinel and DEM (x) and landcover (y) data to 256x256 px tiles (`tile_size = 256`). To lower the bias we will random shuffle tiles (`shuffle=True`). To evaluate model performance on a data that was not used in model training we will split data into train, validation and test subsets in proportion 3 to 1 to 1 (`split={"train": 3, "validation": 1, "test": 1}`).
 
 The function generates an ML-ready dataset in a RSPDS format (which is based on HuggingFace Datasets dataset format) and returns patch to this dataset.
-```
+```pycon
 >>> x_tiles, y_tiles = rsp.semantic.generate_tiles(
 ... 	x,
 ... 	y,
@@ -183,20 +183,20 @@ Here we are training UperNet CNN that predicts landcover class based on Sentinel
 
 First, we need to set up train and validation datasets. Each dataset is a dict of 3 elements: "path": a path to a dataset, "sub": split name defined in `generate_tiles` or list of split names or 'all' if you need to use the whole dataset, "y": a target varialble that you want to use. In case your dataset have only one target variable, this key can be omitted. You can provide a list of datasets to train model on multiple datasets.
 
-```
+```pycon
 >>> train_ds = {"path": dataset, "sub": "train", "y": "landcover"}
 >>> val_ds = {"path": dataset, "sub": "validation", "y": "landcover"}
 ```
 
-We will use the UperNet model architecture (`model="UperNet",`) with ConvNeXTV2 backbone (`backbone="ConvNeXTV2",`). Model will be saved to `/home/rsp_test/model/upernet.ckpt` and could be used later for testing and prediction. Model will be trained for 100 epochs, with early stopping callback enabled and patience of 10 epochs (`epochs={"max_epochs":100, "early_stopping": True, "patience": 10}`) with default set of augmentations applied to train data (`augment=True`) and automatic selection of number of workers used (`num_workers="auto"`).
-```
+We will use the UperNet model architecture (`model="UperNet"`) with ConvNeXTV2 backbone (`backbone="ConvNeXTV2"`). Model will be saved to `/home/rsp_test/model/upernet.ckpt` and could be used later for testing and prediction. Model will be trained for 100 epochs, with early stopping callback enabled and patience of 10 epochs (`epochs={"max_epochs":100, "early_stopping": True, "patience": 10}`) with default set of augmentations applied to train data (`augment=True`) and automatic selection of number of workers used (`num_workers="auto"`).
+```pycon
 >>> model = rsp.segmentation.train(
 ... 	train_ds, 
 ... 	val_ds,
-... 	model_file='/home/rsp_test/model/upernet.ckpt', 
+... 	model_file="/home/rsp_test/model/upernet.ckpt", 
 ... 	model="UperNet", 
 ... 	backbone="ConvNeXTV2", 
-... 	epochs={"max_epochs":100, "early_stopping": True, "patience": 10},
+... 	epochs={"max_epochs": 100, "early_stopping": True, "patience": 10},
 ...     augment=True,
 ...     num_workers="auto",
 ... )
@@ -225,7 +225,7 @@ train_loss_epoch=0.349, train_acc_epoch=0.842, train_auroc_epoch=0.797, train_io
 
 Then we need to test model performance on test data. We will use a custom set of metrics to better evaluate model performance.
 
-```
+```pycon
 >>> test_ds = {"path": dataset, "sub": "test", "y": "landcover"}
 >>> rsp.semantic.test(
 ...     test_ds,
@@ -264,9 +264,9 @@ Then we need to test model performance on test data. We will use a custom set of
 ## Mapping predictions
 
 When we finished training a model, we can use it to create a landcover map based on its predictions. We need to define data that will be used for prediction (we will use the same dataset, but in real life it will probably be another dataset), model that will be used for predictions (it is out UperNet model) and a path where to write output map.
-```
+```pycon
 >>> whole_ds = {"path": dataset, "sub": "all", "y": "landcover"}
->>> output_map = '/home/rsp_test/prediction.tif'
+>>> output_map = "/home/rsp_test/prediction.tif"
 >>> rsp.semantic.generate_map(whole_ds, model, output_map)
 Predicting: 100% #################### 372/372 [32:16, 1.6s/it]
 ```

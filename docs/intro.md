@@ -15,7 +15,7 @@ Another key idea of RSP is easy pipeline construction, where outputs from one fu
 
 ```
 output_sentinels = rsp.sentinel2(sentinel2_imgs)
-x = rsp.mosaic(output_sentinels, '/home/rsp_test/mosaics/sentinel/')
+x = rsp.mosaic(output_sentinels, "/home/rsp_test/mosaics/sentinel/")
 x_tiles, y_tiles = rsp.semantic.generate_tiles(x, y)
 ```
 
@@ -131,7 +131,7 @@ You need to have Nvidia GPU in your PC to run pytorch models. Actually, it shoul
 
 If you have GPU and received this error, try to re-install `pytorch` using [official guide](https://pytorch.org/get-started/locally/). Or try another pytorch version.
 
-If you are get such error while Sentinel-2 processing, try to run `sentinel2` with `upscale = 'resample'` or `upscale = None`.
+If you are get such error while Sentinel-2 processing, try to run `sentinel2` with `upscale = "resample"` or `upscale = None`.
 
 ### I want to report an error / suggest adding a new feature
 
