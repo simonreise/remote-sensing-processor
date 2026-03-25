@@ -229,7 +229,7 @@ def generate_tiles(
     target_size = 256 * 1024 * 1024
     x_channels = x_img.shape[0]
     y_channels = len(y_img) if y_img is not None else 0
-    bytes_per_sample = (x_channels + y_channels) * (tile_size ** 2) * 4
+    bytes_per_sample = (x_channels + y_channels) * (tile_size**2) * 4
     writer_batch_size = max(1, int(target_size / bytes_per_sample))
 
     for name in split:
