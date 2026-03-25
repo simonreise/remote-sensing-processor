@@ -1,6 +1,5 @@
 """General tiles generation functions."""
 
-from pydantic import BaseModel
 from typing import Optional, Union
 
 import warnings
@@ -143,6 +142,39 @@ def pad(img: xr.DataArray, shp_pad: list[int], nodata: Optional[Union[int, float
     return persist(img)
 
 
+def filter_nodata_raster(
+    x_img: xr.DataArray,
+    y_img: Optional[xr.DataArray],
+    filter_nodata: str,
+    x_nodata: Optional[Union[int, float]],
+    y_nodata: Optional[Union[int, float]],
+) -> tuple[xr.DataArray, xr.DataArray]:
+    """Filter nodata values in x and y rasters."""
+    if filter_nodata == "x":
+        mask = (x_img != x_nodata).any(dim="band")
+        y_img = y_img.where(mask, y_nodata)
+        y_img = persist(y_img)
+    elif filter_nodata == "y":
+        mask = (y_img != y_img.rio.nodata).any(dim="band")
+        x_img = x_img.where(mask, x_nodata)
+        x_img = persist(x_img)
+    elif filter_nodata in ["x_or_y", "x_and_y"]:
+        # noinspection PyUnresolvedReferences
+        mask1 = (y_img != y_nodata).any(dim="band")
+        mask2 = (x_img != x_nodata).any(dim="band")
+        if filter_nodata == "x_or_y":
+            mask = mask1 & mask2
+        elif filter_nodata == "x_and_y":
+            mask = mask1 | mask2
+        else:
+            raise ValueError("Invalid `filter_nodata`")
+        x_img = x_img.where(mask, x_nodata)
+        y_img = y_img.where(mask, y_nodata)
+        x_img = persist(x_img)
+        y_img = persist(y_img)
+    return x_img, y_img
+
+
 def filter_samples(batcher: BatchGenerator, samples: list[int], nodata: Optional[Union[int, float]]) -> list[int]:
     """Remove samples that contain only nodata."""
 
@@ -229,21 +261,21 @@ def check_classes(rasters: xr.Dataset, nodata: Optional[Union[int, float]]) -> N
                 )
 
 
-def replace_y_in_meta(meta: dict, dataset: BaseModel) -> dict:
+def replace_y_in_meta(meta: dict, y: str, predict: bool) -> dict:
     """Replaces dict of different y values to a single y."""
     # If y is not needed (e.g., if predict)
-    if dataset.predict:
+    if predict:
         del meta["y"]
         return meta
 
     if len(meta["y"]) > 1:
-        if dataset.y is None:
+        if y is None:
             raise ValueError("y not found in dataset")
-    elif dataset.y is None:
-        dataset.y = next(iter(meta["y"].keys()))
+    elif y is None:
+        y = next(iter(meta["y"].keys()))
 
-    meta["y"] = meta["y"][dataset.y]
-    meta["y"]["name"] = dataset.y
+    meta["y"] = meta["y"][y]
+    meta["y"]["name"] = y
     return meta
 
 

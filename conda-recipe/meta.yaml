@@ -41,7 +41,7 @@ requirements:
     - stactools
     - tensorboard
     - timm
-    - torchgeo
+    - torchgeo >=0.9
     - torchmetrics >=1.8.1
     - torchvision >=0.17
     - transformers >=4.56.0

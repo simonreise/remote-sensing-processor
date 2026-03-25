@@ -1,6 +1,6 @@
 """Regression main functionality."""
 
-from pydantic import BaseModel, InstanceOf, NonNegativeInt, PositiveInt, TypeAdapter, validate_call
+from pydantic import InstanceOf, NonNegativeInt, PositiveInt, TypeAdapter, validate_call
 from typing import Any, Literal, Optional, Union
 
 import warnings
@@ -21,8 +21,6 @@ from remote_sensing_processor.common.torch_test import cuda_test
 from remote_sensing_processor.common.types import (
     FilePath,
     ListOfDict,
-    ListOfStr,
-    LoadRSPDS,
     NewPath,
     SingleOrList,
     SKLModel,
@@ -38,6 +36,7 @@ from remote_sensing_processor.segmentation.regression.models import (
     sklearn_models,
 )
 from remote_sensing_processor.segmentation.segmentation import (
+    DS,
     DataModule,
     Dataset,
     Model,
@@ -55,22 +54,20 @@ warnings.filterwarnings("ignore", message=".*could not find the monitored key in
 warnings.filterwarnings("ignore", message=".*Skipping val loop.*")
 
 
-class DS(BaseModel):
+class RegressionDS(DS):
     """Dataset class for user input."""
 
-    path: LoadRSPDS
-    sub: Union[Literal["all"], ListOfStr]
     y: Optional[str] = None
     predict: Optional[bool] = False
 
 
-ListOfDS = SingleOrList[DS]
+ListOfDS = SingleOrList[RegressionDS]
 
 
 class RegressionDataset(Dataset):
     """Semantic segmentation dataset."""
 
-    def __init__(self, dataset: DS) -> None:
+    def __init__(self, dataset: RegressionDS) -> None:
         super().__init__(dataset)
 
         # Change detection dataset have bi-temporal x variable
@@ -81,7 +78,7 @@ class RegressionDataset(Dataset):
             # Needed only if y exists, because x is always the same
             if self.meta["task"] != "regression":
                 raise ValueError("dataset is not a regression dataset")
-            self.meta = replace_y_in_meta(self.meta, dataset)
+            self.meta = replace_y_in_meta(self.meta, dataset.y, dataset.predict)
 
         # Setting up regression specific parameters
         self.y_nodata = self.meta["y"]["nodata"] if "y" in self.meta else None
@@ -109,7 +106,7 @@ class RegressionDataModule(DataModule):
         if test_datasets is not None:
             test_datasets = TypeAdapter(ListOfDS).validate_python(test_datasets)
         if pred_dataset is not None:
-            pred_dataset = TypeAdapter(DS).validate_python(pred_dataset)
+            pred_dataset = TypeAdapter(RegressionDS).validate_python(pred_dataset)
 
         super().__init__(
             train_datasets,
@@ -206,8 +203,12 @@ class RegressionModel(Model, RegressionModels, RegresssionMetrics):
         else:
             self.model = self.validate_model(model=model)
 
-        self.setup_metrics(metrics)
+        self.init_metrics(metrics)
         self.loss_fn = setup_loss(loss=loss)
+
+    def init_metrics(self, metrics: Optional[ListOfDict]) -> None:
+        """Initialize metrics."""
+        self.setup_metrics(metrics)
 
     def forward(self, batch: dict) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, int]:
         """Here data is being fit to the model."""
@@ -295,25 +296,21 @@ class SklearnRegressionModel(SklearnModel, RegressionModels, RegresssionMetrics)
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> None:
         """Fit the model."""
-        # noinspection PyUnresolvedReferences
         self.model.fit(x, y)
         self.test(x, y)
 
     def test(self, x: np.ndarray, y: np.ndarray) -> None:
         """Test the model."""
-        # noinspection PyUnresolvedReferences
         pred = self.model.predict(x)
 
         # Calculating and printing metrics
         filtered = np.where(y != self.y_nodata, True, False).nonzero()[0].tolist()
-        # noinspection PyUnresolvedReferences
         metrics = self.metrics(torch.tensor(pred[filtered]).float(), torch.tensor(y[filtered]).float())
         for metric, val in metrics.items():
             print(metric, val.item())
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         """Predict with the model."""
-        # noinspection PyUnresolvedReferences
         return self.model.predict(x)
 
     def setup_warm_start(self, **kwargs: Any) -> None:
@@ -554,6 +551,7 @@ def train(
                 y_nodata=dm.y_nodata,
                 lr=lr,
                 val=val_datasets is not None,
+                weights_only=False,
             )
         else:
             model = RegressionModel(
@@ -575,7 +573,12 @@ def train(
             model.save_checkpoint(model_file)
         else:
             # Setting up trainer
-            trainer = setup_trainer(model_file, epochs, val_datasets is not None, precision)
+            trainer = setup_trainer(
+                model_file,
+                epochs,
+                val_datasets is not None,
+                precision,
+            )
             # Training
             trainer.fit(model, dm)
     # Sklearn ML models
@@ -691,7 +694,7 @@ def test(
     # Loading model
     if isinstance(model, Path):
         if ".ckpt" in model.suffixes:
-            model = RegressionModel.load_from_checkpoint(model)
+            model = RegressionModel.load_from_checkpoint(model, weights_only=False)
         elif ".joblib" in model.suffixes:
             model = joblib.load(model)
         else:

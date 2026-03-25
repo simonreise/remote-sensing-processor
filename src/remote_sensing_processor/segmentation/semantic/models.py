@@ -1,5 +1,6 @@
 """Semantic segmentation models."""
 
+from pydantic import InstanceOf
 from typing import Any, Optional, Union
 
 import json
@@ -100,12 +101,18 @@ def load_backbone(bb: str, input_shape: int, input_dims: int) -> transformers.Pr
         backbone = transformers.HGNetV2Config(
             image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
+            out_features=["stage2", "stage3", "stage4"],
             stem_channels=[input_dims, 32, 48],
         )
     elif bb == "Hiera":
         backbone = transformers.HieraConfig(
             image_size=[input_shape, input_shape],
+            num_channels=input_dims,
+            out_features=["stage1", "stage2", "stage3", "stage4"],
+        )
+    elif bb == "LW-DETR":
+        backbone = transformers.LwDetrViTConfig(
+            image_size=input_shape,
             num_channels=input_dims,
             out_features=["stage1", "stage2", "stage3", "stage4"],
         )
@@ -115,9 +122,9 @@ def load_backbone(bb: str, input_shape: int, input_dims: int) -> transformers.Pr
             num_channels=input_dims,
             out_features=["stage1", "stage2", "stage3", "stage4"],
         )
-    # Currently not supported because there's no natten package in conda and no windows support
-    elif bb == "NAT":
-        backbone = transformers.NatConfig(
+    elif bb == "Pixio":
+        backbone = transformers.PixioConfig(
+            image_size=input_shape,
             num_channels=input_dims,
             out_features=["stage1", "stage2", "stage3", "stage4"],
         )
@@ -168,6 +175,34 @@ def load_backbone(bb: str, input_shape: int, input_dims: int) -> transformers.Pr
     return backbone
 
 
+def get_farseg_weights(bb: str, weights: str) -> Optional[InstanceOf[torchvision.models._api.WeightsEnum]]:
+    """Load Farseg backbone weights."""
+    if weights is not None:
+        if bb is None or bb == "resnet50":
+            if hasattr(torchvision.models.ResNet50_Weights, weights):
+                weights = getattr(torchvision.models.ResNet50_Weights, weights)
+            else:
+                weights = None
+        elif bb == "resnet18":
+            if hasattr(torchvision.models.ResNet18_Weights, weights):
+                weights = getattr(torchvision.models.ResNet18_Weights, weights)
+            else:
+                weights = None
+        elif bb == "resnet34":
+            if hasattr(torchvision.models.ResNet34_Weights, weights):
+                weights = getattr(torchvision.models.ResNet34_Weights, weights)
+            else:
+                weights = None
+        elif bb == "resnet101":
+            if hasattr(torchvision.models.ResNet101_Weights, weights):
+                weights = getattr(torchvision.models.ResNet101_Weights, weights)
+            else:
+                weights = None
+        else:
+            weights = None
+    return weights
+
+
 class TransformersModel(torch.nn.Module):
     """A custom class that includes data pre- and post-processing for Transformers models."""
 
@@ -200,7 +235,6 @@ class TransformersModel(torch.nn.Module):
             inputs["segmentation_maps"] = y
         # Oneformer also requires tokenized tasks as inputs, task is semantic
         if isinstance(self.model, transformers.OneFormerForUniversalSegmentation):
-            # noinspection PyTypeChecker
             inputs["task_inputs"] = ["semantic"] * x.shape[0]
         # Process
         inputs = self.processor(**inputs)
@@ -650,6 +684,7 @@ class SemanticSegmentationModels:
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
+                model.train()
             else:
                 processor = transformers.BeitImageProcessorFast(
                     do_resize=False,
@@ -684,6 +719,7 @@ class SemanticSegmentationModels:
                     num_labels=self.num_classes,
                     **kwargs,
                 )
+                model.train()
             else:
                 processor = transformers.ConditionalDetrImageProcessorFast(
                     do_resize=False,
@@ -728,6 +764,7 @@ class SemanticSegmentationModels:
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
+                model.train()
             else:
                 processor = transformers.BeitImageProcessorFast(
                     do_resize=False,
@@ -763,6 +800,7 @@ class SemanticSegmentationModels:
                     num_labels=self.num_classes,
                     **kwargs,
                 )
+                model.train()
             else:
                 processor = transformers.DetrImageProcessorFast(
                     do_resize=False,
@@ -807,6 +845,7 @@ class SemanticSegmentationModels:
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
+                model.train()
             else:
                 processor = transformers.DPTImageProcessorFast(
                     do_resize=False,
@@ -841,9 +880,9 @@ class SemanticSegmentationModels:
                     image_size=self.input_shape,
                     num_channels=self.input_dims,
                     num_labels=self.num_classes,
-                    ignore_value=self.y_nodata,
                     **kwargs,
                 )
+                model.train()
             else:
                 processor = transformers.EomtImageProcessorFast(
                     do_resize=False,
@@ -857,10 +896,47 @@ class SemanticSegmentationModels:
                     image_size=self.input_shape,
                     num_channels=self.input_dims,
                     num_labels=self.num_classes,
-                    ignore_value=self.y_nodata,
                     **kwargs,
                 )
                 model = transformers.EomtForUniversalSegmentation(config)
+            model = TransformersModel(model, processor, self.input_shape, self.y_nodata, "eomt")
+        elif model_name == "EoMT-DINOv3":
+            if weights is not None:
+                processor = transformers.EomtImageProcessorFast.from_pretrained(
+                    weights,
+                    use_fast=True,
+                    do_resize=False,
+                    do_rescale=False,
+                    do_normalize=False,
+                    do_pad=False,
+                    do_split_image=False,
+                    ignore_index=self.y_nodata,
+                )
+                model = transformers.EomtDinov3ForUniversalSegmentation.from_pretrained(
+                    weights,
+                    ignore_mismatched_sizes=True,
+                    image_size=self.input_shape,
+                    num_channels=self.input_dims,
+                    num_labels=self.num_classes,
+                    **kwargs,
+                )
+                model.train()
+            else:
+                processor = transformers.EomtImageProcessorFast(
+                    do_resize=False,
+                    do_rescale=False,
+                    do_normalize=False,
+                    do_pad=False,
+                    do_split_image=False,
+                    ignore_index=self.y_nodata,
+                )
+                config = transformers.EomtDinov3Config(
+                    image_size=self.input_shape,
+                    num_channels=self.input_dims,
+                    num_labels=self.num_classes,
+                    **kwargs,
+                )
+                model = transformers.EomtDinov3ForUniversalSegmentation(config)
             model = TransformersModel(model, processor, self.input_shape, self.y_nodata, "eomt")
         elif model_name == "Mask2Former":
             if weights is not None:
@@ -888,6 +964,7 @@ class SemanticSegmentationModels:
                     ignore_mismatched_sizes=True,
                     config=config,
                 )
+                model.train()
             else:
                 processor = transformers.Mask2FormerImageProcessorFast(
                     do_resize=False,
@@ -932,6 +1009,7 @@ class SemanticSegmentationModels:
                     ignore_mismatched_sizes=True,
                     config=config,
                 )
+                model.train()
             else:
                 processor = transformers.MaskFormerImageProcessorFast(
                     do_resize=False,
@@ -969,6 +1047,7 @@ class SemanticSegmentationModels:
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
+                model.train()
             else:
                 processor = transformers.MobileNetV2ImageProcessorFast(
                     do_resize=False,
@@ -1004,6 +1083,7 @@ class SemanticSegmentationModels:
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
+                model.train()
             else:
                 processor = transformers.MobileViTImageProcessorFast(
                     do_resize=False,
@@ -1039,6 +1119,7 @@ class SemanticSegmentationModels:
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
+                model.train()
             else:
                 processor = transformers.MobileViTImageProcessorFast(
                     do_resize=False,
@@ -1097,6 +1178,7 @@ class SemanticSegmentationModels:
                     ignore_mismatched_sizes=True,
                     config=config,
                 )
+                model.train()
             else:
                 processor = transformers.OneFormerImageProcessorFast(
                     do_resize=False,
@@ -1145,6 +1227,7 @@ class SemanticSegmentationModels:
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
+                model.train()
             else:
                 processor = transformers.SegformerImageProcessorFast(
                     do_resize=False,
@@ -1184,6 +1267,7 @@ class SemanticSegmentationModels:
                     ignore_mismatched_sizes=True,
                     config=config,
                 )
+                model.train()
             else:
                 processor = transformers.SegformerImageProcessorFast(
                     do_resize=False,
@@ -1419,10 +1503,11 @@ class SemanticSegmentationModels:
             )
             model = SMPModel(model)
         elif model_name == "FarSeg":
+            weights = get_farseg_weights(bb, weights)
             model = torchgeo.models.FarSeg(
                 backbone=bb if bb is not None else "resnet50",
                 classes=self.num_classes,
-                backbone_pretrained=weights is not None,
+                backbone_weights=weights,
             )
             model.backbone.conv1 = torch.nn.Conv2d(
                 self.input_dims,
@@ -1588,6 +1673,7 @@ pytorch_models = [
     "DETR",
     "DPT",
     "EoMT",
+    "EoMT-DINOv3",
     "Mask2Former",
     "MaskFormer",
     "MobileNetV2",

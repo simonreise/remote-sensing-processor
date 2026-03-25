@@ -1,5 +1,6 @@
 """Regression models."""
 
+from pydantic import InstanceOf
 from typing import Any, Optional, Union
 
 import warnings
@@ -122,15 +123,21 @@ def load_backbone(bb: str, input_shape: int, input_dims: int) -> transformers.Pr
             num_channels=input_dims,
             out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+    elif bb == "LW-DETR":
+        backbone = transformers.LwDetrViTConfig(
+            image_size=[input_shape, input_shape],
+            num_channels=input_dims,
+            out_features=["stage1", "stage2", "stage3", "stage4"],
+        )
     elif bb == "MaskFormer-Swin":
         backbone = transformers.MaskFormerSwinConfig(
             image_size=input_shape,
             num_channels=input_dims,
             out_features=["stage1", "stage2", "stage3", "stage4"],
         )
-    # Currently not supported because there's no natten package in conda and no windows support
-    elif bb == "NAT":
-        backbone = transformers.NatConfig(
+    elif bb == "Pixio":
+        backbone = transformers.PixioConfig(
+            image_size=[input_shape, input_shape],
             num_channels=input_dims,
             out_features=["stage1", "stage2", "stage3", "stage4"],
         )
@@ -179,6 +186,34 @@ def load_backbone(bb: str, input_shape: int, input_dims: int) -> transformers.Pr
             num_channels=input_dims,
         )
     return backbone
+
+
+def get_farseg_weights(bb: str, weights: str) -> Optional[InstanceOf[torchvision.models._api.WeightsEnum]]:
+    """Load Farseg backbone weights."""
+    if weights is not None:
+        if bb is None or bb == "resnet50":
+            if hasattr(torchvision.models.ResNet50_Weights, weights):
+                weights = getattr(torchvision.models.ResNet50_Weights, weights)
+            else:
+                weights = None
+        elif bb == "resnet18":
+            if hasattr(torchvision.models.ResNet18_Weights, weights):
+                weights = getattr(torchvision.models.ResNet18_Weights, weights)
+            else:
+                weights = None
+        elif bb == "resnet34":
+            if hasattr(torchvision.models.ResNet34_Weights, weights):
+                weights = getattr(torchvision.models.ResNet34_Weights, weights)
+            else:
+                weights = None
+        elif bb == "resnet101":
+            if hasattr(torchvision.models.ResNet101_Weights, weights):
+                weights = getattr(torchvision.models.ResNet101_Weights, weights)
+            else:
+                weights = None
+        else:
+            weights = None
+    return weights
 
 
 class TransformersModel(torch.nn.Module):
@@ -832,10 +867,11 @@ class RegressionModels:
             )
             model = SMPModel(model)
         elif model_name == "FarSeg":
+            weights = get_farseg_weights(bb, weights)
             model = torchgeo.models.FarSeg(
                 backbone=bb if bb is not None else "resnet50",
                 classes=self.num_classes,
-                backbone_pretrained=weights is not None,
+                backbone_weights=weights,
             )
             model.backbone.conv1 = torch.nn.Conv2d(
                 self.input_dims,

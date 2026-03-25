@@ -186,7 +186,7 @@ def band_importance(
     # Loading model
     if isinstance(model, Path):
         if ".ckpt" in model.suffixes:
-            model = SemanticSegmentationModel.load_from_checkpoint(model)
+            model = SemanticSegmentationModel.load_from_checkpoint(model, weights_only=False)
         elif ".joblib" in model.suffixes:
             model = joblib.load(model)
         else:
@@ -443,7 +443,7 @@ def confusion_matrix(
     # Loading model
     if isinstance(model, Path):
         if ".ckpt" in model.suffixes:
-            model = SemanticSegmentationModel.load_from_checkpoint(model)
+            model = SemanticSegmentationModel.load_from_checkpoint(model, weights_only=False)
         elif ".joblib" in model.suffixes:
             model = joblib.load(model)
         else:

@@ -17,7 +17,14 @@ from torchvision import tv_tensors
 from torchvision.transforms import v2
 
 from remote_sensing_processor.common.common_functions import read_json
-from remote_sensing_processor.common.types import SKLModel, TorchNNModel, TorchTransform
+from remote_sensing_processor.common.types import ListOfStr, LoadRSPDS, SKLModel, TorchNNModel, TorchTransform
+
+
+class DS(BaseModel):
+    """Dataset class for user input."""
+
+    path: LoadRSPDS
+    sub: Union[Literal["all"], ListOfStr]
 
 
 class Epochs(BaseModel):
@@ -29,7 +36,12 @@ class Epochs(BaseModel):
     patience: Optional[PositiveInt] = None
 
 
-def setup_trainer(model_file: Path, epochs: Optional[dict], val: bool, precision: Optional[str]) -> l.Trainer:
+def setup_trainer(
+    model_file: Path,
+    epochs: Optional[dict],
+    val: bool,
+    precision: Optional[str],
+) -> l.Trainer:
     """Set up a Lightning trainer."""
     monitor = "val_loss" if val else "train_loss"
 
@@ -80,7 +92,7 @@ def setup_trainer(model_file: Path, epochs: Optional[dict], val: bool, precision
 class Dataset:
     """Basic dataset class."""
 
-    def __init__(self, dataset: BaseModel) -> None:
+    def __init__(self, dataset: DS) -> None:
         path = dataset.path
         self.reference = path / "ref.tif"
 

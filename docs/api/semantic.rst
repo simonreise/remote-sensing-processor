@@ -32,6 +32,9 @@ List of available NN models
    * - EoMT
      - See Transformers backbones
      - `Huggingface Transformers <https://huggingface.co/docs/transformers/main/en/model_doc/eomt>`_
+    * - EoMT-DINOv3
+     - See Transformers backbones
+     - `Huggingface Transformers <https://huggingface.co/docs/transformers/main/en/model_doc/eomt_dinov3>`_
    * - Mask2Former
      - See Transformers backbones
      - `Huggingface Transformers <https://huggingface.co/docs/transformers/main/en/model_doc/mask2former>`_
@@ -102,7 +105,7 @@ List of available NN models
      - `SMP <https://smp.readthedocs.io/en/latest/encoders.html>`_ and `TIMM <https://smp.readthedocs.io/en/latest/encoders_timm.html>`_
      - `Segmentation Models Pytorch <https://smp.readthedocs.io/en/latest/models.html#dpt>`_
    * - FarSeg
-     - Not available
+     - "resnet18", "resnet34", "resnet50", "resnet101"
      - `TorchGeo <https://torchgeo.readthedocs.io/en/stable/api/models/farseg.html>`_
 
 Transformers backbones are:
@@ -119,8 +122,9 @@ Transformers backbones are:
 - FocalNet
 - HGNet-V2
 - Hiera
+- LW-DETR
 - MaskFormer-Swin
-- NAT
+- Pixio
 - PVTV2
 - ResNet
 - RT-DETR-ResNet
@@ -133,7 +137,7 @@ You can fine-tune pre-trained model by defining ``weights``. For models from Tra
 
 ``rsp.segmentation.train`` also saves CSV and Tensorboard logs in directory where checkpoint file is saved.
 
-DiNAT and NAT backbones require ``natten`` library, that is not available on Windows and Mac and not available via Conda. RSP supports DiNAT backbone, but you need to install ``natten`` in your python env manually.
+DiNAT backbone require ``natten`` library, that is not available on Windows and Mac and not available via Conda. RSP supports DiNAT backbone, but you need to install ``natten`` in your python env manually.
 
 
 List of available Scikit-learn models

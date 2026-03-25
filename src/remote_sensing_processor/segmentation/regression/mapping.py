@@ -148,7 +148,7 @@ def generate_map(
     # Loading model
     if isinstance(model, Path):
         if ".ckpt" in model.suffixes:
-            model = RegressionModel.load_from_checkpoint(model)
+            model = RegressionModel.load_from_checkpoint(model, weights_only=False)
         elif ".joblib" in model.suffixes:
             model = joblib.load(model)
         else:

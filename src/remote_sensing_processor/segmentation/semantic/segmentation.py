@@ -1,6 +1,6 @@
 """Semantic segmentation main functionality."""
 
-from pydantic import BaseModel, InstanceOf, NonNegativeInt, PositiveInt, TypeAdapter, validate_call
+from pydantic import InstanceOf, NonNegativeInt, PositiveInt, TypeAdapter, validate_call
 from typing import Any, Literal, Optional, Union
 
 import warnings
@@ -21,8 +21,6 @@ from remote_sensing_processor.common.torch_test import cuda_test
 from remote_sensing_processor.common.types import (
     FilePath,
     ListOfDict,
-    ListOfStr,
-    LoadRSPDS,
     NewPath,
     SingleOrList,
     SKLModel,
@@ -31,6 +29,7 @@ from remote_sensing_processor.common.types import (
     TorchTransform,
 )
 from remote_sensing_processor.segmentation.segmentation import (
+    DS,
     DataModule,
     Dataset,
     Model,
@@ -55,22 +54,20 @@ warnings.filterwarnings("ignore", message=".*could not find the monitored key in
 warnings.filterwarnings("ignore", message=".*Skipping val loop.*")
 
 
-class DS(BaseModel):
+class SemanticSegmentationDS(DS):
     """Dataset class for user input."""
 
-    path: LoadRSPDS
-    sub: Union[Literal["all"], ListOfStr]
     y: Optional[str] = None
     predict: Optional[bool] = False
 
 
-ListOfDS = SingleOrList[DS]
+ListOfDS = SingleOrList[SemanticSegmentationDS]
 
 
 class SemanticSegmentationDataset(Dataset):
     """Semantic segmentation dataset."""
 
-    def __init__(self, dataset: DS) -> None:
+    def __init__(self, dataset: SemanticSegmentationDS) -> None:
         super().__init__(dataset)
 
         # Change detection dataset have bi-temporal x variable
@@ -81,7 +78,7 @@ class SemanticSegmentationDataset(Dataset):
             # Needed only if y exists, because x is always the same
             if self.meta["task"] != "semantic":
                 raise ValueError("dataset is not a semantic dataset")
-            self.meta = replace_y_in_meta(self.meta, dataset)
+            self.meta = replace_y_in_meta(self.meta, dataset.y, dataset.predict)
 
         # Setting up semantic segmentation specific parameters
         self.y_nodata = int(self.meta["y"]["nodata"]) if "y" in self.meta else None
@@ -111,7 +108,7 @@ class SemanticSegmentationDataModule(DataModule, SemanticSegmentationMetrics):
         if test_datasets is not None:
             test_datasets = TypeAdapter(ListOfDS).validate_python(test_datasets)
         if pred_dataset is not None:
-            pred_dataset = TypeAdapter(DS).validate_python(pred_dataset)
+            pred_dataset = TypeAdapter(SemanticSegmentationDS).validate_python(pred_dataset)
 
         self.num_classes = None
         self.classes = None
@@ -222,8 +219,12 @@ class SemanticSegmentationModel(Model, SemanticSegmentationModels, SemanticSegme
         else:
             self.model = self.validate_model(model=model)
 
-        self.setup_metrics(metrics)
+        self.init_metrics(metrics)
         self.loss_fn = setup_loss(loss=loss, y_nodata=y_nodata)
+
+    def init_metrics(self, metrics: Optional[ListOfDict]) -> None:
+        """Initialize metrics."""
+        self.setup_metrics(metrics)
 
     def forward(self, batch: dict) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, int]:
         """Here data is being fit to the model."""
@@ -301,24 +302,20 @@ class SklearnSemanticSegmentationModel(SklearnModel, SemanticSegmentationModels,
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> None:
         """Fit the model."""
-        # noinspection PyUnresolvedReferences
         self.model.fit(x, y)
         self.test(x, y)
 
     def test(self, x: np.ndarray, y: np.ndarray) -> None:
         """Test the model."""
-        # noinspection PyUnresolvedReferences
         pred = self.model.predict(x)
 
         # Calculating and printing metrics
-        # noinspection PyUnresolvedReferences
         metrics = self.metrics(torch.tensor(pred).unsqueeze(-1).long(), torch.tensor(y).unsqueeze(-1).long())
         for metric, val in metrics.items():
             print(metric, val.item())
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         """Predict with the model."""
-        # noinspection PyUnresolvedReferences
         pred = self.model.predict(x)
         # Get back to 1, 2, 3, ... n
         return pred + 1
@@ -559,6 +556,7 @@ def train(
                 y_nodata=dm.y_nodata,
                 lr=lr,
                 val=val_datasets is not None,
+                weights_only=False,
             )
         else:
             model = SemanticSegmentationModel(
@@ -581,7 +579,12 @@ def train(
             model.save_checkpoint(model_file)
         else:
             # Setting up trainer
-            trainer = setup_trainer(model_file, epochs, val_datasets is not None, precision)
+            trainer = setup_trainer(
+                model_file,
+                epochs,
+                val_datasets is not None,
+                precision,
+            )
             # Training
             trainer.fit(model, dm)
     # Sklearn ML models
@@ -698,7 +701,7 @@ def test(
     # Loading model
     if isinstance(model, Path):
         if ".ckpt" in model.suffixes:
-            model = SemanticSegmentationModel.load_from_checkpoint(model)
+            model = SemanticSegmentationModel.load_from_checkpoint(model, weights_only=False)
         elif ".joblib" in model.suffixes:
             model = joblib.load(model)
         else:

@@ -34,6 +34,7 @@ from remote_sensing_processor.segmentation.tiles import (
     check_dtype,
     clean_cache,
     create_folders,
+    filter_nodata_raster,
     filter_samples,
     get_cache,
     pad,
@@ -66,6 +67,7 @@ def generate_tiles(
     tile_size: Optional[Annotated[int, Field(strict=True, ge=8)]] = 128,
     shuffle: Optional[bool] = False,
     split: Optional[Dict[str, Union[PositiveInt, PositiveFloat]]] = None,
+    filter_nodata: Optional[str] = "x",
     x_dtype: Optional[DType] = None,
     y_dtype: Optional[DType] = None,
     x_nodata: Optional[Union[int, float]] = None,
@@ -103,6 +105,13 @@ def generate_tiles(
         values are numbers defining proportions of every subset.
         For example, `{"train": 3, "validation": 1, "test": 1}` will generate
         3 subsets (train, validation, and test) in proportion 3 to 1 to 1.
+    filter_nodata : str (default = "x")
+        How the nodata values should be treated.
+        `None`: do not filter nodata.
+        `"x"`: filter out pixels that are nodata in x.
+        `"y"`: filter out pixels that are nodata in y.
+        `"x_or_y"`: filter out pixels that are nodata in x or y.
+        `"x_and_y"`: filter out pixels that are nodata in x and y.
     x_dtype : dtype definition as a string (optional)
         If you run out of memory, you can try to convert your data to less memory consuming format.
     y_dtype : dtype definition as a string (optional)
@@ -127,11 +136,13 @@ def generate_tiles(
     Examples
     --------
         >>> import remote_sensing_processor as rsp
-        >>> x = ["/home/rsp_test/mosaics/sentinel/", "/home/rsp_test/mosaics/dem/dem.tif"]
+        >>> x1 = ["/home/rsp_test/mosaics/sentinel-2000/", "/home/rsp_test/mosaics/dem/dem.tif"]
+        >>> x2 = ["/home/rsp_test/mosaics/sentinel-2010/", "/home/rsp_test/mosaics/dem/dem.tif"]
         >>> y = ["/home/rsp_test/mosaics/landcover.tif", "/home/rsp_test/mosaics/forest_types.tif"]
         >>> out_file = "/home/rsp_test/model/landcover_dataset.rspds"
         >>> out_dataset = rsp.change_detection.generate_tiles(
-        ...     x,
+        ...     x1,
+        ...     x2,
         ...     y,
         ...     out_file,
         ...     tile_size=256,
@@ -177,9 +188,6 @@ def generate_tiles(
 
     if y is not None:
         y_img, y_nodata = prepare_seg_maps(y=y, ref=x_img[0], dtype=y_dtype, y_nodata=y_nodata)
-        # Masking areas where y_img is not nodata, but x_img is nodata
-        y_img = y_img.where(x_img[0] != x_nodata, y_nodata)
-        # x_img = x_img.where(y_img[0] != y_nodata, x_nodata)
         if x_img.shape[1:] != y_img.shape[1:]:
             raise ValueError("x and y have different shapes")
     else:
@@ -193,6 +201,9 @@ def generate_tiles(
     x_img = pad(x_img, padding, x_nodata)
     if y_img is not None:
         y_img = pad(y_img, padding, y_nodata)
+    # Filtering
+    if y_img is not None and filter_nodata is not None:
+        x_img, y_img = filter_nodata_raster(x_img, y_img, filter_nodata, x_nodata, y_nodata)
 
     data["x"] = {
         "dtype": x_img.dtype,
@@ -231,9 +242,12 @@ def generate_tiles(
 
     # Getting samples
     samples = list(range(len(x_batches)))
-    samples = filter_samples(x_batches, samples, x_nodata)
+    samples_x = filter_samples(x_batches, samples, x_nodata)
     if y_img is not None:
-        samples = filter_samples(y_batches, samples, y_nodata)
+        samples_y = filter_samples(y_batches, samples, y_nodata)
+        samples = list(set(samples_x + samples_y))
+    else:
+        samples = samples_x
     # Shuffling samples
     if shuffle:
         np.random.shuffle(samples)
@@ -342,7 +356,7 @@ def load_dataset(dataset: Any) -> tuple[list[Path], Path, dict]:
         raise ValueError("dataset is not a change detection dataset")
 
     if "y" in meta:
-        meta = replace_y_in_meta(meta, dataset)
+        meta = replace_y_in_meta(meta, dataset.y, dataset.predict)
 
     files = []
     length = []
