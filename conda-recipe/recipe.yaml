@@ -1,11 +1,13 @@
-{% set data = load_file_data("./pyproject.toml") %}
-
 package:
   name: remote-sensing-processor
-  version: {{ data.get('project', {}).get('version') }}
+  version: 0.3.0
 
 source:
   path: ./..
+
+build:
+  noarch: python
+  script: pip install . -v
 
 requirements:
   host:
@@ -46,27 +48,21 @@ requirements:
     - xarray-spatial
     - xbatcher >=0.3
     - xgboost
-    
-build:
-    noarch: python
 
-test:
-  imports:
-    - remote_sensing_processor
-    - remote_sensing_processor.common
-    - remote_sensing_processor.dem
-    - remote_sensing_processor.imagery
-    - remote_sensing_processor.indices
-    - remote_sensing_processor.mosaic
-    - remote_sensing_processor.segmentation.semantic
-    - remote_sensing_processor.segmentation.regression
-
+tests:
+  - python:
+      imports:
+        - remote_sensing_processor
+        - remote_sensing_processor.common
+        - remote_sensing_processor.dem
+        - remote_sensing_processor.imagery
+        - remote_sensing_processor.indices
+        - remote_sensing_processor.mosaic
+        - remote_sensing_processor.segmentation.semantic
+        - remote_sensing_processor.segmentation.regression
 
 about:
-  home: "https://github.com/simonreise/remote-sensing-processor"
-  license: "GNU General Public v3 (GPLv3)"
-  license_family: GPL3
-  license_file:
-  summary: "RSP is a tool for geospatial raster data processing and machine learning"
-  doc_url: "https://remote-sensing-processor.readthedocs.io"
-  dev_url:
+  license: GPL-3.0-or-later
+  summary: RSP is a tool for geospatial raster data processing and machine learning
+  homepage: https://github.com/simonreise/remote-sensing-processor
+  documentation: https://remote-sensing-processor.readthedocs.io

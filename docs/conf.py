@@ -23,19 +23,12 @@ project = "Remote Sensing Processor"
 copyright = "2022-2026, Mikhail Moskovchenko"
 author = "Mikhail Moskovchenko"
 
-# The short X.Y version
-try:
-    version = remote_sensing_processor.__version__
-except:
-    with open('../src/remote_sensing_processor/__init__.py') as f:
-        for line in f:
-            if line.find("__version__") >= 0:
-                version = line.split("=")[1].strip()
-                version = version.strip('"')
-                version = version.strip("'")
-                continue
+from importlib.metadata import version as get_version
+
 # The full version, including alpha/beta/rc tags
-release = version
+release = get_version("remote-sensing-processor")
+# The short X.Y version
+version = ".".join(release.split(".")[:2]) # e.g., "0.3"
 
 
 # -- General configuration ---------------------------------------------------

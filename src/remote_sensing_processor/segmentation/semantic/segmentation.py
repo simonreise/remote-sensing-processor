@@ -454,8 +454,8 @@ def train(
         ...     shuffle=True,
         ...     split={"train": 3, "val": 1, "test": 1},
         ... )
-        >>> train_ds = {"path": dataset_path, "sub": "train"}
         >>> # We will train model to predict forest types
+        >>> train_ds = {"path": dataset_path, "sub": "train", "y": "forest_types"}
         >>> val_ds = {"path": dataset_path, "sub": "val", "y": "forest_types"}
         >>> model = rsp.semantic.train(
         ...     train_ds,

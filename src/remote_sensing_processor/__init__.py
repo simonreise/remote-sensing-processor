@@ -1,6 +1,12 @@
 """Remote Sensing Processor."""
 
-__version__ = "0.2.2"
+from importlib.metadata import version, PackageNotFoundError
+
+try:
+    __version__ = version("remote-sensing-processor")
+except PackageNotFoundError:
+    # Package is not installed (e.g., during local development)
+    __version__ = "unknown"
 
 
 from remote_sensing_processor.common.process import process

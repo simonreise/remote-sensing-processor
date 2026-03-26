@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "remote-sensing-processor"
-dynamic = ["version"]
+version = "0.3.0"
 authors = [
   { name="Mikhail Moskovchenko", email="moskovchenkomike@gmail.com"},
 ]
 description = "RSP is a tool for geospatial raster data processing and machine learning"
 readme = "README.md"
-license = {file = "LICENSE"}
+license = "GPL-3.0-or-later"
 requires-python = ">=3.12"
 dependencies = [
 	# Basic packages
@@ -60,7 +60,6 @@ keywords = [
 classifiers = [
 	"Programming Language :: Python :: 3",
 	"Intended Audience :: Science/Research",
-	"License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
 	"Operating System :: OS Independent",
 	"Environment :: GPU :: NVIDIA CUDA",
 	"Topic :: Scientific/Engineering :: GIS",
@@ -75,9 +74,6 @@ Documentation = "https://remote-sensing-processor.readthedocs.io"
 [project.optional-dependencies]
 docs = ["myst-parser", "sphinx-rtd-theme", "sphinxcontrib-napoleon", "matplotlib"]
 tests = ["pytest", "pytest-dependency", "pystac-client", "planetary-computer", "ruff"]
-
-[tool.setuptools.dynamic]
-version = {attr = "remote_sensing_processor.__version__"}
 
 [tool.pytest.ini_options]
 markers = [

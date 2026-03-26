@@ -1,6 +1,6 @@
 # Release History
 
-## 0.3 (2025-mm-dd)
+## 0.3.0 (2026-03-26)
 
 ### ML module changes
 - Now `semantic` and `regression` are separate modules
@@ -22,7 +22,7 @@
 - Added `dem` group of functions: `slope`, `curvature`, `aspect`, `hillshade`
 - Added `match_hist` function that matches histograms of two images/datasets
 - Added `clip_values` function that clips raster values to a certain range
-- Added `denormalize` functions that restore original values from min-max normalized data
+- Added `denormalize` functions that restore original values from normalized data
 - Added `get_normalization_params` functions that retrieve optimal normalization parameters
 - Added `zscore` and `dynamicworld` normalization
 - Now data is saved with a metadata file in STAC format (can be controlled with `write_stac` argument)
