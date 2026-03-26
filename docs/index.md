@@ -195,7 +195,7 @@ rsp.semantic.generate_map(whole_ds, model, output_map)
 ```
 
 ## Citation
-If you use RSP in a scientific publication, we would appreciate citations: https://doi.org/10.5281/zenodo.11091321
+If you use RSP in a scientific publication, we would appreciate citations: https://doi.org/10.5281/zenodo.19238835
 
 
 ```{eval-rst}

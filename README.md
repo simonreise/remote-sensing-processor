@@ -1,5 +1,5 @@
 
-![image](docs/_static/logo/logo_wide.png)
+![image](https://github.com/simonreise/remote-sensing-processor/blob/main/docs/_static/logo/logo_wide.png?raw=true)
 
 ----
 
@@ -7,7 +7,7 @@
 [![style](https://github.com/simonreise/remote-sensing-processor/actions/workflows/style.yml/badge.svg)](https://github.com/simonreise/remote-sensing-processor/actions/workflows/style.yml)
 [![PyPI](https://img.shields.io/pypi/v/remote-sensing-processor)](https://pypi.org/project/remote-sensing-processor/)
 [![Conda](https://img.shields.io/conda/v/moskovchenkomike/remote-sensing-processor)](https://anaconda.org/moskovchenkomike/remote-sensing-processor)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.11091321.svg)](https://doi.org/10.5281/zenodo.11091321)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19238835.svg)](https://doi.org/10.5281/zenodo.19238835)
 
 RSP is a tool for geospatial raster data processing and machine learning.
 
@@ -224,10 +224,10 @@ If you have a GPU that supports CUDA we strongly recommend you to install Pytorc
 > :warning: This package is still in early development stage, so its API can change significantly, sometimes without backward compatibility. Consider this before updating the package.
 
 ## License
-See [LICENSE](LICENSE).
+See [LICENSE](https://github.com/simonreise/remote-sensing-processor/blob/master/LICENSE).
 
 ## Citation
-If you use RSP in a scientific publication, we would appreciate citations: https://doi.org/10.5281/zenodo.11091321
+If you use RSP in a scientific publication, we would appreciate citations: https://doi.org/10.5281/zenodo.19238835
 
 ## Credits
 

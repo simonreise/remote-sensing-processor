@@ -139,7 +139,7 @@ Feel free to open new tickets at https://github.com/simonreise/remote-sensing-pr
 
 ### How can I cite RSP?
 
-If you use RSP in a scientific publication, we would appreciate citations: https://doi.org/10.5281/zenodo.11091321
+If you use RSP in a scientific publication, we would appreciate citations: https://doi.org/10.5281/zenodo.19238835
 
 ### I got error 'Sen2Cor not working. Is it installed correctly?'.
 
