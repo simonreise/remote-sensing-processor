@@ -195,6 +195,8 @@ def get_index(
             bands = add_constants(bands, {"cexp": 1.0})
         elif index == "RVI4RE":
             bands = add_constants(bands, {"alpha": 0.9, "beta": 0.6})
+        elif index == "RWI":
+            bands = add_constants(bands, {"n": (0.3461 / 0.0559)})
         elif index == "SARVI":  # noqa SIM114
             bands = add_constants(bands, {"L": 0.5})
         elif index == "SAVI":
