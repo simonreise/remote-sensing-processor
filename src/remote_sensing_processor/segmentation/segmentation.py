@@ -126,7 +126,7 @@ class DataModule(l.LightningDataModule):
         test_datasets: Optional[list[BaseModel]] = None,
         pred_dataset: Optional[BaseModel] = None,
         repeat: Optional[int] = 1,
-        augment: Optional[Union[bool, tuple[Union[str, TorchTransform]]]] = False,
+        augment: Optional[Union[bool, tuple[Union[str, TorchTransform], ...]]] = False,
         batch_size: Optional[int] = 32,
         num_workers: Optional[Union[int, Literal["auto"]]] = "auto",
         bbox: Optional[bool] = False,
@@ -181,7 +181,7 @@ class DataModule(l.LightningDataModule):
 
     def setup_transform(
         self,
-        augment: Optional[Union[bool, tuple[Union[str, TorchTransform]]]],
+        augment: Optional[Union[bool, tuple[Union[str, TorchTransform], ...]]],
         bbox: Optional[bool],
     ) -> Optional[v2.Compose]:
         """Setup data augmentation."""
