@@ -14,6 +14,7 @@ import xarray as xr
 import datasets
 
 from remote_sensing_processor.common.common_functions import persist, write_json
+from remote_sensing_processor.common.common_raster import assert_equal_shapes
 from remote_sensing_processor.common.types import (
     DirectoryPath,
     DType,
@@ -164,8 +165,7 @@ def generate_tiles(
 
     if y is not None:
         y_img, y_nodata = prepare_seg_maps(y=y, y_nodata=y_nodata, ref=x_img[0], dtype=y_dtype, dtype_class=np.floating)
-        if x_img.shape[1:] != y_img.shape[1:]:
-            raise ValueError("x and y have different shapes")
+        assert_equal_shapes([x_img, y_img])
     else:
         y_img, y_nodata = None, None
 

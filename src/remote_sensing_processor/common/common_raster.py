@@ -169,7 +169,7 @@ def clipf(
 
 
 def clean_reproject_name(raster: Union[xr.Dataset, xr.DataArray]) -> Union[xr.Dataset, xr.DataArray]:
-    """ODC reproject can add a weird name to a band, removing it."""
+    """ODC reproject can add a weird name to a band, removing it and also change dim names."""
     if isinstance(raster, xr.Dataset):
         for band in raster:
             if raster[band].name is not None and "reproject" in raster[band].name:
@@ -177,6 +177,10 @@ def clean_reproject_name(raster: Union[xr.Dataset, xr.DataArray]) -> Union[xr.Da
     else:
         if raster.name is not None and "reproject" in raster.name:
             raster.name = None
+    if "latitude" in raster.dims:
+        raster = raster.rename({"latitude": "y"})
+    if "longitude" in raster.dims:
+        raster = raster.rename({"longitude": "x"})
     return raster
 
 
@@ -355,18 +359,38 @@ def get_first_proj(path: Union[Path, Item]) -> rio.crs.CRS:
 def assert_equal_shapes(rasters: list[Union[xr.Dataset, xr.DataArray]]) -> None:
     """Assert if array shapes are equal."""
     shape = None
+    dims = None
+    coords = None
     for raster in rasters:
         if isinstance(raster, xr.Dataset):
             for band in raster:
                 if shape is None:
-                    shape = raster[band].shape[1:]
-                elif raster[band].shape[1:] != shape:
+                    shape = raster[band].shape[-2:]
+                elif raster[band].shape[-2:] != shape:
                     raise ValueError(str(band) + " shape is not equal to other bands.")
+                if dims is None:
+                    dims = raster[band].dims
+                elif raster[band].dims != dims:
+                    raise ValueError(str(band) + " dims is not equal to other bands.")
+                if coords is None:
+                    coords = {"x": raster[band].coords["x"], "y": raster[band].coords["y"]}
+                elif not (
+                    (raster[band].coords["x"].equals(coords["x"])) and (raster[band].coords["y"].equals(coords["y"]))
+                ):
+                    raise ValueError(str(band) + " coords is not equal to other bands.")
         else:
             if shape is None:
-                shape = raster.shape[1:]
-            elif raster.shape[1:] != shape:
+                shape = raster.shape[-2:]
+            elif raster.shape[-2:] != shape:
                 raise ValueError(str(raster.name) + " shape is not equal to other bands.")
+            if dims is None:
+                dims = raster.dims
+            elif raster.dims != dims:
+                raise ValueError(str(raster.name) + " dims is not equal to other bands.")
+            if coords is None:
+                coords = {"x": raster.coords["x"], "y": raster.coords["y"]}
+            elif not ((raster.coords["x"].equals(coords["x"])) and (raster.coords["y"].equals(coords["y"]))):
+                raise ValueError(str(raster.name) + " coords is not equal to other bands.")
 
 
 def make_nodata_equal(
