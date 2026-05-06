@@ -11,7 +11,7 @@ except PackageNotFoundError:
 
 from remote_sensing_processor.common.process import process
 
-from remote_sensing_processor.common.replace import replace_value, replace_nodata
+from remote_sensing_processor.common.replace import replace_value, replace_nodata, replace_nan
 
 from remote_sensing_processor.common.rasterize import rasterize
 
@@ -54,6 +54,7 @@ __all__ = [
     "process",
     "replace_value",
     "replace_nodata",
+    "replace_nan",
     "rasterize",
     "match_hist",
     "clip_values",

@@ -63,6 +63,7 @@ def prepare_images(
     if nodata is None:
         nodata = get_nodata(img)
     img, nodata = fix_nodata(img, nodata)
+    img = fill_nan(img, nodata)
     img = make_nodata_equal(img, nodata)
     img = check_dtype(img=img, dtype=dtype)
     img = persist(img.squeeze().to_array("band").chunk("auto"))
@@ -93,6 +94,7 @@ def prepare_raster_sm(
     stac = read_dataset(path)
     ds = load_dataset(stac)
     ds, y_nodata = fix_nodata(ds, y_nodata)
+    ds = fill_nan(ds, y_nodata)
     ds = reproject_match(ds, ref)
     ds = ds.squeeze().to_array("band")
     if ds.shape[0] != 1:
@@ -155,7 +157,8 @@ def filter_nodata_raster(
         y_img = y_img.where(mask, y_nodata)
         y_img = persist(y_img)
     elif filter_nodata == "y":
-        mask = (y_img != y_img.rio.nodata).any(dim="band")
+        # noinspection PyUnresolvedReferences
+        mask = (y_img != y_nodata).any(dim="band")
         x_img = x_img.where(mask, x_nodata)
         x_img = persist(x_img)
     elif filter_nodata in ["x_or_y", "x_and_y"]:
@@ -238,6 +241,17 @@ def fix_nodata(img: xr.Dataset, nodata: Optional[Union[int, float]]) -> tuple[xr
             img[band] = img[band].where(img[band] != img[band].rio.nodata, nodata)
     img, nodata = prepare_nodata(img, nodata, 0)
     return img, nodata
+
+
+def fill_nan(img: xr.Dataset, nodata: Optional[Union[int, float]]) -> xr.Dataset:
+    """Fills missing values with nodata."""
+    for band in img:
+        if img[band].isnull().any():
+            warnings.warn(str(band) + " has NaN values. Filling them with nodata. ", stacklevel=2)
+            if nodata is None:
+                raise ValueError("Nodata value is not set")
+            img[band] = img[band].fillna(nodata)
+    return img
 
 
 def check_classes(rasters: xr.Dataset, nodata: Optional[Union[int, float]]) -> None:

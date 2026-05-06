@@ -197,6 +197,74 @@ def replace_val(
     return output_path
 
 
+@validate_call
+def replace_nan(
+    input_path: Union[FilePath, DirectoryPath, PystacItem],
+    output_path: Optional[Union[FilePath, DirectoryPath, NewPath]] = None,
+    new: Optional[Union[int, float]] = None,
+    write_stac: Optional[bool] = True,
+) -> NewPath:
+    """
+    Replaces nans with a nodata value.
+
+    Parameters
+    ----------
+    input_path : string or STAC Item
+        Path to input file, directory or STAC dataset or a STAC Item (e.g., from Planetary Computer).
+    output_path : string (optional)
+        Path to an output file, directory, or STAC dataset. If it is not set, then will overwrite the input files.
+        Must be set if input is a remote STAC Item.
+    new: int or float (optional)
+        A new nodata value to insert. If not set, then is read from inputs.
+    write_stac : bool (default = True)
+        If True, then output metadata is saved to a STAC file.
+
+    Returns
+    -------
+    pathlib.Path
+        Path where output raster is saved.
+
+    Examples
+    --------
+        >>> import remote_sensing_processor as rsp
+        >>> rsp.replace_nan(
+        ...     input_path="/home/rsp_test/mosaics/landcover/landcover.tif",
+        ...     output_path="/home/rsp_test/mosaics/landcover/landcover_new.tif",
+        ...     new=0,
+        ... )
+    """
+    output_path = check_output(input_path, output_path)
+
+    dataset = read_dataset(input_path)
+
+    img = load_dataset(dataset)
+    if new is None:
+        img, new = prepare_nodata(img)
+        if new is None:
+            raise ValueError('Input file does not contain nodata value. Please set it explicitly with "new" arg')
+
+    img = img.fillna(new)
+    img = check_dtype(img)
+    img = persist(img)
+
+    # Rewrite nodata
+    img, _ = prepare_nodata(img, new)
+
+    # Creating an output folder
+    create_path(output_path)
+
+    dataset, json_path = postprocess_dataset(dataset, img, output_path)
+
+    # Write
+    write_dataset(img, dataset, json_path)
+
+    if write_stac:
+        # Writing JSON metadata file
+        dataset.save_object(dest_href=json_path.as_posix())
+        return json_path
+    return output_path
+
+
 def postprocess_classification(
     stac: Item,
     values: Optional[dict[Union[int, float], Union[int, float]]] = None,
