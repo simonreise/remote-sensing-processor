@@ -489,8 +489,8 @@ def train(
         ...     {"path": ds_id, "sub": ["area_3", "area_6", "area8"]},
         ... ]
         >>> val_ds = [
-        ...     {'path': ds_mo, 'sub': ['area_3', 'area_4']},
-        ...     {'path': ds_id, 'sub': ['area_1']},
+        ...     {"path": ds_mo, "sub": ["area_3", "area_4"]},
+        ...     {"path": ds_id, "sub": ["area_1"]},
         ... ]
         >>> model = rsp.regression.train(
         ...     train_ds,
