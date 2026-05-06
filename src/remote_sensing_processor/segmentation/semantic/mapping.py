@@ -165,13 +165,12 @@ def generate_map(
             batch_size=batch_size,
             num_workers=num_workers,
         )
-        classes = rdm.classes
-        nodata = rdm.y_nodata
-        dtype = rdm.y_dtype
     else:
-        classes = dm.classes
-        nodata = dm.y_nodata
-        dtype = dm.y_dtype
+        dataset["predict"] = False
+        rdm = SemanticSegmentationDataModule(pred_dataset=dataset, batch_size=batch_size, num_workers=num_workers)
+    classes = rdm.classes
+    nodata = rdm.y_nodata
+    dtype = rdm.y_dtype
     if classes is None or nodata is None:
         raise ValueError("Classes or nodata information is absent in the input dataset.")
 

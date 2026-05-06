@@ -157,11 +157,11 @@ def generate_map(
     # Reading nodata
     if reference_dataset is not None:
         rdm = RegressionDataModule(pred_dataset=reference_dataset, batch_size=batch_size, num_workers=num_workers)
-        nodata = rdm.y_nodata
-        dtype = rdm.y_dtype
     else:
-        nodata = dm.y_nodata
-        dtype = dm.y_dtype
+        dataset["predict"] = False
+        rdm = RegressionDataModule(pred_dataset=dataset, batch_size=batch_size, num_workers=num_workers)
+    nodata = rdm.y_nodata
+    dtype = rdm.y_dtype
     if nodata is None:
         raise ValueError("Nodata information is absent in the input dataset.")
 
