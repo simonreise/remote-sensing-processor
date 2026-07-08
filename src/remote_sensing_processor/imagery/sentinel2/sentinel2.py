@@ -362,7 +362,7 @@ def mask_sentinel2(img: xr.Dataset, dataset: Item, nodata: Optional[Union[int, f
     if "cldmsk" in dataset.assets:
         shape = dataset.assets["cldmsk"].href
         if shape.endswith(".gml"):
-            img = clipf(img, Path(shape), invert=True)
+            img = clipf(img, Path(shape), pad=False, invert=True)
             mask = None
         else:
             with rxr.open_rasterio(shape, chunks=True, lock=True) as tif:
@@ -394,9 +394,9 @@ def mask_sentinel2(img: xr.Dataset, dataset: Item, nodata: Optional[Union[int, f
 
     if mask is not None:
         # Delete small gaps in mask
-        mask = xr.where(fillnodata(mask, mask, 5, None) == 1, 0, 1)  # fill 0 - nodata -> 1 - nodata, 0 - data
+        mask = xr.where(fillnodata(mask, mask, 5, 0) == 1, 0, 1)  # fill 0 - nodata -> 1 - nodata, 0 - data
         # Emerge mask
-        mask = fillnodata(mask, mask, 22, None)  # fill 0 - data
+        mask = fillnodata(mask, mask, 22, 0)  # fill 0 - data
         # Masking nodata
         img = img.where(mask.data == 0, nodata)  # 0 - data, 1 - nodata
         img = persist(img)

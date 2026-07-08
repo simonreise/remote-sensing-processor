@@ -188,7 +188,7 @@ def generate_tiles(
 
     if y is not None:
         y_img, y_nodata = prepare_seg_maps(y=y, ref=x_img[0], dtype=y_dtype, y_nodata=y_nodata)
-        assert_equal_shapes([x_img, y_img])
+        x_img, y_img = assert_equal_shapes([x_img, y_img])
     else:
         y_img, y_nodata = None, None
 
@@ -311,7 +311,7 @@ def construct_bitemporal_input(
     x2_nodata: Optional[int],
 ) -> tuple[xr.DataArray, int]:
     """Merge two segmentation inputs to a bitemporal input."""
-    assert_equal_shapes([x1_img, x2_img])
+    x1_img, x2_img = assert_equal_shapes([x1_img, x2_img])
     if x1_nodata != x2_nodata:
         raise ValueError(f"Expected both inputs have the same nodata value, got {x1_nodata} and {x2_nodata}.")
     x_img = xr.concat([x1_img, x2_img], "time")

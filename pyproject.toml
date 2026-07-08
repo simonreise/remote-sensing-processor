@@ -35,10 +35,10 @@ dependencies = [
 	# Machine learning
 	"torch>=2.2",
     "torchvision>=0.17",
-    "lightning>=2.2",
+    "lightning>=2.2, !=2.6.2, != 2.6.3",
 	"torchmetrics>=1.8.1",
     "tensorboard",
-    "transformers>=5.1.0",
+    "transformers>=5.4.0",
 	"segmentation-models-pytorch>=0.5.0",
 	"torchgeo>=0.9",
     "datasets>=4.3.0",

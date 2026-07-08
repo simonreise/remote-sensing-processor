@@ -182,11 +182,32 @@ def generate_map(
         keys = np.concatenate(keys, axis=0).tolist()
     # Sklearn models
     elif model.model_name in sklearn_models:
+        from tqdm import tqdm
+
         dm.setup(stage="predict")
-        x_pred, _, keys = sklearn_load_dataset(dm, "predict", model.generate_features)
-        # Predict everything
-        predictions = model.predict(x_pred)
-        predictions = predictions.reshape(len(dm.ds_pred), 1, dm.input_shape, dm.input_shape)
+
+        predictions_list = []
+        keys = []
+
+        total_tiles = len(dm.ds_pred)
+
+        with tqdm(total=total_tiles, desc="Predicting tiles") as pbar:
+            for x_batch, _, keys_batch in sklearn_load_dataset(
+                dm,
+                "predict",
+                model.generate_features,
+                batch_size=batch_size,
+            ):
+                batch_pred = model.predict(x_batch)
+                predictions_list.append(batch_pred)
+                keys.extend(keys_batch)
+                pbar.update(len(keys_batch))
+
+        if total_tiles == 0:
+            predictions = np.empty((0, 1, dm.input_shape, dm.input_shape))
+        else:
+            predictions = np.concatenate(predictions_list, axis=0)
+            predictions = predictions.reshape(total_tiles, 1, dm.input_shape, dm.input_shape)
     else:
         raise ValueError("Wrong model name. Check spelling or read a documentation and choose a supported model")
 

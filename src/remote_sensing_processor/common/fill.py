@@ -24,8 +24,14 @@ def fillnodata(
         fillnodata_ufunc,
         raster,
         kwargs={"fill_distance": fill_distance, "nodata": nodata},
+        input_core_dims=[["y", "x"]],
+        output_core_dims=[["y", "x"]],
         dask="parallelized",
+        dask_gufunc_kwargs={"allow_rechunk": True},
     )
+    # If there are some unfilled areas left - fill them with nodata again
+    if nodata is not None:
+        raster = raster.fillna(nodata)
 
     return persist(raster)
 

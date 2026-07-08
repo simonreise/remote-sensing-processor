@@ -1,7 +1,7 @@
 """General segmentation functions and classes."""
 
 from pydantic import BaseModel, NonNegativeFloat, NonNegativeInt, PositiveInt, TypeAdapter
-from typing import Any, Literal, Optional, Union
+from typing import Any, Generator, Literal, Optional, Union
 
 import warnings
 from pathlib import Path
@@ -494,7 +494,11 @@ def sklearn_load_dataset(
     dm: DataModule,
     stage: str,
     generate_features: bool,
-) -> tuple[np.ndarray, np.ndarray, list[int]]:
+    batch_size: Optional[int] = None,
+) -> Union[
+    tuple[np.ndarray, Optional[np.ndarray], list[int]],
+    Generator[tuple[np.ndarray, Optional[np.ndarray], list[int]], None, None],
+]:
     """Convert HF dataset to numpy arrays for Sklearn models."""
     y_nodata = dm.y_nodata
 
@@ -526,32 +530,52 @@ def sklearn_load_dataset(
         return out
 
     if stage == "train":
-        dm.ds_train.set_format("numpy")
-        dm.ds_train = dm.ds_train.map(sklearn_process_tile, keep_in_memory=True)
-        x = np.concatenate(dm.ds_train["x"], axis=0)
-        y = np.concatenate(dm.ds_train["y"], axis=0) if "y" in dm.ds_train.features else None
-        keys = list(dm.ds_train["key"])
+        ds = dm.ds_train
     elif stage == "val":
-        if dm.ds_val is not None:
-            dm.ds_val.set_format("numpy")
-            dm.ds_val = dm.ds_val.map(sklearn_process_tile, keep_in_memory=True)
-            x = np.concatenate(dm.ds_val["x"], axis=0)
-            y = np.concatenate(dm.ds_val["y"], axis=0) if "y" in dm.ds_val.features else None
-            keys = list(dm.ds_val["key"])
-        else:
+        if dm.ds_val is None:
             raise ValueError("trying to perform validation while val dataset is not set")
+        ds = dm.ds_val
     elif stage == "test":
-        dm.ds_test.set_format("numpy")
-        dm.ds_test = dm.ds_test.map(sklearn_process_tile, keep_in_memory=True)
-        x = np.concatenate(dm.ds_test["x"], axis=0)
-        y = np.concatenate(dm.ds_test["y"], axis=0) if "y" in dm.ds_test.features else None
-        keys = list(dm.ds_test["key"])
+        ds = dm.ds_test
     elif stage == "predict":
-        dm.ds_pred.set_format("numpy")
-        dm.ds_pred = dm.ds_pred.map(sklearn_process_tile, keep_in_memory=True)
-        x = np.concatenate(dm.ds_pred["x"], axis=0)
-        y = np.concatenate(dm.ds_pred["y"], axis=0) if "y" in dm.ds_pred.features else None
-        keys = list(dm.ds_pred["key"])
+        ds = dm.ds_pred
     else:
         raise ValueError("Invalid stage")
+
+    ds.set_format("numpy")
+
+    if batch_size is not None:
+
+        def batch_generator() -> Generator[tuple[np.ndarray, Optional[np.ndarray], list[int]], None, None]:
+            for i in range(0, len(ds), batch_size):
+                batch_x = []
+                batch_y = []
+                keys_batch = []
+                for j in range(i, min(i + batch_size, len(ds))):
+                    tile = ds[j]
+                    processed = sklearn_process_tile(tile)
+                    batch_x.append(processed["x"])
+                    if "y" in processed:
+                        batch_y.append(processed["y"])
+                    keys_batch.append(processed["key"])
+
+                x_b = np.concatenate(batch_x, axis=0)
+                y_b = np.concatenate(batch_y, axis=0) if batch_y else None
+                yield x_b, y_b, keys_batch
+
+        return batch_generator()
+    mapped_ds = ds.map(sklearn_process_tile, keep_in_memory=True)
+    mapped_ds.set_format("numpy")
+    if stage == "train":
+        dm.ds_train = mapped_ds
+    elif stage == "val":
+        dm.ds_val = mapped_ds
+    elif stage == "test":
+        dm.ds_test = mapped_ds
+    elif stage == "predict":
+        dm.ds_pred = mapped_ds
+
+    x = np.concatenate(mapped_ds["x"], axis=0)
+    y = np.concatenate(mapped_ds["y"], axis=0) if "y" in mapped_ds.features else None
+    keys = list(mapped_ds["key"])
     return x, y, keys

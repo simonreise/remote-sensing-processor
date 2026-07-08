@@ -54,135 +54,132 @@ def load_backbone(bb: str, input_shape: int, input_dims: int) -> transformers.Pr
         backbone = transformers.BeitConfig(
             image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "BiT":
         backbone = transformers.BitConfig(
-            image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "ConvNeXT":
         backbone = transformers.ConvNextConfig(
             image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "ConvNeXTV2":
         backbone = transformers.ConvNextV2Config(
             image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     # Currently not supported because there's no natten package in conda and no windows support
     elif bb == "DiNAT":
         backbone = transformers.DinatConfig(
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "DINOV2":
         backbone = transformers.Dinov2Config(
             image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "DINOV2WithRegisters":
         backbone = transformers.Dinov2WithRegistersConfig(
             image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "DINOV3ViT":
         backbone = transformers.DINOv3ViTConfig(
             image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "DINOV3ConvNeXT":
         backbone = transformers.DINOv3ConvNextConfig(
             image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "FocalNet":
         backbone = transformers.FocalNetConfig(
             image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "HGNet-V2":
         backbone = transformers.HGNetV2Config(
-            image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
             stem_channels=[input_dims, 32, 48],
         )
+        backbone.out_features = ["stage2", "stage3", "stage4"]
     elif bb == "Hiera":
         backbone = transformers.HieraConfig(
             image_size=[input_shape, input_shape],
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "LW-DETR":
         backbone = transformers.LwDetrViTConfig(
-            image_size=[input_shape, input_shape],
+            image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "MaskFormer-Swin":
         backbone = transformers.MaskFormerSwinConfig(
             image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "Pixio":
         backbone = transformers.PixioConfig(
-            image_size=[input_shape, input_shape],
+            image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "PVTV2":
         backbone = transformers.PvtV2Config(
             image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "ResNet":
         backbone = transformers.ResNetConfig(
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "RT-DETR-ResNet":
         backbone = transformers.RTDetrResNetConfig(
-            image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "Swin":
         backbone = transformers.SwinConfig(
             image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "SwinV2":
         backbone = transformers.Swinv2Config(
             image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     elif bb == "ViTDet":
         backbone = transformers.VitDetConfig(
             image_size=input_shape,
             num_channels=input_dims,
-            out_features=["stage1", "stage2", "stage3", "stage4"],
         )
+        backbone.out_features = ["stage1", "stage2", "stage3", "stage4"]
     else:
         warnings.warn(
             bb + " is not one of the default backbones. Trying to load timm backbone with the requested name.",
             stacklevel=2,
         )
         backbone = transformers.TimmBackboneConfig(
-            bb,
+            backbone=bb,
             num_channels=input_dims,
         )
     return backbone
@@ -222,7 +219,7 @@ class TransformersModel(torch.nn.Module):
     def __init__(
         self,
         model: transformers.PreTrainedModel,
-        preprocessor: transformers.BaseImageProcessorFast,
+        preprocessor: transformers.BaseImageProcessor,
         input_shape: int,
     ) -> None:
         super().__init__()
@@ -370,9 +367,12 @@ class RegressionModels:
         **kwargs: Any,
     ) -> TorchNNModel:
         """Load a Torch-based regression model."""
+        id2label = {0: "regression_target"}
+        label2id = {"regression_target": 0}
+
         if model_name == "BEiT":
             if weights is not None:
-                processor = transformers.BeitImageProcessorFast.from_pretrained(
+                processor = transformers.BeitImageProcessor.from_pretrained(
                     weights,
                     do_resize=False,
                     do_center_crop=False,
@@ -384,12 +384,13 @@ class RegressionModels:
                     ignore_mismatched_sizes=True,
                     image_size=self.input_shape,
                     num_channels=self.input_dims,
-                    num_labels=self.num_classes,
+                    id2label=id2label,
+                    label2id=label2id,
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
             else:
-                processor = transformers.BeitImageProcessorFast(
+                processor = transformers.BeitImageProcessor(
                     do_resize=False,
                     do_center_crop=False,
                     do_rescale=False,
@@ -398,11 +399,12 @@ class RegressionModels:
                 config = transformers.BeitConfig(
                     image_size=self.input_shape,
                     num_channels=self.input_dims,
-                    num_labels=self.num_classes,
-                    out_indices=[3, 5, 7, 11],
+                    id2label=id2label,
+                    label2id=label2id,
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
+                config.out_indices = [3, 5, 7, 11]
                 model = transformers.BeitForSemanticSegmentation(config)
             model = TransformersModel(model, processor, self.input_shape)
         elif model_name == "Data2Vec":
@@ -419,12 +421,13 @@ class RegressionModels:
                     ignore_mismatched_sizes=True,
                     image_size=self.input_shape,
                     num_channels=self.input_dims,
-                    num_labels=self.num_classes,
+                    id2label=id2label,
+                    label2id=label2id,
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
             else:
-                processor = transformers.BeitImageProcessorFast(
+                processor = transformers.BeitImageProcessor(
                     do_resize=False,
                     do_center_crop=False,
                     do_rescale=False,
@@ -433,7 +436,8 @@ class RegressionModels:
                 config = transformers.Data2VecVisionConfig(
                     image_size=self.input_shape,
                     num_channels=self.input_dims,
-                    num_labels=self.num_classes,
+                    id2label=id2label,
+                    label2id=label2id,
                     out_indices=[3, 5, 7, 11],
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
@@ -442,7 +446,7 @@ class RegressionModels:
             model = TransformersModel(model, processor, self.input_shape)
         elif model_name == "DPT":
             if weights is not None:
-                processor = transformers.DPTImageProcessorFast.from_pretrained(
+                processor = transformers.DPTImageProcessor.from_pretrained(
                     weights,
                     do_resize=False,
                     do_pad=False,
@@ -454,12 +458,13 @@ class RegressionModels:
                     ignore_mismatched_sizes=True,
                     image_size=self.input_shape,
                     num_channels=self.input_dims,
-                    num_labels=self.num_classes,
+                    id2label=id2label,
+                    label2id=label2id,
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
             else:
-                processor = transformers.DPTImageProcessorFast(
+                processor = transformers.DPTImageProcessor(
                     do_resize=False,
                     do_pad=False,
                     do_rescale=False,
@@ -468,7 +473,8 @@ class RegressionModels:
                 config = transformers.DPTConfig(
                     image_size=self.input_shape,
                     num_channels=self.input_dims,
-                    num_labels=self.num_classes,
+                    id2label=id2label,
+                    label2id=label2id,
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
@@ -476,7 +482,7 @@ class RegressionModels:
             model = TransformersModel(model, processor, self.input_shape)
         elif model_name == "MobileNetV2":
             if weights is not None:
-                processor = transformers.MobileNetV2ImageProcessorFast.from_pretrained(
+                processor = transformers.MobileNetV2ImageProcessor.from_pretrained(
                     weights,
                     do_resize=False,
                     do_center_crop=False,
@@ -488,12 +494,13 @@ class RegressionModels:
                     ignore_mismatched_sizes=True,
                     image_size=self.input_shape,
                     num_channels=self.input_dims,
-                    num_labels=self.num_classes,
+                    id2label=id2label,
+                    label2id=label2id,
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
             else:
-                processor = transformers.MobileNetV2ImageProcessorFast(
+                processor = transformers.MobileNetV2ImageProcessor(
                     do_resize=False,
                     do_center_crop=False,
                     do_rescale=False,
@@ -502,7 +509,8 @@ class RegressionModels:
                 config = transformers.MobileNetV2Config(
                     image_size=self.input_shape,
                     num_channels=self.input_dims,
-                    num_labels=self.num_classes,
+                    id2label=id2label,
+                    label2id=label2id,
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
@@ -510,7 +518,7 @@ class RegressionModels:
             model = TransformersModel(model, processor, self.input_shape)
         elif model_name == "MobileViT":
             if weights is not None:
-                processor = transformers.MobileViTImageProcessorFast.from_pretrained(
+                processor = transformers.MobileViTImageProcessor.from_pretrained(
                     weights,
                     do_resize=False,
                     do_center_crop=False,
@@ -522,12 +530,13 @@ class RegressionModels:
                     ignore_mismatched_sizes=True,
                     image_size=self.input_shape,
                     num_channels=self.input_dims,
-                    num_labels=self.num_classes,
+                    id2label=id2label,
+                    label2id=label2id,
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
             else:
-                processor = transformers.MobileViTImageProcessorFast(
+                processor = transformers.MobileViTImageProcessor(
                     do_resize=False,
                     do_center_crop=False,
                     do_rescale=False,
@@ -536,7 +545,8 @@ class RegressionModels:
                 config = transformers.MobileViTConfig(
                     image_size=self.input_shape,
                     num_channels=self.input_dims,
-                    num_labels=self.num_classes,
+                    id2label=id2label,
+                    label2id=label2id,
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
@@ -544,7 +554,7 @@ class RegressionModels:
             model = TransformersModel(model, processor, self.input_shape)
         elif model_name == "MobileViTV2":
             if weights is not None:
-                processor = transformers.MobileViTImageProcessorFast.from_pretrained(
+                processor = transformers.MobileViTImageProcessor.from_pretrained(
                     weights,
                     do_resize=False,
                     do_center_crop=False,
@@ -556,12 +566,13 @@ class RegressionModels:
                     ignore_mismatched_sizes=True,
                     image_size=self.input_shape,
                     num_channels=self.input_dims,
-                    num_labels=self.num_classes,
+                    id2label=id2label,
+                    label2id=label2id,
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
             else:
-                processor = transformers.MobileViTImageProcessorFast(
+                processor = transformers.MobileViTImageProcessor(
                     do_resize=False,
                     do_center_crop=False,
                     do_rescale=False,
@@ -570,7 +581,8 @@ class RegressionModels:
                 config = transformers.MobileViTV2Config(
                     image_size=self.input_shape,
                     num_channels=self.input_dims,
-                    num_labels=self.num_classes,
+                    id2label=id2label,
+                    label2id=label2id,
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
@@ -578,7 +590,7 @@ class RegressionModels:
             model = TransformersModel(model, processor, self.input_shape)
         elif model_name == "SegFormer":
             if weights is not None:
-                processor = transformers.SegformerImageProcessorFast.from_pretrained(
+                processor = transformers.SegformerImageProcessor.from_pretrained(
                     weights,
                     do_resize=False,
                     do_normalize=False,
@@ -587,22 +599,22 @@ class RegressionModels:
                 model = transformers.SegformerForSemanticSegmentation.from_pretrained(
                     weights,
                     ignore_mismatched_sizes=True,
-                    image_size=self.input_shape,
                     num_channels=self.input_dims,
-                    num_labels=self.num_classes,
+                    id2label=id2label,
+                    label2id=label2id,
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
             else:
-                processor = transformers.SegformerImageProcessorFast(
+                processor = transformers.SegformerImageProcessor(
                     do_resize=False,
                     do_normalize=False,
                     do_rescale=False,
                 )
                 config = transformers.SegformerConfig(
-                    image_size=self.input_shape,
                     num_channels=self.input_dims,
-                    num_labels=self.num_classes,
+                    id2label=id2label,
+                    label2id=label2id,
                     semantic_loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
@@ -610,7 +622,7 @@ class RegressionModels:
             model = TransformersModel(model, processor, self.input_shape)
         elif model_name == "UperNet":
             if weights is not None:
-                processor = transformers.SegformerImageProcessorFast.from_pretrained(
+                processor = transformers.SegformerImageProcessor.from_pretrained(
                     weights,
                     do_resize=False,
                     do_normalize=False,
@@ -618,7 +630,8 @@ class RegressionModels:
                 )
                 config = transformers.AutoConfig.from_pretrained(
                     weights,
-                    num_labels=self.num_classes,
+                    id2label=id2label,
+                    label2id=label2id,
                     loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )
@@ -632,7 +645,7 @@ class RegressionModels:
                     config=config,
                 )
             else:
-                processor = transformers.SegformerImageProcessorFast(
+                processor = transformers.SegformerImageProcessor(
                     do_resize=False,
                     do_normalize=False,
                     do_rescale=False,
@@ -640,10 +653,10 @@ class RegressionModels:
                 if bb is None:
                     bb = "Swin"
                 backbone = load_backbone(bb, self.input_shape, self.input_dims)
-                # ResNet auxiliary_in_channels=1024
                 config = transformers.UperNetConfig(
                     backbone_config=backbone,
-                    num_labels=self.num_classes,
+                    id2label=id2label,
+                    label2id=label2id,
                     loss_ignore_index=self.y_nodata,
                     **kwargs,
                 )

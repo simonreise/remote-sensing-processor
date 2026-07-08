@@ -73,7 +73,7 @@ def load_dataset(dataset: Item, bands: Optional[list] = None, clip: Optional[Pat
                 files.append(raster)
 
     # Assert files have equal shapes
-    assert_equal_shapes(files)
+    files = assert_equal_shapes(files)
 
     img = xr.merge(files)
 
@@ -158,12 +158,21 @@ def restore_nodata_from_nan(raster: Union[xr.Dataset, xr.DataArray]) -> Union[xr
 def clipf(
     raster: Union[xr.Dataset, xr.DataArray],
     clip: Path,
+    pad: bool = True,
     **kwargs: Any,
 ) -> Union[xr.Dataset, xr.DataArray]:
     """Clips a raster by vector."""
     crs = raster.rio.crs
     shape = gpd.read_file(clip).to_crs(crs)
     shape = convert_3d_2d(shape)
+    # Pad if clip extent is bigger than raster extent
+    if pad:
+        # Check if padding is needed
+        r_minx, r_miny, r_maxx, r_maxy = raster.rio.bounds()
+        p_minx, p_miny, p_maxx, p_maxy = shape.total_bounds.tolist()
+        needs_padding = p_minx < r_minx or p_miny < r_miny or p_maxx > r_maxx or p_maxy > r_maxy
+        if needs_padding:
+            raster = raster.rio.pad_box(*shape.total_bounds.tolist())
     raster = raster.rio.clip(shape.geometry.values, **kwargs)
     return persist(raster)
 
@@ -196,8 +205,9 @@ def reproject(
     # ODC adds names to data arrays and sets spatial_ref to epsg. Removing it
     raster = clean_reproject_name(raster)
     raster.spatial_ref.values = np.asarray(0, "int32")
-    # Explicitly set CRS
+    # Explicitly set CRS and transform
     raster = raster.rio.write_crs(crs)
+    raster = raster.rio.write_transform(raster.rio.transform(recalc=True))
     # raster = raster.rio.reproject(crs, resampling=resample)
     # raster = raster.chunk("auto")
     return persist(raster)
@@ -215,8 +225,13 @@ def reproject_match(
     # ODC adds names to data arrays and sets spatial_ref to epsg. Removing it
     raster = clean_reproject_name(raster)
     raster.spatial_ref.values = np.asarray(0, "int32")
-    # Explicitly set CRS
+    # Explicitly set CRS, coords and transform
     raster = raster.rio.write_crs(reference_raster.rio.crs)
+    spatial_dims = reference_raster.odc.spatial_dims
+    raster = raster.assign_coords(
+        {spatial_dims[0]: reference_raster[spatial_dims[0]], spatial_dims[1]: reference_raster[spatial_dims[1]]},
+    )
+    raster = raster.rio.write_transform(raster.rio.transform(recalc=True))
     # raster = raster.rio.reproject_match(pan, resampling=resample)
     # raster = raster.chunk("auto")
     return persist(raster)
@@ -356,14 +371,15 @@ def get_first_proj(path: Union[Path, Item]) -> rio.crs.CRS:
     return projection
 
 
-def assert_equal_shapes(rasters: list[Union[xr.Dataset, xr.DataArray]]) -> None:
+def assert_equal_shapes(rasters: list[Union[xr.Dataset, xr.DataArray]]) -> list[Union[xr.Dataset, xr.DataArray]]:
     """Assert if array shapes are equal."""
     shape = None
     dims = None
     coords = None
+    new_rasters = []
     for raster in rasters:
         if isinstance(raster, xr.Dataset):
-            for band in raster:
+            for band in list(raster):
                 if shape is None:
                     shape = raster[band].shape[-2:]
                 elif raster[band].shape[-2:] != shape:
@@ -373,11 +389,17 @@ def assert_equal_shapes(rasters: list[Union[xr.Dataset, xr.DataArray]]) -> None:
                 elif raster[band].dims != dims:
                     raise ValueError(str(band) + " dims is not equal to other bands.")
                 if coords is None:
-                    coords = {"x": raster[band].coords["x"], "y": raster[band].coords["y"]}
-                elif not (
-                    (raster[band].coords["x"].equals(coords["x"])) and (raster[band].coords["y"].equals(coords["y"]))
-                ):
-                    raise ValueError(str(band) + " coords is not equal to other bands.")
+                    coords = {"x": rasters[0][band].coords["x"], "y": rasters[0][band].coords["y"]}
+                elif not ((raster.coords["x"].equals(coords["x"])) and (raster.coords["y"].equals(coords["y"]))):
+                    raster = raster.reindex(
+                        {
+                            raster.rio.y_dim: rasters[0][raster.rio.y_dim],
+                            raster.rio.x_dim: rasters[0][raster.rio.x_dim],
+                        },
+                        method="nearest",
+                        tolerance=np.min([*np.abs(raster[band].rio.resolution())]) * 0.01,
+                    ).astype(raster[band].dtype)
+            new_rasters.append(raster)
         else:
             if shape is None:
                 shape = raster.shape[-2:]
@@ -390,7 +412,13 @@ def assert_equal_shapes(rasters: list[Union[xr.Dataset, xr.DataArray]]) -> None:
             if coords is None:
                 coords = {"x": raster.coords["x"], "y": raster.coords["y"]}
             elif not ((raster.coords["x"].equals(coords["x"])) and (raster.coords["y"].equals(coords["y"]))):
-                raise ValueError(str(raster.name) + " coords is not equal to other bands.")
+                raster = raster.reindex(
+                    {raster.rio.y_dim: rasters[0][raster.rio.y_dim], raster.rio.x_dim: rasters[0][raster.rio.x_dim]},
+                    method="nearest",
+                    tolerance=np.min([*np.abs(raster.rio.resolution())]) * 0.01,
+                ).astype(raster.dtype)
+            new_rasters.append(raster)
+    return new_rasters
 
 
 def make_nodata_equal(

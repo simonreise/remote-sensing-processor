@@ -24,7 +24,7 @@ from remote_sensing_processor.common.types import CRS, DirectoryPath, DType, Fil
 def process(
     input_path: Union[FilePath, DirectoryPath, PystacItem],
     output_path: Optional[Union[FilePath, DirectoryPath, NewPath]] = None,
-    fill_nodata: Optional[bool] = False,
+    fill_nodata: Optional[Union[bool, int, float]] = False,
     fill_distance: Optional[PositiveInt] = 250,
     clip: Optional[FilePath] = None,
     crs: Optional[CRS] = None,
@@ -44,8 +44,10 @@ def process(
     output_path : string (optional)
         Path to an output file, directory, or STAC dataset. If not set, then will overwrite the input files.
         Must be set if input is a remote STAC Item.
-    fill_nodata : bool (default = False)
+    fill_nodata : bool, int or float (default = False)
         Is filling the gaps in the raster needed.
+        If True, will use interpolation to fill in the gaps.
+        If an integer or float is passed, will fill the gaps with that value.
     fill_distance : int (default = 250)
         Fill distance for `fill_nodata` function.
     clip : string (optional)
@@ -130,9 +132,13 @@ def process(
         # outside -> 1
         for band in mask:
             mask[band] = mask[band].rio.write_nodata(1)
-        mask = clipf(mask, clip)
-        # Fill nodata
-        img = fillnodata(img, mask, fill_distance, nodata)
+        mask = clipf(mask, clip, pad=False)
+        if fill_nodata is not True:
+            # Fill nodata with value
+            img = img.where(mask == 1, fill_nodata)
+        else:
+            # Fill nodata by interpolation
+            img = fillnodata(img, mask, fill_distance, nodata)
 
     # Changing dtype
     if dtype:

@@ -34,7 +34,7 @@ from remote_sensing_processor.mosaic.dataset import postprocess_mosaic_dataset
 def mosaic(
     inputs: list[Union[FilePath, DirectoryPath, PystacItem]],
     output_dir: Union[DirectoryPath, NewPath],
-    fill_nodata: Optional[bool] = False,
+    fill_nodata: Optional[Union[bool, int, float]] = False,
     fill_distance: Optional[PositiveInt] = 250,
     clip: Optional[FilePath] = None,
     crs: Optional[CRS] = None,
@@ -56,8 +56,10 @@ def mosaic(
         in order from images that should be on top to images that should be on bottom.
     output_dir: path to output directory as a string
         Path where mosaic raster or rasters will be saved.
-    fill_nodata : bool (default = False)
+    fill_nodata : bool, int or float (default = False)
         Is filling the gaps in the raster needed.
+        If True, will use interpolation to fill in the gaps.
+        If an integer or float is passed, will fill the gaps with that value.
     fill_distance : int (default = 250)
         Fill distance for `fill_nodata` function.
     clip : string (optional)
@@ -209,9 +211,13 @@ def mosaic(
         # outside -> 1
         for band in mask:
             mask[band] = mask[band].rio.write_nodata(1)
-        mask = clipf(mask, clip)
-        # Fill nodata
-        final = fillnodata(final, mask, fill_distance, nodata)
+        mask = clipf(mask, clip, pad=False)
+        if fill_nodata is not True:
+            # Fill nodata with value
+            final = final.where(mask == 1, fill_nodata)
+        else:
+            # Fill nodata by interpolation
+            final = fillnodata(final, mask, fill_distance, nodata)
 
     final = check_dtype(final)
 
@@ -243,7 +249,7 @@ def initial_process_dataset(
     if crs is not None:
         img = reproject(img, crs)
     if clip is not None:
-        img = clipf(img, clip)
+        img = clipf(img, clip, pad=False)
     img = check_dtype(img)
 
     # Adding empty data arrays for bands that are absent in the current dataset
@@ -309,7 +315,7 @@ def order(
                     img = (img == nodata).astype("uint8")  # nodata-1 data-0
                     img = img.rio.write_nodata(0)
                     if clip is not None:
-                        img = clipf(img, clip)  # nodata-1 data-0 outside_nodata-0
+                        img = clipf(img, clip, pad=False)  # nodata-1 data-0 outside_nodata-0
                     zeros.append((da.count_nonzero(img) / img.size).compute())
                 except Exception:
                     zeros.append(0.0)

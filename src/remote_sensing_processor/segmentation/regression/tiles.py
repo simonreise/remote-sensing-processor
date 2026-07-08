@@ -165,7 +165,7 @@ def generate_tiles(
 
     if y is not None:
         y_img, y_nodata = prepare_seg_maps(y=y, y_nodata=y_nodata, ref=x_img[0], dtype=y_dtype, dtype_class=np.floating)
-        assert_equal_shapes([x_img, y_img])
+        x_img, y_img = assert_equal_shapes([x_img, y_img])
     else:
         y_img, y_nodata = None, None
 

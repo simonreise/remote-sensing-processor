@@ -56,7 +56,7 @@ def prepare_images(
     for stac in stacs:
         datasets.append(dask.delayed(load_dataset)(stac))
     datasets = list(dask.compute(*datasets))
-    assert_equal_shapes(datasets)
+    datasets = assert_equal_shapes(datasets)
     datasets = add_prefixes(datasets)
     img = xr.merge(datasets)
     # Fixing x_nodata if different nodata values
