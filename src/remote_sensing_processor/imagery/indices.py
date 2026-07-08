@@ -213,6 +213,8 @@ def get_index(
             bands = add_constants(bands, {"gamma": 0.4})
         elif index == "TSAVI":
             bands = add_constants(bands, {"sla": 1.22, "slb": 0.03})
+        elif index == "WCI1" or index == "WCI2":
+            bands = add_constants(bands, {"epsilon": 1e-8})
         elif index == "WDRVI":
             bands = add_constants(bands, {"alpha": 0.1})
         elif index == "WDVI":

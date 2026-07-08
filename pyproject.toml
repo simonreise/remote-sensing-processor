@@ -23,7 +23,7 @@ dependencies = [
 	"rioxarray>=0.20",
 	"xarray-spatial",
 	"geocube",
-	"odc-geo>=0.4.3",
+	"odc-geo>=0.4.3,!=0.5.2", # 0.5.2 has a reproject bug in it
 	"geopandas",
 	"pystac",
 	"stactools",
