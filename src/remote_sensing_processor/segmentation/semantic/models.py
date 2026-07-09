@@ -206,16 +206,14 @@ class TransformersModel(torch.nn.Module):
     def __init__(
         self,
         model: transformers.PreTrainedModel,
-        preprocessor: Union[transformers.BaseImageProcessor, transformers.OneFormerProcessor],
+        processor: Union[transformers.BaseImageProcessor, transformers.OneFormerProcessor],
         input_shape: int,
         y_nodata: Optional[int] = None,
-        postprocessor: Optional[str] = "general",
         detr: Optional[bool] = False,
     ) -> None:
         super().__init__()
         self.model = model
-        self.processor = preprocessor
-        self.postprocessor = postprocessor
+        self.processor = processor
         self.detr = detr
         self.input_shape = input_shape
         self.y_nodata = y_nodata
@@ -255,31 +253,12 @@ class TransformersModel(torch.nn.Module):
         # Get loss
         loss = pred.loss
         # Postprocess
-        if self.postprocessor == "general":
-            pred = self.post_process_semantic_segmentation(
-                pred,
-                target_sizes=[(self.input_shape, self.input_shape)] * x.shape[0],
-            )
-        elif self.postprocessor == "conditional_detr":
-            pred = self.post_process_semantic_segmentation_conditional_detr(
-                pred,
-                target_sizes=[(self.input_shape, self.input_shape)] * x.shape[0],
-            )
-        elif self.postprocessor == "detr":
-            pred = self.post_process_semantic_segmentation_detr(
-                pred,
-                target_sizes=[(self.input_shape, self.input_shape)] * x.shape[0],
-            )
-        elif self.postprocessor == "maskformer":
-            pred = self.post_process_semantic_segmentation_maskformer(
-                pred,
-                target_sizes=[(self.input_shape, self.input_shape)] * x.shape[0],
-            )
-        elif self.postprocessor == "eomt":
-            pred = self.post_process_semantic_segmentation_eomt(
-                pred,
-                target_sizes=[(self.input_shape, self.input_shape)] * x.shape[0],
-            )
+        pred = self.processor.post_process_semantic_segmentation(
+            pred,
+            target_sizes=[(self.input_shape, self.input_shape)] * x.shape[0],
+            return_segmentation_scores=True,
+        )
+        pred = [x["segmentation_scores"] for x in pred]
         pred = torch.stack(pred)
         return pred, loss
 
@@ -319,275 +298,6 @@ class TransformersModel(torch.nn.Module):
         annotation["boxes"] = masks_to_boxes(panoptic_seg)
         # noinspection PyTypeChecker
         return DetrImageProcessor.normalize_annotation(None, annotation, (input_shape, input_shape))
-
-    def post_process_semantic_segmentation(
-        self,
-        outputs: Any,
-        target_sizes: Optional[list[tuple]] = None,
-    ) -> list[torch.Tensor]:
-        """
-        Converts the output of [`SegFormerForSemanticSegmentation`] into semantic segmentation maps.
-
-        Only supports PyTorch.
-
-        Parameters
-        ----------
-            outputs ([`MobileNetV2ForSemanticSegmentation`]):
-                Raw outputs of the model.
-            target_sizes (`list[Tuple]` of length `batch_size`, *optional*):
-                List of tuples corresponding to the requested final size (height, width) of each prediction. If unset,
-                predictions will not be resized.
-
-        Returns
-        -------
-            semantic_segmentation: `list[torch.Tensor]` of length `batch_size`, where each item is a semantic
-            segmentation map of shape (height, width) corresponding to the target_sizes entry (if `target_sizes` is
-            specified). Each entry of each `torch.Tensor` correspond to a semantic class id.
-        """
-        logits = outputs.logits
-
-        # Resize logits and compute semantic segmentation maps
-        if target_sizes is not None:
-            if len(logits) != len(target_sizes):
-                raise ValueError("Make sure that you pass in as many target sizes as the batch dimension of the logits")
-
-            semantic_segmentation = []
-
-            for idx in range(len(logits)):
-                resized_logits = torch.nn.functional.interpolate(
-                    logits[idx].unsqueeze(dim=0),
-                    size=target_sizes[idx],
-                    mode="bilinear",
-                    align_corners=False,
-                )
-                semantic_map = resized_logits[0]
-                semantic_segmentation.append(semantic_map)
-        else:
-            semantic_segmentation = logits
-            semantic_segmentation = [semantic_segmentation[i] for i in range(semantic_segmentation.shape[0])]
-
-        return semantic_segmentation
-
-    def post_process_semantic_segmentation_conditional_detr(
-        self,
-        outputs: Any,
-        target_sizes: Optional[list[tuple[int, int]]] = None,
-    ) -> list[torch.Tensor]:
-        """
-        Converts the output of [`ConditionalDetrForSegmentation`] to semantic segmentation maps. Only supports PyTorch.
-
-        Parameters
-        ----------
-            outputs ([`ConditionalDetrForSegmentation`]):
-                Raw outputs of the model.
-            target_sizes (`list[tuple[int, int]]`, *optional*):
-                A list of tuples (`tuple[int, int]`) containing the target size (height, width) of each image in the
-                batch. If unset, predictions will not be resized.
-
-        Returns
-        -------
-            `list[torch.Tensor]`:
-                A list of length `batch_size`, where each item is a semantic segmentation map of shape (height, width)
-                corresponding to the target_sizes entry (if `target_sizes` is specified). Each entry of each
-                `torch.Tensor` correspond to a semantic class id.
-        """
-        class_queries_logits = outputs.logits  # [batch_size, num_queries, num_classes+1]
-        masks_queries_logits = outputs.pred_masks  # [batch_size, num_queries, height, width]
-
-        # Remove the null class `[..., :-1]`
-        masks_classes = class_queries_logits.softmax(dim=-1)
-        masks_probs = masks_queries_logits.sigmoid()  # [batch_size, num_queries, height, width]
-
-        # Semantic segmentation logits of shape (batch_size, num_classes, height, width)
-        segmentation = torch.einsum("bqc, bqhw -> bchw", masks_classes, masks_probs)
-        batch_size = class_queries_logits.shape[0]
-
-        # Resize logits and compute semantic segmentation maps
-        if target_sizes is not None:
-            if batch_size != len(target_sizes):
-                raise ValueError(
-                    "Make sure that you pass in as many target sizes as the batch dimension of the logits",
-                )
-
-            semantic_segmentation = []
-            for idx in range(batch_size):
-                resized_logits = torch.nn.functional.interpolate(
-                    segmentation[idx].unsqueeze(dim=0),
-                    size=target_sizes[idx],
-                    mode="bilinear",
-                    align_corners=False,
-                )
-                semantic_map = resized_logits[0]
-                semantic_segmentation.append(semantic_map)
-        else:
-            semantic_segmentation = segmentation
-            semantic_segmentation = [semantic_segmentation[i] for i in range(semantic_segmentation.shape[0])]
-
-        return semantic_segmentation
-
-    def post_process_semantic_segmentation_detr(
-        self,
-        outputs: Any,
-        target_sizes: Optional[list[tuple[int, int]]] = None,
-    ) -> list[torch.Tensor]:
-        """
-        Converts the output of [`DetrForSegmentation`] into semantic segmentation maps. Only supports PyTorch.
-
-        Parameters
-        ----------
-            outputs ([`DetrForSegmentation`]):
-                Raw outputs of the model.
-            target_sizes (`list[tuple[int, int]]`, *optional*):
-                A list of tuples (`tuple[int, int]`) containing the target size (height, width) of each image in the
-                batch. If unset, predictions will not be resized.
-
-        Returns
-        -------
-            `list[torch.Tensor]`:
-                A list of length `batch_size`, where each item is a semantic segmentation map of shape (height, width)
-                corresponding to the target_sizes entry (if `target_sizes` is specified). Each entry of each
-                `torch.Tensor` correspond to a semantic class id.
-        """
-        class_queries_logits = outputs.logits  # [batch_size, num_queries, num_classes+1]
-        masks_queries_logits = outputs.pred_masks  # [batch_size, num_queries, height, width]
-
-        # Remove the null class `[..., :-1]`
-        masks_classes = class_queries_logits.softmax(dim=-1)[..., :-1]
-        masks_probs = masks_queries_logits.sigmoid()  # [batch_size, num_queries, height, width]
-
-        # Semantic segmentation logits of shape (batch_size, num_classes, height, width)
-        segmentation = torch.einsum("bqc, bqhw -> bchw", masks_classes, masks_probs)
-        batch_size = class_queries_logits.shape[0]
-
-        # Resize logits and compute semantic segmentation maps
-        if target_sizes is not None:
-            if batch_size != len(target_sizes):
-                raise ValueError(
-                    "Make sure that you pass in as many target sizes as the batch dimension of the logits",
-                )
-
-            semantic_segmentation = []
-            for idx in range(batch_size):
-                resized_logits = torch.nn.functional.interpolate(
-                    segmentation[idx].unsqueeze(dim=0),
-                    size=target_sizes[idx],
-                    mode="bilinear",
-                    align_corners=False,
-                )
-                semantic_map = resized_logits[0]
-                semantic_segmentation.append(semantic_map)
-        else:
-            semantic_segmentation = segmentation
-            semantic_segmentation = [semantic_segmentation[i] for i in range(semantic_segmentation.shape[0])]
-
-        return semantic_segmentation
-
-    def post_process_semantic_segmentation_maskformer(
-        self,
-        outputs: Any,
-        target_sizes: Optional[list[tuple[int, int]]] = None,
-    ) -> list[torch.Tensor]:
-        """
-        Converts the output of [`MaskFormerForInstanceSegmentation`] into semantic segmentation maps.
-
-        Only supports PyTorch.
-
-        Parameters
-        ----------
-            outputs ([`MaskFormerForUniversalSegmentation`]):
-                Raw outputs of the model.
-            target_sizes (`list[tuple[int, int]]`, *optional*):
-                List of length (batch_size), where each list item (`tuple[int, int]`) corresponds to the requested
-                final size (height, width) of each prediction. If left to None, predictions will not be resized.
-
-        Returns
-        -------
-            `list[torch.Tensor]`:
-                A list of length `batch_size`, where each item is a semantic segmentation map of shape (height, width)
-                corresponding to the target_sizes entry (if `target_sizes` is specified). Each entry of each
-                `torch.Tensor` correspond to a semantic class id.
-        """
-        class_queries_logits = outputs.class_queries_logits  # [batch_size, num_queries, num_classes+1]
-        masks_queries_logits = outputs.masks_queries_logits  # [batch_size, num_queries, height, width]
-
-        # Scale back to preprocessed image size - (384, 384) for all models
-        masks_queries_logits = torch.nn.functional.interpolate(
-            masks_queries_logits,
-            size=(384, 384),
-            mode="bilinear",
-            align_corners=False,
-        )
-
-        # Remove the null class `[..., :-1]`
-        masks_classes = class_queries_logits.softmax(dim=-1)[..., :-1]
-        masks_probs = masks_queries_logits.sigmoid()  # [batch_size, num_queries, height, width]
-
-        # Semantic segmentation logits of shape (batch_size, num_classes, height, width)
-        segmentation = torch.einsum("bqc, bqhw -> bchw", masks_classes, masks_probs)
-        batch_size = class_queries_logits.shape[0]
-
-        # Resize logits and compute semantic segmentation maps
-        if target_sizes is not None:
-            if batch_size != len(target_sizes):
-                raise ValueError("Make sure that you pass in as many target sizes as the batch dimension of the logits")
-
-            semantic_segmentation = []
-            for idx in range(batch_size):
-                resized_logits = torch.nn.functional.interpolate(
-                    segmentation[idx].unsqueeze(dim=0),
-                    size=target_sizes[idx],
-                    mode="bilinear",
-                    align_corners=False,
-                )
-                semantic_map = resized_logits[0]
-                semantic_segmentation.append(semantic_map)
-        else:
-            semantic_segmentation = segmentation
-            semantic_segmentation = [semantic_segmentation[i] for i in range(semantic_segmentation.shape[0])]
-
-        return semantic_segmentation
-
-    def post_process_semantic_segmentation_eomt(
-        self,
-        outputs: Any,
-        target_sizes: list[tuple[int, int]],
-        size: Optional[dict[str, int]] = None,
-    ) -> list[torch.Tensor]:
-        """Post-processes model outputs into final semantic segmentation prediction."""
-        size = size if size is not None else self.processor.size
-
-        masks_queries_logits = outputs.masks_queries_logits  # [batch_size, num_queries, height, width]
-        class_queries_logits = outputs.class_queries_logits  # [batch_size, num_queries, num_classes+1]
-        patch_offsets = outputs.patch_offsets
-
-        output_size = (size["shortest_edge"], size["longest_edge"] or size["shortest_edge"])
-        masks_queries_logits = torch.nn.functional.interpolate(
-            masks_queries_logits,
-            size=output_size,
-            mode="bilinear",
-        )
-
-        # Remove the null class `[..., :-1]`
-        masks_classes = class_queries_logits.softmax(dim=-1)[..., :-1]
-        masks_probs = masks_queries_logits.sigmoid()  # [batch_size, num_queries, height, width]
-
-        segmentation_logits = torch.einsum("bqc, bqhw -> bchw", masks_classes, masks_probs)
-
-        if patch_offsets:
-            output_logits = self.merge_image_patches(segmentation_logits, patch_offsets, target_sizes, size)
-        else:
-            output_logits = []
-
-            for idx in range(len(segmentation_logits)):
-                resized_logits = torch.nn.functional.interpolate(
-                    segmentation_logits[idx].unsqueeze(dim=0),
-                    size=target_sizes[idx],
-                    mode="bilinear",
-                    align_corners=False,
-                )
-                output_logits.append(resized_logits[0])
-
-        return output_logits
 
 
 class TorchVisionModel(torch.nn.Module):
@@ -747,7 +457,7 @@ class SemanticSegmentationModels:
                         **kwargs,
                     )
                 model = transformers.ConditionalDetrForSegmentation(config)
-            model = TransformersModel(model, processor, self.input_shape, self.y_nodata, "conditional_detr", True)
+            model = TransformersModel(model, processor, self.input_shape, self.y_nodata, True)
         elif model_name == "Data2Vec":
             if weights is not None:
                 processor = transformers.AutoImageProcessor.from_pretrained(
@@ -831,7 +541,7 @@ class SemanticSegmentationModels:
                         **kwargs,
                     )
                 model = transformers.DetrForSegmentation(config)
-            model = TransformersModel(model, processor, self.input_shape, self.y_nodata, "detr", True)
+            model = TransformersModel(model, processor, self.input_shape, self.y_nodata, True)
         elif model_name == "DPT":
             if weights is not None:
                 processor = transformers.DPTImageProcessor.from_pretrained(
@@ -909,7 +619,7 @@ class SemanticSegmentationModels:
                     **kwargs,
                 )
                 model = transformers.EomtForUniversalSegmentation(config)
-            model = TransformersModel(model, processor, self.input_shape, self.y_nodata, "eomt")
+            model = TransformersModel(model, processor, self.input_shape, self.y_nodata)
         elif model_name == "EoMT-DINOv3":
             if weights is not None:
                 processor = transformers.EomtImageProcessor.from_pretrained(
@@ -949,7 +659,7 @@ class SemanticSegmentationModels:
                     **kwargs,
                 )
                 model = transformers.EomtDinov3ForUniversalSegmentation(config)
-            model = TransformersModel(model, processor, self.input_shape, self.y_nodata, "eomt")
+            model = TransformersModel(model, processor, self.input_shape, self.y_nodata)
         elif model_name == "Mask2Former":
             if weights is not None:
                 processor = transformers.Mask2FormerImageProcessor.from_pretrained(
@@ -999,7 +709,7 @@ class SemanticSegmentationModels:
                     **kwargs,
                 )
                 model = transformers.Mask2FormerForUniversalSegmentation(config)
-            model = TransformersModel(model, processor, self.input_shape, self.y_nodata, "maskformer")
+            model = TransformersModel(model, processor, self.input_shape, self.y_nodata)
         elif model_name == "MaskFormer":
             if weights is not None:
                 processor = transformers.MaskFormerImageProcessor.from_pretrained(
@@ -1047,7 +757,7 @@ class SemanticSegmentationModels:
                     **kwargs,
                 )
                 model = transformers.MaskFormerForInstanceSegmentation(config)
-            model = TransformersModel(model, processor, self.input_shape, self.y_nodata, "maskformer")
+            model = TransformersModel(model, processor, self.input_shape, self.y_nodata)
         elif model_name == "MobileNetV2":
             if weights is not None:
                 processor = transformers.MobileNetV2ImageProcessor.from_pretrained(
@@ -1237,7 +947,7 @@ class SemanticSegmentationModels:
                     **kwargs,
                 )
                 model = transformers.OneFormerForUniversalSegmentation(config)
-            model = TransformersModel(model, processor, self.input_shape, self.y_nodata, "maskformer")
+            model = TransformersModel(model, processor, self.input_shape, self.y_nodata)
             Path(temp.name).unlink()
         elif model_name == "SegFormer":
             if weights is not None:

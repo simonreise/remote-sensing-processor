@@ -49,7 +49,7 @@ def process(
         If True, will use interpolation to fill in the gaps.
         If an integer or float is passed, will fill the gaps with that value.
     fill_distance : int (default = 250)
-        Fill distance for `fill_nodata` function.
+        Fill distance for `fill_nodata` function. Only works if `fill_nodata=True`.
     clip : string (optional)
         Path to a vector file to be used to crop the image.
     crs : string (optional)

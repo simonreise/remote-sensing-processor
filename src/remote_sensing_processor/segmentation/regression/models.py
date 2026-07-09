@@ -219,12 +219,12 @@ class TransformersModel(torch.nn.Module):
     def __init__(
         self,
         model: transformers.PreTrainedModel,
-        preprocessor: transformers.BaseImageProcessor,
+        processor: transformers.BaseImageProcessor,
         input_shape: int,
     ) -> None:
         super().__init__()
         self.model = model
-        self.processor = preprocessor
+        self.processor = processor
         self.input_shape = input_shape
 
     def forward(self, batch: dict) -> tuple[torch.Tensor, torch.Tensor]:
@@ -243,56 +243,14 @@ class TransformersModel(torch.nn.Module):
         # Get loss
         loss = pred.loss
         # Postprocess
-        pred = self.post_process_regression(
+        pred = self.processor.post_process_semantic_segmentation(
             pred,
             target_sizes=[(self.input_shape, self.input_shape)] * x.shape[0],
+            return_segmentation_scores=True,
         )
+        pred = [x["segmentation_scores"] for x in pred]
         pred = torch.stack(pred)
         return pred, loss
-
-    def post_process_regression(self, outputs: Any, target_sizes: Optional[list[tuple]] = None) -> list[torch.Tensor]:
-        """
-        Adapted from post_process_semantic_segmentation.
-
-        Converts the output of [`SegformerForSemanticSegmentation`] into regression maps. Only supports PyTorch.
-
-        Parameters
-        ----------
-            outputs ([`SegformerForSemanticSegmentation`]):
-                Raw outputs of the model.
-            target_sizes (`List[Tuple]` of length `batch_size`, *optional*):
-                List of tuples corresponding to the requested final size (height, width) of each prediction. If unset,
-                predictions will not be resized.
-
-        Returns
-        -------
-            regression: `List[torch.Tensor]` of length `batch_size`, where each item is a regression
-             map of shape (height, width) corresponding to the target_sizes entry (if `target_sizes` is
-            specified). Each entry of each `torch.Tensor` correspond to a semantic class id.
-        """
-        logits = outputs.logits
-
-        # Resize logits and compute semantic segmentation maps
-        if target_sizes is not None:
-            if len(logits) != len(target_sizes):
-                raise ValueError("Make sure that you pass in as many target sizes as the batch dimension of the logits")
-
-            regression = []
-
-            for idx in range(len(logits)):
-                resized_logits = torch.nn.functional.interpolate(
-                    logits[idx].unsqueeze(dim=0),
-                    size=target_sizes[idx],
-                    mode="bilinear",
-                    align_corners=False,
-                )
-                semantic_map = resized_logits[0]
-                regression.append(semantic_map)
-        else:
-            regression = logits
-            regression = [regression[i] for i in range(regression.shape[0])]
-
-        return regression
 
 
 class TorchVisionModel(torch.nn.Module):
