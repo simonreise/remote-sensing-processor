@@ -165,6 +165,8 @@ def get_index(
             bands = add_constants(bands, {"lambdaN": 850, "lambdaR": 678, "lambdaS1": 1610})
         elif index == "GDVI":
             bands = add_constants(bands, {"nexp": 1.0})
+        elif index == "GRARI":
+            bands = add_constants(bands, {"eta": 0.5, "lmb": 1})
         if index == "IAVI":
             bands = add_constants(bands, {"gamma": 1.0})
         elif index == "IBI":
