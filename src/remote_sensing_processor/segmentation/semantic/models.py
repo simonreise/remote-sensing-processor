@@ -983,6 +983,40 @@ class SemanticSegmentationModels:
                 )
                 model = transformers.SegformerForSemanticSegmentation(config)
             model = TransformersModel(model, processor, self.input_shape, self.y_nodata)
+        elif model_name == "TIPSv2DPT":
+            if weights is not None:
+                processor = transformers.Tipsv2DptImageProcessor.from_pretrained(
+                    weights,
+                    use_fast=True,
+                    do_resize=False,
+                    do_normalize=False,
+                    do_rescale=False,
+                )
+                model = transformers.Tipsv2DptForSemanticSegmentation.from_pretrained(
+                    weights,
+                    ignore_mismatched_sizes=True,
+                    num_channels=self.input_dims,
+                    id2label=id2label,
+                    label2id=label2id,
+                    semantic_loss_ignore_index=self.y_nodata,
+                    **kwargs,
+                )
+                model.train()
+            else:
+                processor = transformers.Tipsv2DptImageProcessor(
+                    do_resize=False,
+                    do_normalize=False,
+                    do_rescale=False,
+                )
+                config = transformers.Tipsv2DptConfig(
+                    num_channels=self.input_dims,
+                    id2label=id2label,
+                    label2id=label2id,
+                    semantic_loss_ignore_index=self.y_nodata,
+                    **kwargs,
+                )
+                model = transformers.Tipsv2DptForSemanticSegmentation(config)
+            model = TransformersModel(model, processor, self.input_shape, self.y_nodata)
         elif model_name == "UperNet":
             if weights is not None:
                 processor = transformers.SegformerImageProcessor.from_pretrained(
@@ -1423,6 +1457,7 @@ pytorch_models = [
     "MobileViTV2",
     "OneFormer",
     "SegFormer",
+    "TIPSv2DPT",
     "UperNet",
     "DeepLabV3",
     "FCN",

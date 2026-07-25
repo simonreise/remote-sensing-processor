@@ -95,7 +95,6 @@ Then we prepare data to semantic segmentation model training. We use Landsat and
 from glob import glob
 import remote_sensing_processor as rsp
 
-
 # Getting a list of Landsat images
 landsat_imgs = glob("/home/rsp_test/landsats/*.zip")
 
@@ -104,31 +103,31 @@ landsat_imgs = glob("/home/rsp_test/landsats/*.zip")
 # We also normalize data values to range from 0 to 1
 output_landsats = rsp.landsat(landsat_imgs, normalize=True)
 
-# Merging Landsat images into one mosaic 
+# Merging Landsat images into one mosaic
 # in order from images with less nodata pixels on top to images with most nodata on bottom
 # filling the gaps, clipping it to the region of interest and reprojecting to the crs we need
 border = "/home/rsp_test/border.gpkg"
 mosaic_landsat = rsp.mosaic(
-	output_landsats, 
-	"/home/rsp_test/mosaics/landsat/",
+    output_landsats,
+    "/home/rsp_test/mosaics/landsat/",
     fill_nodata=True,
-	clip=border,
-	crs="EPSG:4326",
-	nodata_order=True,
+    clip=border,
+    crs="EPSG:4326",
+    nodata_order=True,
 )
 
 # Calculating NDVI for Landsat mosaic
 ndvi = rsp.calculate_index("NDVI", mosaic_landsat)
 
-# Merging DEM files into mosaic 
+# Merging DEM files into mosaic
 # and matching it to resolution and projection of a reference file (one of Landsat mosaic bands)
 dems = glob("/home/rsp_test/dem/*.tif")
 mosaic_dem = rsp.mosaic(
-	dems, 
-	"/home/rsp_test/mosaics/dem/", 
-	clip=border, 
-	reference_raster="/home/rsp_test/mosaics/landsat/B1.tif", 
-	nodata=0,
+    dems,
+    "/home/rsp_test/mosaics/dem/",
+    clip=border,
+    reference_raster="/home/rsp_test/mosaics/landsat/B1.tif",
+    nodata=0,
 )
 
 # Applying min/max normalization to DEM mosaic (heights in our region of interest are in range from 100 to 1000)
@@ -147,31 +146,31 @@ slope = rsp.dem.slope(
 )
 
 # Preparing data for semantic segmentation
-# Cut Landsat and DEM (training data) and landcover (target variable) data to 256x256 px tiles, 
+# Cut Landsat and DEM (training data) and landcover (target variable) data to 256x256 px tiles,
 # random shuffle samples, split data into train, validation and test subsets in proportion 3 to 1 to 1
 # If target variable is a vector, it can be automatically rasterized
 x = mosaic_landsat + dem + slope
 landcover_shp = "/home/rsp_test/landcover/types.shp"
 y = {"name": "landcover", "path": landcover_shp, "value": "type"}
 dataset = rsp.semantic.generate_tiles(
-	x, 
-	y,
+    x,
+    y,
     "/home/rsp_test/model/landcover_dataset.rspds",
-	tile_size=256,
-	shuffle=True,
-	split={"train": 3, "validation": 1, "test": 1},
+    tile_size=256,
+    shuffle=True,
+    split={"train": 3, "validation": 1, "test": 1},
 )
 
 # Training UperNet that predicts landcover class based on Landsat and DEM
 train_ds = {"path": dataset, "sub": "train", "y": "landcover"}
 val_ds = {"path": dataset, "sub": "validation", "y": "landcover"}
 model = rsp.semantic.train(
-	train_ds,
-	val_ds,
+    train_ds,
+    val_ds,
     model_file="/home/rsp_test/model/upernet.ckpt",
-	model="UperNet", 
-	backbone="ConvNeXTV2",
-	epochs={"max_epochs":100, "early_stopping": True, "patience": 10},
+    model="UperNet",
+    backbone="ConvNeXTV2",
+    epochs={"max_epochs": 100, "early_stopping": True, "patience": 10},
     augment=True,
     num_workers="auto",
 )

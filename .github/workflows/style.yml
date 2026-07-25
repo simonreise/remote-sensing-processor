@@ -20,6 +20,6 @@ jobs:
       - name: Install dependencies
         run: pip install .[tests]
       - name: Run Ruff Linter
-        run: ruff check --output-format=github
+        run: ruff check --output-format github
       - name: Run Ruff Formatter
-        run: ruff format --check
+        run: ruff format --check --output-format github
