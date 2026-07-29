@@ -1,6 +1,7 @@
 # Release History
 
 ## 0.3.1 (2026-xx-xx)
+- Added TIPSv2DPT model support
 - Now you can set an int or float as `fill_nodata` to fill the gaps with that value
 - Multiple bug fixes and performance optimizations
 

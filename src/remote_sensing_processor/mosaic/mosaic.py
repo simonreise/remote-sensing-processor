@@ -23,7 +23,7 @@ from remote_sensing_processor.common.common_raster import (
     reproject_match,
     write_dataset,
 )
-from remote_sensing_processor.common.dataset import is_multiband, read_dataset
+from remote_sensing_processor.common.dataset import is_multi_asset, read_dataset
 from remote_sensing_processor.common.fill import fillnodata
 from remote_sensing_processor.common.match_hist import histogram_match
 from remote_sensing_processor.common.types import CRS, DirectoryPath, FilePath, NewPath, PystacItem
@@ -139,7 +139,7 @@ def mosaic(
     """
     # Reading datasets
     datasets = [read_dataset(i) for i in inputs]
-    mb = is_multiband(datasets[0])
+    mb = is_multi_asset(datasets[0])
 
     # If datasets are single-band, then we should give the same name to their assets
     if not mb:

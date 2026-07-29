@@ -18,6 +18,7 @@ from stactools.core.utils import antimeridian
 
 from remote_sensing_processor.common.common_functions import ping
 from remote_sensing_processor.common.dataset import (
+    _bbox_to_polygon,
     add_asset,
     add_rsp_metadata,
     etree_to_dict,
@@ -741,15 +742,15 @@ def read_sentinel2_dataset(path):
                 item=stac,
                 name="coastal",
                 path=prepare_band(b1, archive),
-                common_name="coastal",
+                band_common_names="coastal",
                 title="Band 1 - Coastal aerosol",
                 description="Band 1 - Coastal aerosol",
-                bname="B01",
+                band_names="B01",
                 roles=["data"],
                 gsd=60,
-                center_wavelength=0.443,
-                nodata=0,
-                dtype="uint16",
+                band_center_wavelengths=0.443,
+                band_nodata=0,
+                band_dtypes="uint16",
                 shape=shape_60,
                 transform=transform_60,
             )
@@ -758,60 +759,60 @@ def read_sentinel2_dataset(path):
                 item=stac,
                 name="blue",
                 path=prepare_band(b2, archive),
-                common_name="blue",
+                band_common_names="blue",
                 title="Band 2 - Blue",
                 description="Band 2 - Blue",
-                bname="B02",
+                band_names="B02",
                 roles=["data"],
                 gsd=10,
-                center_wavelength=0.49,
-                nodata=0,
-                dtype="uint16",
+                band_center_wavelengths=0.49,
+                band_nodata=0,
+                band_dtypes="uint16",
             )
         if b3 is not None:
             add_asset(
                 item=stac,
                 name="green",
                 path=prepare_band(b3, archive),
-                common_name="green",
+                band_common_names="green",
                 title="Band 3 - Green",
                 description="Band 3 - Green",
-                bname="B03",
+                band_names="B03",
                 roles=["data"],
                 gsd=10,
-                center_wavelength=0.56,
-                nodata=0,
-                dtype="uint16",
+                band_center_wavelengths=0.56,
+                band_nodata=0,
+                band_dtypes="uint16",
             )
         if b4 is not None:
             add_asset(
                 item=stac,
                 name="red",
                 path=prepare_band(b4, archive),
-                common_name="red",
+                band_common_names="red",
                 title="Band 4 - Red",
                 description="Band 4 - Red",
-                bname="B04",
+                band_names="B04",
                 roles=["data"],
                 gsd=10,
-                center_wavelength=0.665,
-                nodata=0,
-                dtype="uint16",
+                band_center_wavelengths=0.665,
+                band_nodata=0,
+                band_dtypes="uint16",
             )
         if b5 is not None:
             add_asset(
                 item=stac,
                 name="rededge071",
                 path=prepare_band(b5, archive),
-                common_name="rededge",
+                band_common_names="rededge",
                 title="Band 5 - Vegetation red edge 1",
                 description="Band 5 - Vegetation red edge 1",
-                bname="B05",
+                band_names="B05",
                 roles=["data"],
                 gsd=20,
-                center_wavelength=0.704,
-                nodata=0,
-                dtype="uint16",
+                band_center_wavelengths=0.704,
+                band_nodata=0,
+                band_dtypes="uint16",
                 shape=shape_20,
                 transform=transform_20,
             )
@@ -820,15 +821,15 @@ def read_sentinel2_dataset(path):
                 item=stac,
                 name="rededge075",
                 path=prepare_band(b6, archive),
-                common_name="rededge",
+                band_common_names="rededge",
                 title="Band 6 - Vegetation red edge 2",
                 description="Band 6 - Vegetation red edge 2",
-                bname="B06",
+                band_names="B06",
                 roles=["data"],
                 gsd=20,
-                center_wavelength=0.74,
-                nodata=0,
-                dtype="uint16",
+                band_center_wavelengths=0.74,
+                band_nodata=0,
+                band_dtypes="uint16",
                 shape=shape_20,
                 transform=transform_20,
             )
@@ -837,15 +838,15 @@ def read_sentinel2_dataset(path):
                 item=stac,
                 name="rededge078",
                 path=prepare_band(b7, archive),
-                common_name="rededge",
+                band_common_names="rededge",
                 title="Band 7 - Vegetation red edge 3",
                 description="Band 7 - Vegetation red edge 3",
-                bname="B07",
+                band_names="B07",
                 roles=["data"],
                 gsd=20,
-                center_wavelength=0.783,
-                nodata=0,
-                dtype="uint16",
+                band_center_wavelengths=0.783,
+                band_nodata=0,
+                band_dtypes="uint16",
                 shape=shape_20,
                 transform=transform_20,
             )
@@ -854,30 +855,30 @@ def read_sentinel2_dataset(path):
                 item=stac,
                 name="nir",
                 path=prepare_band(b8, archive),
-                common_name="nir",
+                band_common_names="nir",
                 title="Band 8 - NIR",
                 description="Band 8 - NIR",
-                bname="B08",
+                band_names="B08",
                 roles=["data"],
                 gsd=10,
-                center_wavelength=0.842,
-                nodata=0,
-                dtype="uint16",
+                band_center_wavelengths=0.842,
+                band_nodata=0,
+                band_dtypes="uint16",
             )
         if b8a is not None:
             add_asset(
                 item=stac,
                 name="nir08",
                 path=prepare_band(b8a, archive),
-                common_name="nir08",
+                band_common_names="nir08",
                 title="Band 8A - Vegetation red edge 4",
                 description="Band 8A - Vegetation red edge 4",
-                bname="B8A",
+                band_names="B8A",
                 roles=["data"],
                 gsd=20,
-                center_wavelength=0.865,
-                nodata=0,
-                dtype="uint16",
+                band_center_wavelengths=0.865,
+                band_nodata=0,
+                band_dtypes="uint16",
                 shape=shape_20,
                 transform=transform_20,
             )
@@ -886,15 +887,15 @@ def read_sentinel2_dataset(path):
                 item=stac,
                 name="nir09",
                 path=prepare_band(b9, archive),
-                common_name="nir09",
+                band_common_names="nir09",
                 title="Band 9 - Water vapor",
                 description="Band 9 - Water vapor",
-                bname="B09",
+                band_names="B09",
                 roles=["data"],
                 gsd=60,
-                center_wavelength=0.945,
-                nodata=0,
-                dtype="uint16",
+                band_center_wavelengths=0.945,
+                band_nodata=0,
+                band_dtypes="uint16",
                 shape=shape_60,
                 transform=transform_60,
             )
@@ -903,15 +904,15 @@ def read_sentinel2_dataset(path):
                 item=stac,
                 name="cirrus",
                 path=prepare_band(b10, archive),
-                common_name="cirrus",
+                band_common_names="cirrus",
                 title="Band 10 - Cirrus",
                 description="Band 10 - Cirrus",
-                bname="B10",
+                band_names="B10",
                 roles=["data"],
                 gsd=60,
-                center_wavelength=1.374,
-                nodata=0,
-                dtype="uint16",
+                band_center_wavelengths=1.374,
+                band_nodata=0,
+                band_dtypes="uint16",
                 shape=shape_60,
                 transform=transform_60,
             )
@@ -920,15 +921,15 @@ def read_sentinel2_dataset(path):
                 item=stac,
                 name="swir16",
                 path=prepare_band(b11, archive),
-                common_name="swir16",
+                band_common_names="swir16",
                 title="Band 11 - SWIR (1.6)",
                 description="Band 11 - SWIR (1.6)",
-                bname="B11",
+                band_names="B11",
                 roles=["data"],
                 gsd=20,
-                center_wavelength=1.61,
-                nodata=0,
-                dtype="uint16",
+                band_center_wavelengths=1.61,
+                band_nodata=0,
+                band_dtypes="uint16",
                 shape=shape_20,
                 transform=transform_20,
             )
@@ -937,15 +938,15 @@ def read_sentinel2_dataset(path):
                 item=stac,
                 name="swir22",
                 path=prepare_band(b12, archive),
-                common_name="swir22",
+                band_common_names="swir22",
                 title="Band 12 - SWIR (2.2)",
                 description="Band 12 - SWIR (2.2)",
-                bname="B12",
+                band_names="B12",
                 roles=["data"],
                 gsd=20,
-                center_wavelength=2.19,
-                nodata=0,
-                dtype="uint16",
+                band_center_wavelengths=2.19,
+                band_nodata=0,
+                band_dtypes="uint16",
                 shape=shape_20,
                 transform=transform_20,
             )
@@ -956,12 +957,12 @@ def read_sentinel2_dataset(path):
                 path=prepare_band(scl, archive),
                 title="Scene classfication map (SCL)",
                 description="Scene classfication map (SCL)",
-                bname="SCL",
+                band_names="SCL",
                 roles=["cloud"],
                 gsd=20,
-                center_wavelength=0,
-                nodata=0,
-                dtype="uint8",
+                band_center_wavelengths=0,
+                band_nodata=0,
+                band_dtypes="uint8",
                 shape=shape_20,
                 transform=transform_20,
             )
@@ -972,12 +973,12 @@ def read_sentinel2_dataset(path):
                 path=prepare_band(cldmsk, archive),
                 title="Cloud Mask",
                 description="Cloud Mask",
-                bname="MSK_CLOUDS",
+                band_names="MSK_CLOUDS",
                 roles=["cloud"],
                 gsd=20,
-                center_wavelength=0,
-                nodata=0,
-                dtype="uint8",
+                band_center_wavelengths=0,
+                band_nodata=0,
+                band_dtypes="uint8",
                 shape=shape_60,
                 transform=transform_60,
             )
@@ -988,12 +989,12 @@ def read_sentinel2_dataset(path):
                 path=prepare_band(cldprb, archive),
                 title="Cloud Probability Mask",
                 description="Cloud Probability Mask",
-                bname="CLDPRB",
+                band_names="CLDPRB",
                 roles=["cloud"],
                 gsd=20,
-                center_wavelength=0,
-                nodata=0,
-                dtype="uint8",
+                band_center_wavelengths=0,
+                band_nodata=0,
+                band_dtypes="uint8",
                 shape=shape_20,
                 transform=transform_20,
             )
@@ -1024,30 +1025,27 @@ def postprocess_sentinel2_dataset(dataset, imgs, json_path, upscale):
         for asset in dataset.assets:
             dataset.assets[asset].common_metadata.gsd = 10
 
-    # Changing datatypes
+    # Changing datatypes and nodata
     for i in imgs:
         for band in i:
             if (
                 dataset.assets[band].ext.has("raster")
                 and dataset.assets[band].ext.raster.bands is not None
             ):
-                dataset.assets[band].ext.raster.bands[0].data_type = i[band].dtype.name
+                raster_bands = dataset.assets[band].ext.raster.bands
+                if raster_bands[0].data_type is not None:
+                    raster_bands[0].data_type = i[band].dtype.name
+                if raster_bands[0].nodata is not None and i[band].rio.nodata is not None:
+                    raster_bands[0].nodata = float(i[band].rio.nodata)
 
     # Updating projection info
-    dataset.ext.proj.shape = list(imgs[0].red.shape[-2:])
-    dataset.ext.proj.transform = list(imgs[0].red.rio.transform())[:6]
-    dataset.ext.proj.epsg = imgs[0].red.rio.crs.to_epsg()
-    dataset.bbox = list(transform_bounds(imgs[0].red.rio.crs, "EPSG:4326", *imgs[0].red.rio.bounds()))
-    dataset.geometry["type"] = "Polygon"
-    dataset.geometry["coordinates"] = [
-        [
-            [dataset.bbox[0], dataset.bbox[1]],  # LL
-            [dataset.bbox[2], dataset.bbox[1]],  # UL
-            [dataset.bbox[2], dataset.bbox[3]],  # UR
-            [dataset.bbox[0], dataset.bbox[3]],  # LR
-            [dataset.bbox[0], dataset.bbox[1]],  # LL
-        ],
-    ]
+    ref_var = imgs[0].red
+    dataset.ext.proj.shape = list(ref_var.shape[-2:])
+    dataset.ext.proj.transform = list(ref_var.rio.transform())[:6]
+    dataset.ext.proj.epsg = ref_var.rio.crs.to_epsg()
+    # noinspection PyTypeChecker
+    dataset.bbox = list(transform_bounds(ref_var.rio.crs, "EPSG:4326", *ref_var.rio.bounds()))
+    dataset.geometry = _bbox_to_polygon(dataset.bbox)
 
     # Updating projection info for each asset
     if len(imgs) == 1:
@@ -1067,7 +1065,9 @@ def postprocess_sentinel2_dataset(dataset, imgs, json_path, upscale):
                     dataset.assets[band].ext.proj.transform = list(i[band].rio.transform())[:6]
 
     # Adding self link
-    dataset.set_self_href(json_path)
+    dataset.clear_links()
+    dataset.collection_id = None
+    dataset.set_self_href(json_path if isinstance(json_path, str) else json_path.as_posix())
 
     # Fix geometries if needed
     dataset = antimeridian.fix_item(dataset, antimeridian.Strategy.SPLIT)

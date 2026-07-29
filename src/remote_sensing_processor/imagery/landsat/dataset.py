@@ -26,6 +26,7 @@ from pystac.extensions.view import ViewExtension
 from stactools.core.utils import antimeridian
 
 from remote_sensing_processor.common.dataset import (
+    _bbox_to_polygon,
     add_asset,
     add_rsp_metadata,
     filter_bands,
@@ -584,105 +585,105 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="coastal",
                     path=b1 if b1 else "B1.TIF",
-                    common_name="coastal",
+                    band_common_names="coastal",
                     title="Coastal/Aerosol Band (B1)",
                     description="Collection " + col + " Level-" + lvl + " Coastal/Aerosol Band (B1) " + sfx,
-                    bname="B1",
+                    band_names="B1",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.443,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.443,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b2 is not None:
                 add_asset(
                     item=stac,
                     name="blue",
                     path=b2 if b2 else "B2.TIF",
-                    common_name="blue",
+                    band_common_names="blue",
                     title="Blue Band (B2)",
                     description="Collection " + col + " Level-" + lvl + " Blue Band (B2) " + sfx,
-                    bname="B2",
+                    band_names="B2",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.482,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.482,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b3 is not None:
                 add_asset(
                     item=stac,
                     name="green",
                     path=b3 if b3 else "B3.TIF",
-                    common_name="green",
+                    band_common_names="green",
                     title="Green Band (B3)",
                     description="Collection " + col + " Level-" + lvl + " Green Band (B3) " + sfx,
-                    bname="B3",
+                    band_names="B3",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.561,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.561,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b4 is not None:
                 add_asset(
                     item=stac,
                     name="red",
                     path=b4 if b4 else "B4.TIF",
-                    common_name="red",
+                    band_common_names="red",
                     title="Red Band (B4)",
                     description="Collection " + col + " Level-" + lvl + " Red Band (B4) " + sfx,
-                    bname="B4",
+                    band_names="B4",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.654,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.654,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b5 is not None:
                 add_asset(
                     item=stac,
                     name="nir08",
                     path=b5 if b5 else "B5.TIF",
-                    common_name="nir08",
+                    band_common_names="nir08",
                     title="Near Infrared Band 0.8 (B5)",
                     description="Collection " + col + " Level-" + lvl + " Near Infrared Band 0.8 (B5) " + sfx,
-                    bname="B5",
+                    band_names="B5",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.865,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.865,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b6 is not None:
                 add_asset(
                     item=stac,
                     name="swir16",
                     path=b6 if b6 else "B6.TIF",
-                    common_name="swir16",
+                    band_common_names="swir16",
                     title="Short-wave Infrared Band 1.6 (B6)",
                     description="Collection " + col + " Level-" + lvl + " Short-wave Infrared Band 1.6 (B6) " + sfx,
-                    bname="B6",
+                    band_names="B6",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=1.608,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=1.608,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b7 is not None:
                 add_asset(
                     item=stac,
                     name="swir22",
                     path=b7 if b7 else "B7.TIF",
-                    common_name="swir22",
+                    band_common_names="swir22",
                     title="Short-wave Infrared Band 2.2 (B7)",
                     description="Collection " + col + " Level-" + lvl + " Short-wave Infrared Band 2.2 (B7) " + sfx,
-                    bname="B7",
+                    band_names="B7",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=2.2,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=2.2,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if lvl == "1":
                 if b8 is not None:
@@ -690,15 +691,15 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                         item=stac,
                         name="pan",
                         path=b8 if b8 else "B8.TIF",
-                        common_name="pan",
+                        band_common_names="pan",
                         title="Panchromatic Band (B8)",
                         description="Collection " + col + " Level-" + lvl + " Panchromatic Band (B8) " + sfx,
-                        bname="B8",
+                        band_names="B8",
                         roles=["data"],
                         gsd=gsd_pan,
-                        center_wavelength=0.589,
-                        nodata=0,
-                        dtype=dtype,
+                        band_center_wavelengths=0.589,
+                        band_nodata=0,
+                        band_dtypes=dtype,
                         shape=pan_sr_shape,
                         transform=pan_transform,
                     )
@@ -707,55 +708,55 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                         item=stac,
                         name="cirrus",
                         path=b9 if b9 else "B9.TIF",
-                        common_name="cirrus",
+                        band_common_names="cirrus",
                         title="Cirrus Band (B9)",
                         description="Collection " + col + " Level-" + lvl + " Cirrus Band (B9) " + sfx,
-                        bname="B9",
+                        band_names="B9",
                         roles=["data"],
                         gsd=gsd_ref,
-                        center_wavelength=1.373,
-                        nodata=0,
-                        dtype=dtype,
+                        band_center_wavelengths=1.373,
+                        band_nodata=0,
+                        band_dtypes=dtype,
                     )
             if b10 is not None:
                 add_asset(
                     item=stac,
                     name="lwir11",
                     path=b10 if b10 else "B10.TIF",
-                    common_name="lwir11",
+                    band_common_names="lwir11",
                     title="Thermal Infrared Band 10.9 (B10)",
                     description="Collection " + col + " Level-" + lvl + " Thermal Infrared Band 10.9 (B10) " + sfx,
-                    bname="B10",
+                    band_names="B10",
                     roles=["data", "temperature"],
                     gsd=gsd_the,
-                    center_wavelength=10.888,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=10.888,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if lvl == "1" and b11 is not None:
                 add_asset(
                     item=stac,
                     name="lwir12",
                     path=b11 if b11 else "B11.TIF",
-                    common_name="lwir12",
+                    band_common_names="lwir12",
                     title="Thermal Infrared Band 12.0 (B11)",
                     description="Collection " + col + " Level-" + lvl + " Thermal Infrared Band 12.0 (B11) " + sfx,
-                    bname="B11",
+                    band_names="B11",
                     roles=["data", "temperature"],
                     gsd=gsd_the,
-                    center_wavelength=12.01,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=12.01,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if qa is not None:
                 add_asset(
                     item=stac,
                     name="qa_pixel",
                     path=qa if qa else "QA_PIXEL.TIF",
-                    common_name="qa_pixel",
+                    band_common_names="qa_pixel",
                     title="Pixel Quality Assessment Band",
                     description="Collection " + col + " Level-" + lvl + " Pixel Quality Assessment Band " + sfx,
-                    bname="QA",
+                    band_names="QA",
                     roles=["cloud", "cloud-shadow", "snow-ice", "water-mask"],
                 )
             if qar is not None:
@@ -763,7 +764,7 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="qa_radsat",
                     path=qar if qar else "QA_RADSAT.TIF",
-                    common_name="qa_radsat",
+                    band_common_names="qa_radsat",
                     title="Radiometric Saturation Quality Assessment Band",
                     description="Collection "
                     + col
@@ -771,7 +772,7 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     + lvl
                     + " Radiometric Saturation Quality Assessment Band "
                     + sfx,
-                    bname="QA_RADSAT",
+                    band_names="QA_RADSAT",
                     roles=["saturation"],
                 )
             if lvl == "2" and qaa is not None:
@@ -779,10 +780,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="qa_aerosol",
                     path=qaa if qaa else "QA_AEROSOL.TIF",
-                    common_name="qa_aerosol",
+                    band_common_names="qa_aerosol",
                     title="Aerosol Quality Analysis Band",
                     description="Collection " + col + " Level-" + lvl + " Aerosol Quality Analysis Band " + sfx,
-                    bname="QA_AEROSOL",
+                    band_names="QA_AEROSOL",
                     roles=["metadata", "data-mask", "water-mask"],
                 )
             if lvl == "2" and qat is not None:
@@ -790,7 +791,7 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="qa",
                     path=qat if qat else "ST_QA.TIF",
-                    common_name="qa",
+                    band_common_names="qa",
                     title="Surface Temperature Quality Assessment Band",
                     description="Collection "
                     + col
@@ -798,7 +799,7 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     + lvl
                     + " Surface Temperature Quality Assessment Band "
                     + sfx,
-                    bname="ST_QA",
+                    band_names="ST_QA",
                     roles=["data"],
                 )
             if lvl == "2" and trad is not None:
@@ -806,10 +807,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="TRAD",
                     path=trad if trad else "TRAD.TIF",
-                    common_name="TRAD",
+                    band_common_names="TRAD",
                     title="Thermal Radiance Band",
                     description="Collection " + col + " Level-" + lvl + " Thermal Radiance Band " + sfx,
-                    bname="TRAD",
+                    band_names="TRAD",
                     roles=["data"],
                 )
             if lvl == "2" and drad is not None:
@@ -817,10 +818,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="DRAD",
                     path=drad if drad else "DRAD.TIF",
-                    common_name="DRAD",
+                    band_common_names="DRAD",
                     title="Downwelled Radiance Band",
                     description="Collection " + col + " Level-" + lvl + " Downwelled Radiance Band " + sfx,
-                    bname="DRAD",
+                    band_names="DRAD",
                     roles=["data"],
                 )
             if lvl == "2" and urad is not None:
@@ -828,10 +829,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="URAD",
                     path=urad if urad else "URAD.TIF",
-                    common_name="URAD",
+                    band_common_names="URAD",
                     title="Upwelled Radiance Band",
                     description="Collection " + col + " Level-" + lvl + " Upwelled Radiance Band " + sfx,
-                    bname="URAD",
+                    band_names="URAD",
                     roles=["data"],
                 )
             if lvl == "2" and atran is not None:
@@ -839,10 +840,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="ATRAN",
                     path=atran if atran else "ATRAN.TIF",
-                    common_name="ATRAN",
+                    band_common_names="ATRAN",
                     title="Atmospheric Transmittance Band",
                     description="Collection " + col + " Level-" + lvl + " Atmospheric Transmittance Band " + sfx,
-                    bname="ATRAN",
+                    band_names="ATRAN",
                     roles=["data"],
                 )
             if lvl == "2" and emis is not None:
@@ -850,10 +851,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="EMIS",
                     path=qar if qar else "EMIS.TIF",
-                    common_name="EMIS",
+                    band_common_names="EMIS",
                     title="Emissivity Band",
                     description="Collection " + col + " Level-" + lvl + " Emissivity Band " + sfx,
-                    bname="EMIS",
+                    band_names="EMIS",
                     roles=["data"],
                 )
             if lvl == "2" and emsd is not None:
@@ -861,10 +862,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="EMSD",
                     path=emsd if emsd else "EMSD.TIF",
-                    common_name="EMSD",
+                    band_common_names="EMSD",
                     title="Emissivity Standard Deviation Band",
                     description="Collection " + col + " Level-" + lvl + " Emissivity Standard Deviation Band " + sfx,
-                    bname="EMSD",
+                    band_names="EMSD",
                     roles=["data"],
                 )
             if lvl == "2" and cdist is not None:
@@ -872,10 +873,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="CDIST",
                     path=cdist if cdist else "CDIST.TIF",
-                    common_name="CDIST",
+                    band_common_names="CDIST",
                     title="Cloud Distance Band",
                     description="Collection " + col + " Level-" + lvl + " Cloud Distance Band " + sfx,
-                    bname="CDIST",
+                    band_names="CDIST",
                     roles=["data"],
                 )
         elif "Landsat_etm" in rsp_type:
@@ -884,135 +885,135 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="blue",
                     path=b1 if b1 else "B1.TIF",
-                    common_name="blue",
+                    band_common_names="blue",
                     title="Blue Band (B1)",
                     description="Collection " + col + " Level-" + lvl + " Blue Band (B1) " + sfx,
-                    bname="B1",
+                    band_names="B1",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.477,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.477,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b2 is not None:
                 add_asset(
                     item=stac,
                     name="green",
                     path=b2 if b2 else "B2.TIF",
-                    common_name="green",
+                    band_common_names="green",
                     title="Green Band (B2)",
                     description="Collection " + col + " Level-" + lvl + " Green Band (B2) " + sfx,
-                    bname="B2",
+                    band_names="B2",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.56,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.56,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b3 is not None:
                 add_asset(
                     item=stac,
                     name="red",
                     path=b3 if b3 else "B3.TIF",
-                    common_name="red",
+                    band_common_names="red",
                     title="Red Band (B3)",
                     description="Collection " + col + " Level-" + lvl + " Red Band (B3) " + sfx,
-                    bname="B3",
+                    band_names="B3",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.661,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.661,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b4 is not None:
                 add_asset(
                     item=stac,
                     name="nir08",
                     path=b4 if b4 else "B4.TIF",
-                    common_name="nir08",
+                    band_common_names="nir08",
                     title="Near Infrared Band 0.8 (B4)",
                     description="Collection " + col + " Level-" + lvl + " Near Infrared Band 0.8 (B4) " + sfx,
-                    bname="B4",
+                    band_names="B4",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.835,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.835,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b5 is not None:
                 add_asset(
                     item=stac,
                     name="swir16",
                     path=b5 if b5 else "B5.TIF",
-                    common_name="swir16",
+                    band_common_names="swir16",
                     title="Short-wave Infrared Band 1.6 (B5)",
                     description="Collection " + col + " Level-" + lvl + " Short-wave Infrared Band 1.6 (B5) " + sfx,
-                    bname="B5",
+                    band_names="B5",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=1.648,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=1.648,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b61 is not None:
                 add_asset(
                     item=stac,
                     name="lwir11",
                     path=b61 if b61 else "B6_VCID_1.TIF" if lvl == "1" else "B6.TIF",
-                    common_name="lwir11",
+                    band_common_names="lwir11",
                     title="Thermal Infrared Band 11.4 (B6)",
                     description="Collection " + col + " Level-" + lvl + " Thermal Infrared Band 11.4 (B6) " + sfx,
-                    bname="B6_VCID_1" if lvl == "1" else "B6",
+                    band_names="B6_VCID_1" if lvl == "1" else "B6",
                     roles=["data", "temperature"],
                     gsd=gsd_the,
-                    center_wavelength=11.45,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=11.45,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if lvl == "1" and b62 is not None:
                 add_asset(
                     item=stac,
                     name="lwir12",
                     path=b62 if b62 else "B6_VCID_2.TIF",
-                    common_name="lwir12",
+                    band_common_names="lwir12",
                     title="Thermal Infrared Band (B6) high gain",
                     description="Collection " + col + " Level-" + lvl + " Thermal Infrared Band (B6) high gain " + sfx,
-                    bname="B6_VCID_2",
+                    band_names="B6_VCID_2",
                     roles=["data", "temperature"],
                     gsd=gsd_the,
-                    center_wavelength=11.45,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=11.45,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b7 is not None:
                 add_asset(
                     item=stac,
                     name="swir22",
                     path=b7 if b7 else "B7.TIF",
-                    common_name="swir22",
+                    band_common_names="swir22",
                     title="Short-wave Infrared Band 2.2 (B7)",
                     description="Collection " + col + " Level-" + lvl + " Short-wave Infrared Band 2.2 (B7) " + sfx,
-                    bname="B7",
+                    band_names="B7",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=2.204,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=2.204,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if lvl == "1" and b8 is not None:
                 add_asset(
                     item=stac,
                     name="pan",
                     path=b8 if b8 else "B8.TIF",
-                    common_name="pan",
+                    band_common_names="pan",
                     title="Panchromatic Band (B8)",
                     description="Collection " + col + " Level-" + lvl + " Panchromatic Band (B8) " + sfx,
-                    bname="B8",
+                    band_names="B8",
                     roles=["data"],
                     gsd=gsd_pan,
-                    center_wavelength=0.71,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.71,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                     shape=pan_sr_shape,
                     transform=pan_transform,
                 )
@@ -1021,10 +1022,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="qa_pixel",
                     path=qa if qa else "QA_PIXEL.TIF",
-                    common_name="qa_pixel",
+                    band_common_names="qa_pixel",
                     title="Pixel Quality Assessment Band",
                     description="Collection " + col + " Level-" + lvl + " Pixel Quality Assessment Band " + sfx,
-                    bname="QA",
+                    band_names="QA",
                     roles=["cloud", "cloud-shadow", "snow-ice", "water-mask"],
                 )
             if qar is not None:
@@ -1032,7 +1033,7 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="qa_radsat",
                     path=qar if qar else "QA_RADSAT.TIF",
-                    common_name="qa_radsat",
+                    band_common_names="qa_radsat",
                     title="Radiometric Saturation Quality Assessment Band",
                     description="Collection "
                     + col
@@ -1040,7 +1041,7 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     + lvl
                     + " Radiometric Saturation Quality Assessment Band "
                     + sfx,
-                    bname="QA_RADSAT",
+                    band_names="QA_RADSAT",
                     roles=["saturation"],
                 )
             if lvl == "2" and qaao is not None:
@@ -1048,10 +1049,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="atmos_opacity",
                     path=qaao if qaao else "ATMOS_OPACITY.TIF",
-                    common_name="atmos_opacity",
+                    band_common_names="atmos_opacity",
                     title="Atmospheric Opacity Band",
                     description="Collection " + col + " Level-" + lvl + " Atmospheric Opacity Band " + sfx,
-                    bname="ATMOS_OPACITY",
+                    band_names="ATMOS_OPACITY",
                     roles=["data"],
                 )
             if lvl == "2" and qac is not None:
@@ -1059,10 +1060,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="cloud_qa",
                     path=qac if qac else "CLOUD_QA.TIF",
-                    common_name="cloud_qa",
+                    band_common_names="cloud_qa",
                     title="Cloud Quality Analysis Band",
                     description="Collection " + col + " Level-" + lvl + " Cloud Quality Analysis Band " + sfx,
-                    bname="CLOUD_QA",
+                    band_names="CLOUD_QA",
                     roles=["metadata", "cloud", "cloud-shadow", "snow-ice", "water-mask"],
                 )
             if lvl == "2" and qat is not None:
@@ -1070,7 +1071,7 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="qa",
                     path=qat if qat else "ST_QA.TIF",
-                    common_name="qa",
+                    band_common_names="qa",
                     title="Surface Temperature Quality Assessment Band",
                     description="Collection "
                     + col
@@ -1078,7 +1079,7 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     + lvl
                     + " Surface Temperature Quality Assessment Band "
                     + sfx,
-                    bname="ST_QA",
+                    band_names="ST_QA",
                     roles=["data"],
                 )
             if lvl == "2" and trad is not None:
@@ -1086,10 +1087,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="TRAD",
                     path=qar if qar else "TRAD.TIF",
-                    common_name="TRAD",
+                    band_common_names="TRAD",
                     title="Thermal Radiance Band",
                     description="Collection " + col + " Level-" + lvl + " Thermal Radiance Band " + sfx,
-                    bname="TRAD",
+                    band_names="TRAD",
                     roles=["data"],
                 )
             if lvl == "2" and drad is not None:
@@ -1097,10 +1098,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="DRAD",
                     path=qar if qar else "DRAD.TIF",
-                    common_name="DRAD",
+                    band_common_names="DRAD",
                     title="Downwelled Radiance Band",
                     description="Collection " + col + " Level-" + lvl + " Downwelled Radiance Band " + sfx,
-                    bname="DRAD",
+                    band_names="DRAD",
                     roles=["data"],
                 )
             if lvl == "2" and urad is not None:
@@ -1108,10 +1109,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="URAD",
                     path=qar if qar else "URAD.TIF",
-                    common_name="URAD",
+                    band_common_names="URAD",
                     title="Upwelled Radiance Band",
                     description="Collection " + col + " Level-" + lvl + " Upwelled Radiance Band " + sfx,
-                    bname="URAD",
+                    band_names="URAD",
                     roles=["data"],
                 )
             if lvl == "2" and atran is not None:
@@ -1119,10 +1120,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="ATRAN",
                     path=qar if qar else "ATRAN.TIF",
-                    common_name="ATRAN",
+                    band_common_names="ATRAN",
                     title="Atmospheric Transmittance Band",
                     description="Collection " + col + " Level-" + lvl + " Atmospheric Transmittance Band " + sfx,
-                    bname="ATRAN",
+                    band_names="ATRAN",
                     roles=["data"],
                 )
             if lvl == "2" and emis is not None:
@@ -1130,10 +1131,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="EMIS",
                     path=qar if qar else "EMIS.TIF",
-                    common_name="EMIS",
+                    band_common_names="EMIS",
                     title="Emissivity Band",
                     description="Collection " + col + " Level-" + lvl + " Emissivity Band " + sfx,
-                    bname="EMIS",
+                    band_names="EMIS",
                     roles=["data"],
                 )
             if lvl == "2" and emsd is not None:
@@ -1141,10 +1142,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="EMSD",
                     path=qar if qar else "EMSD.TIF",
-                    common_name="EMSD",
+                    band_common_names="EMSD",
                     title="Emissivity Standard Deviation Band",
                     description="Collection " + col + " Level-" + lvl + " Emissivity Standard Deviation Band " + sfx,
-                    bname="EMSD",
+                    band_names="EMSD",
                     roles=["data"],
                 )
             if lvl == "2" and cdist is not None:
@@ -1152,10 +1153,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="CDIST",
                     path=qar if qar else "CDIST.TIF",
-                    common_name="CDIST",
+                    band_common_names="CDIST",
                     title="Cloud Distance Band",
                     description="Collection " + col + " Level-" + lvl + " Cloud Distance Band " + sfx,
-                    bname="CDIST",
+                    band_names="CDIST",
                     roles=["data"],
                 )
         elif "Landsat_tm" in rsp_type:
@@ -1164,115 +1165,115 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="blue",
                     path=b1 if b1 else "B1.TIF",
-                    common_name="blue",
+                    band_common_names="blue",
                     title="Blue Band (B1)",
                     description="Collection " + col + " Level-" + lvl + " Blue Band (B1) " + sfx,
-                    bname="B1",
+                    band_names="B1",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.48,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.48,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b2 is not None:
                 add_asset(
                     item=stac,
                     name="green",
                     path=b2 if b2 else "B2.TIF",
-                    common_name="green",
+                    band_common_names="green",
                     title="Green Band (B2)",
                     description="Collection " + col + " Level-" + lvl + " Green Band (B2) " + sfx,
-                    bname="B2",
+                    band_names="B2",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.56,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.56,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b3 is not None:
                 add_asset(
                     item=stac,
                     name="red",
                     path=b3 if b3 else "B3.TIF",
-                    common_name="red",
+                    band_common_names="red",
                     title="Red Band (B3)",
                     description="Collection " + col + " Level-" + lvl + " Red Band (B3) " + sfx,
-                    bname="B3",
+                    band_names="B3",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.66,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.66,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b4 is not None:
                 add_asset(
                     item=stac,
                     name="nir08",
                     path=b4 if b4 else "B4.TIF",
-                    common_name="nir08",
+                    band_common_names="nir08",
                     title="Near Infrared Band 0.8 (B4)",
                     description="Collection " + col + " Level-" + lvl + " Near Infrared Band 0.8 (B4) " + sfx,
-                    bname="B4",
+                    band_names="B4",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.83,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.83,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b5 is not None:
                 add_asset(
                     item=stac,
                     name="swir16",
                     path=b5 if b5 else "B5.TIF",
-                    common_name="swir16",
+                    band_common_names="swir16",
                     title="Short-wave Infrared Band 1.6 (B5)",
                     description="Collection " + col + " Level-" + lvl + " Short-wave Infrared Band 1.6 (B5) " + sfx,
-                    bname="B5",
+                    band_names="B5",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=1.65,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=1.65,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b6 is not None:
                 add_asset(
                     item=stac,
                     name="lwir11",
                     path=b6 if b6 else "B6.TIF",
-                    common_name="lwir11",
+                    band_common_names="lwir11",
                     title="Thermal Infrared Band 11.4 (B6)",
                     description="Collection " + col + " Level-" + lvl + " Thermal Infrared Band 11.4 (B6) " + sfx,
-                    bname="B6",
+                    band_names="B6",
                     roles=["data", "temperature"],
                     gsd=gsd_the,
-                    center_wavelength=11.45,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=11.45,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b7 is not None:
                 add_asset(
                     item=stac,
                     name="swir22",
                     path=b7 if b7 else "B7.TIF",
-                    common_name="swir22",
+                    band_common_names="swir22",
                     title="Short-wave Infrared Band 2.2 (B7)",
                     description="Collection " + col + " Level-" + lvl + " Short-wave Infrared Band 2.2 (B7) " + sfx,
-                    bname="B7",
+                    band_names="B7",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=2.22,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=2.22,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if qa is not None:
                 add_asset(
                     item=stac,
                     name="qa_pixel",
                     path=qa if qa else "QA_PIXEL.TIF",
-                    common_name="qa_pixel",
+                    band_common_names="qa_pixel",
                     title="Pixel Quality Assessment Band",
                     description="Collection " + col + " Level-" + lvl + " Pixel Quality Assessment Band " + sfx,
-                    bname="QA",
+                    band_names="QA",
                     roles=["cloud", "cloud-shadow", "snow-ice", "water-mask"],
                 )
             if qar is not None:
@@ -1280,7 +1281,7 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="qa_radsat",
                     path=qar if qar else "QA_RADSAT.TIF",
-                    common_name="qa_radsat",
+                    band_common_names="qa_radsat",
                     title="Radiometric Saturation Quality Assessment Band",
                     description="Collection "
                     + col
@@ -1288,7 +1289,7 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     + lvl
                     + " Radiometric Saturation Quality Assessment Band "
                     + sfx,
-                    bname="QA_RADSAT",
+                    band_names="QA_RADSAT",
                     roles=["saturation"],
                 )
             if lvl == "2" and qaao is not None:
@@ -1296,10 +1297,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="atmos_opacity",
                     path=qaao if qaao else "ATMOS_OPACITY.TIF",
-                    common_name="atmos_opacity",
+                    band_common_names="atmos_opacity",
                     title="Atmospheric Opacity Band",
                     description="Collection " + col + " Level-" + lvl + " Atmospheric Opacity Band " + sfx,
-                    bname="ATMOS_OPACITY",
+                    band_names="ATMOS_OPACITY",
                     roles=["data"],
                 )
             if lvl == "2" and qac is not None:
@@ -1307,10 +1308,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="cloud_qa",
                     path=qac if qac else "CLOUD_QA.TIF",
-                    common_name="cloud_qa",
+                    band_common_names="cloud_qa",
                     title="Cloud Quality Analysis Band",
                     description="Collection " + col + " Level-" + lvl + " Cloud Quality Analysis Band " + sfx,
-                    bname="CLOUD_QA",
+                    band_names="CLOUD_QA",
                     roles=["metadata", "cloud", "cloud-shadow", "snow-ice", "water-mask"],
                 )
             if lvl == "2" and qat is not None:
@@ -1318,7 +1319,7 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="qa",
                     path=qat if qat else "ST_QA.TIF",
-                    common_name="qa",
+                    band_common_names="qa",
                     title="Surface Temperature Quality Assessment Band",
                     description="Collection "
                     + col
@@ -1326,7 +1327,7 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     + lvl
                     + " Surface Temperature Quality Assessment Band "
                     + sfx,
-                    bname="ST_QA",
+                    band_names="ST_QA",
                     roles=["data"],
                 )
             if lvl == "2" and trad is not None:
@@ -1334,10 +1335,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="TRAD",
                     path=qar if qar else "TRAD.TIF",
-                    common_name="TRAD",
+                    band_common_names="TRAD",
                     title="Thermal Radiance Band",
                     description="Collection " + col + " Level-" + lvl + " Thermal Radiance Band " + sfx,
-                    bname="TRAD",
+                    band_names="TRAD",
                     roles=["data"],
                 )
             if lvl == "2" and drad is not None:
@@ -1345,10 +1346,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="DRAD",
                     path=qar if qar else "DRAD.TIF",
-                    common_name="DRAD",
+                    band_common_names="DRAD",
                     title="Downwelled Radiance Band",
                     description="Collection " + col + " Level-" + lvl + " Downwelled Radiance Band " + sfx,
-                    bname="DRAD",
+                    band_names="DRAD",
                     roles=["data"],
                 )
             if lvl == "2" and urad is not None:
@@ -1356,10 +1357,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="URAD",
                     path=qar if qar else "URAD.TIF",
-                    common_name="URAD",
+                    band_common_names="URAD",
                     title="Upwelled Radiance Band",
                     description="Collection " + col + " Level-" + lvl + " Upwelled Radiance Band " + sfx,
-                    bname="URAD",
+                    band_names="URAD",
                     roles=["data"],
                 )
             if lvl == "2" and atran is not None:
@@ -1367,10 +1368,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="ATRAN",
                     path=qar if qar else "ATRAN.TIF",
-                    common_name="ATRAN",
+                    band_common_names="ATRAN",
                     title="Atmospheric Transmittance Band",
                     description="Collection " + col + " Level-" + lvl + " Atmospheric Transmittance Band " + sfx,
-                    bname="ATRAN",
+                    band_names="ATRAN",
                     roles=["data"],
                 )
             if lvl == "2" and emis is not None:
@@ -1378,10 +1379,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="EMIS",
                     path=qar if qar else "EMIS.TIF",
-                    common_name="EMIS",
+                    band_common_names="EMIS",
                     title="Emissivity Band",
                     description="Collection " + col + " Level-" + lvl + " Emissivity Band " + sfx,
-                    bname="EMIS",
+                    band_names="EMIS",
                     roles=["data"],
                 )
             if lvl == "2" and emsd is not None:
@@ -1389,10 +1390,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="EMSD",
                     path=qar if qar else "EMSD.TIF",
-                    common_name="EMSD",
+                    band_common_names="EMSD",
                     title="Emissivity Standard Deviation Band",
                     description="Collection " + col + " Level-" + lvl + " Emissivity Standard Deviation Band " + sfx,
-                    bname="EMSD",
+                    band_names="EMSD",
                     roles=["data"],
                 )
             if lvl == "2" and cdist is not None:
@@ -1400,10 +1401,10 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="CDIST",
                     path=qar if qar else "CDIST.TIF",
-                    common_name="CDIST",
+                    band_common_names="CDIST",
                     title="Cloud Distance Band",
                     description="Collection " + col + " Level-" + lvl + " Cloud Distance Band " + sfx,
-                    bname="CDIST",
+                    band_names="CDIST",
                     roles=["data"],
                 )
         elif "Landsat_mss" in rsp_type:
@@ -1413,15 +1414,15 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="green",
                     path=b1 if b1 else "B1.TIF" if ("LM04" in name) or ("LM05" in name) else "B4.TIF",
-                    common_name="green",
+                    band_common_names="green",
                     title=title,
                     description="Collection " + col + " Level-" + lvl + " " + title + " " + sfx,
-                    bname="B1" if ("LM04" in name) or ("LM05" in name) else "B4",
+                    band_names="B1" if ("LM04" in name) or ("LM05" in name) else "B4",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.55,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.55,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b2 is not None:
                 title = "Red Band (B2)" if ("LM04" in name) or ("LM05" in name) else "Red Band (B5)"
@@ -1429,15 +1430,15 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="red",
                     path=b2 if b2 else "B2.TIF" if ("LM04" in name) or ("LM05" in name) else "B5.TIF",
-                    common_name="red",
+                    band_common_names="red",
                     title=title,
                     description="Collection " + col + " Level-" + lvl + " " + title + " " + sfx,
-                    bname="B2" if ("LM04" in name) or ("LM05" in name) else "B5",
+                    band_names="B2" if ("LM04" in name) or ("LM05" in name) else "B5",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.65,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.65,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b3 is not None:
                 title = (
@@ -1449,15 +1450,15 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="nir08",
                     path=b3 if b3 else "B3.TIF" if ("LM04" in name) or ("LM05" in name) else "B6.TIF",
-                    common_name="nir08",
+                    band_common_names="nir08",
                     title=title,
                     description="Collection " + col + " Level-" + lvl + " " + title + " " + sfx,
-                    bname="B3" if ("LM04" in name) or ("LM05" in name) else "B6",
+                    band_names="B3" if ("LM04" in name) or ("LM05" in name) else "B6",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.75,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.75,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if b4 is not None:
                 title = (
@@ -1469,25 +1470,25 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="nir09",
                     path=b4 if b4 else "B4.TIF" if ("LM04" in name) or ("LM05" in name) else "B7.TIF",
-                    common_name="nir09",
+                    band_common_names="nir09",
                     title=title,
                     description="Collection " + col + " Level-" + lvl + " " + title + " " + sfx,
-                    bname="B4" if ("LM04" in name) or ("LM05" in name) else "B7",
+                    band_names="B4" if ("LM04" in name) or ("LM05" in name) else "B7",
                     roles=["data"],
                     gsd=gsd_ref,
-                    center_wavelength=0.95,
-                    nodata=0,
-                    dtype=dtype,
+                    band_center_wavelengths=0.95,
+                    band_nodata=0,
+                    band_dtypes=dtype,
                 )
             if qa is not None:
                 add_asset(
                     item=stac,
                     name="qa_pixel",
                     path=qa if qa else "QA_PIXEL.TIF",
-                    common_name="qa_pixel",
+                    band_common_names="qa_pixel",
                     title="Pixel Quality Assessment Band",
                     description="Collection " + col + " Level-" + lvl + " Pixel Quality Assessment Band " + sfx,
-                    bname="QA",
+                    band_names="QA",
                     roles=["cloud", "cloud-shadow", "snow-ice", "water-mask"],
                 )
             if qar is not None:
@@ -1495,7 +1496,7 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     item=stac,
                     name="qa_radsat",
                     path=qar if qar else "QA_RADSAT.TIF",
-                    common_name="qa_radsat",
+                    band_common_names="qa_radsat",
                     title="Radiometric Saturation Quality Assessment Band",
                     description="Collection "
                     + col
@@ -1503,7 +1504,7 @@ def read_landsat_dataset(path: Union[pystac.Item, Path], scene: satpy.Scene, rsp
                     + lvl
                     + " Radiometric Saturation Quality Assessment Band "
                     + sfx,
-                    bname="QA_RADSAT",
+                    band_names="QA_RADSAT",
                     roles=["saturation"],
                 )
 
@@ -1544,36 +1545,49 @@ def postprocess_landsat_dataset(
     for asset in dataset.assets:
         dataset.assets[asset].href = dataset.assets[asset].ext.eo.bands[0].name + ".tif"
 
-    # Changing datatypes
+    # Changing datatypes and nodata
     for asset in dataset.assets:
         if dataset.assets[asset].ext.has("raster") and dataset.assets[asset].ext.raster.bands is not None:
+            raster_bands = dataset.assets[asset].ext.raster.bands
             if pansharpen is False and keep_pan_band is True and asset == "pan":
-                dataset.assets[asset].ext.raster.bands[0].data_type = pan.dtype.name
+                da = pan
+            elif asset in img:
+                da = img[asset]
             else:
-                dataset.assets[asset].ext.raster.bands[0].data_type = img[asset].dtype.name
+                continue
+
+            if raster_bands[0].data_type is not None:
+                raster_bands[0].data_type = da.dtype.name
+            if raster_bands[0].nodata is not None and da.rio.nodata is not None:
+                raster_bands[0].nodata = float(da.rio.nodata)
 
     # Updating projection info
+    ref_var = img.red
+    dataset.ext.proj.shape = list(ref_var.shape[-2:])
+    dataset.ext.proj.transform = list(ref_var.rio.transform())[:6]
+    dataset.ext.proj.epsg = ref_var.rio.crs.to_epsg()
+    # noinspection PyTypeChecker
+    dataset.bbox = list(transform_bounds(ref_var.rio.crs, "EPSG:4326", *ref_var.rio.bounds()))
+    dataset.geometry = _bbox_to_polygon(dataset.bbox)
+
+    # Updating projection info for each asset
     for asset in dataset.assets:
         if pansharpen is False and keep_pan_band is True and asset == "pan":
-            dataset.assets[asset].ext.proj.shape = list(pan.shape[-2:])
-            dataset.assets[asset].ext.proj.transform = list(pan.rio.transform())[:6]
-    dataset.ext.proj.shape = list(img.red.shape[-2:])
-    dataset.ext.proj.transform = list(img.red.rio.transform())[:6]
-    dataset.ext.proj.epsg = img.red.rio.crs.to_epsg()
-    # noinspection PyTypeChecker
-    dataset.bbox = list(transform_bounds(img.red.rio.crs, "EPSG:4326", *img.red.rio.bounds()))
-    dataset.geometry["type"] = "Polygon"
-    dataset.geometry["coordinates"] = [
-        [
-            [dataset.bbox[0], dataset.bbox[1]],  # LL
-            [dataset.bbox[2], dataset.bbox[1]],  # UL
-            [dataset.bbox[2], dataset.bbox[3]],  # UR
-            [dataset.bbox[0], dataset.bbox[3]],  # LR
-            [dataset.bbox[0], dataset.bbox[1]],  # LL
-        ],
-    ]
+            da = pan
+        elif asset in img:
+            da = img[asset]
+        else:
+            continue
+
+        if dataset.assets[asset].ext.has("proj"):
+            if dataset.assets[asset].ext.proj.shape is not None:
+                dataset.assets[asset].ext.proj.shape = list(da.shape[-2:])
+            if dataset.assets[asset].ext.proj.transform is not None:
+                dataset.assets[asset].ext.proj.transform = list(da.rio.transform())[:6]
 
     # Adding self link
+    dataset.clear_links()
+    dataset.collection_id = None
     dataset.set_self_href(json_path.as_posix())
 
     # Fix geometries if needed
