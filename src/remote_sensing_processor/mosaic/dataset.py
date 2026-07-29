@@ -3,8 +3,9 @@
 import datetime
 from pathlib import Path
 
-from rasterio.warp import transform_bounds
 from xarray import Dataset
+
+from rasterio.warp import transform_bounds
 
 from pystac import Item
 from stactools.core.utils import antimeridian
